@@ -3,8 +3,20 @@
 let
   dotfiles = "/home/brenoslivio/dotfiles";
   outOfStore = config.lib.file.mkOutOfStoreSymlink;
+  
+  importModule = name: import "${dotfiles}/modules/${name}/${name}.nix" {
+    inherit config pkgs dotfiles outOfStore;
+  };
 in
 {
+  imports = [
+    (importModule "fish")
+    (importModule "hypr")
+    (importModule "rofi")
+    (importModule "waybar")
+    (importModule "wlogout")
+  ];
+
   home.username = "brenoslivio";
   home.homeDirectory = "/home/brenoslivio";
 
@@ -42,12 +54,6 @@ in
 
     # Wayland flags
     ".config/code-flags.conf".source = outOfStore "${dotfiles}/config_files/wayland_flags/code-flags.conf";
-
-    # Modules
-    ".config/hypr".source = outOfStore "${dotfiles}/modules/hypr";
-    ".config/rofi".source = outOfStore "${dotfiles}/modules/rofi";
-    ".config/waybar".source = outOfStore "${dotfiles}/modules/waybar";
-    ".config/wlogout".source = outOfStore "${dotfiles}/modules/wlogout";
 
     # # You can also set the file content immediately.
     # ".gradle/gradle.properties".text = ''

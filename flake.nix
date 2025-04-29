@@ -27,7 +27,7 @@
       homeConfigurations."brenoslivio" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
         modules = [ 
-          ./modules/home-manager
+          ./modules
         ];
       };
     };
