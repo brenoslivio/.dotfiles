@@ -26,7 +26,9 @@
       # Home Manager as a standalone config
       homeConfigurations."brenoslivio" = home-manager.lib.homeManagerConfiguration {
         inherit pkgs;
-        modules = [ ./modules/home-manager ];
+        modules = [ 
+          ./modules/home-manager
+        ];
       };
     };
 }
