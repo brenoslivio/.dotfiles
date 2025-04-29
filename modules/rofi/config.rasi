@@ -1,0 +1,180 @@
+configuration {
+    show-icons: true;
+    display-drun: "";
+    disable-history: false;
+    terminal: "alacritty";
+    show-match: false;
+}
+
+* {
+    font: "Inter 12";
+    foreground: #eeeeee;
+    background-color: rgba(0, 0, 0, 0.5);
+    active-background: rgba(255, 255, 255, 0.1);
+    urgent-background: #de0be6;
+    urgent-foreground: rgba(0, 0, 0, 0.1);
+    selected-background: rgba(255, 255, 255, 0.1);
+    selected-urgent-background: #de0be6;
+    selected-active-background: rgba(255, 255, 255, 0.1);
+    separatorcolor: #d891ed;
+    bordercolor: #d891ed;
+}
+
+#window {
+    background-color: @background-color;
+    border: 1px;
+    border-radius: 10px;
+    border-color: @bordercolor;
+    padding: 20px;
+    width: 25%;
+}
+
+#overlay {
+    border-radius: 10px;
+}
+
+#mainbox {
+    padding: 20px 40px;
+    border-radius: 10px;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+#message {
+    border: 0px;
+    border-color: @separatorcolor;
+}
+
+#textbox {
+    text-color: @foreground;
+}
+
+#listview {
+    fixed-height: 0;
+    border: 0px;
+    border-color: @bordercolor;
+    spacing: 5px;
+    scrollbar: false;
+    border-radius: 10px;
+    padding: 5px 0px;
+    lines: 5;
+}
+
+#element {
+    border: 0;
+    padding: 1px 4px;
+    border-radius: 10px;
+    font: "Inter 12";
+}
+
+#element.normal.normal {
+    background-color: transparent;
+    text-color: @foreground;
+}
+
+#element.normal.urgent {
+    background-color: @urgent-background;
+    text-color: @urgent-foreground;
+}
+
+#element.normal.active {
+    background-color: @active-background;
+    text-color: @foreground;
+}
+
+#element.selected.normal {
+    background-color: @selected-background;
+    text-color: @foreground;
+}
+
+#element.selected.urgent {
+    background-color: @selected-urgent-background;
+    text-color: @foreground;
+}
+
+#element.selected.active {
+    background-color: @selected-active-background;
+    text-color: @foreground;
+}
+
+#element.alternate.normal {
+    background-color: transparent;
+    text-color: @foreground;
+}
+
+#element.alternate.urgent {
+    background-color: @urgent-background;
+    text-color: @urgent-foreground;
+}
+
+#element.alternate.active {
+    background-color: @active-background;
+    text-color: @foreground;
+}
+
+#scrollbar {
+    width: 4px;
+    border: 0;
+    handle-width: 8px;
+    padding: 0;
+    background-color: transparent;
+}
+
+#sidebar {
+    border: 0;
+}
+
+#button.selected {
+    background-color: @selected-background;
+    text-color: @foreground;
+}
+
+#inputbar {
+    background-color: rgba(255, 255, 255, 0.05);
+    border: 1px;
+    border-radius: 20px;
+    border-color: rgba(255, 255, 255, 0.1);
+    padding: 6px 0px;
+    spacing: 0;
+    margin: 10px 0;
+    width: 60%;
+    children: [ textbox-prompt-colon, prompt, entry ];
+}
+
+
+#case-indicator {
+    spacing: 0;
+    text-color: @foreground;
+    background-color: transparent;
+}
+
+#prompt {
+    text-color: @foreground;
+    font: "FiraCode Nerd Font Mono 16";
+    padding: 0 10px 0 0;
+    background-color: transparent;    
+}
+
+#entry {
+    text-color: @foreground;
+    background-color: transparent;
+    font: "Inter 12";
+    placeholder: "Search...";
+    padding: 8px 0px 0px 20px;
+    margin: 0;
+    expand: true;
+}
+
+#textbox-prompt-colon {
+    expand: false;
+    str: "";
+    padding: 0px 0px 0px 20px;
+    text-color: @foreground;
+    background-color: transparent;
+    font: "FiraCode Nerd Font Mono 22";
+}
+
+element-text, element-icon {
+    background-color: transparent;
+    text-color: inherit;
+    font: "Inter 12";
+}

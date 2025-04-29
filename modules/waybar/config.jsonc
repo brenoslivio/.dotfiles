@@ -1,0 +1,193 @@
+{
+    "layer": "bottom",
+    "position": "top",
+    "margin-top": 10,
+    "margin-left": 18,
+    "margin-right": 18,
+    "height": 24,
+    "spacing": 2,
+
+    "modules-left": ["custom/menu", "hyprland/workspaces", "hyprland/window"],
+    "modules-center": ["custom/notification", "clock", "custom/weather"],
+    "modules-right": ["mpris", "cava", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/power"],
+
+    "custom/menu": {
+        "format": "",
+        "on-click": "rofi -show drun -show-icons",
+        "tooltip": false
+    },
+
+    "hyprland/workspaces": {
+        "format": "<span size='large'>{icon}</span>",
+        "on-click": "activate",
+        "format-icons": {
+            "1": "󰖟",
+            "2": "",
+            "3": "",
+            "4": "",
+            // "active": "\uf444",
+            "default": "\uf4c3"
+        },
+        "sort-by-number": true,
+        "persistent-workspaces": {
+            "1": [],
+            "2": [],
+            "3": [],
+            "4": []
+        }
+    },
+
+    "hyprland/window": {
+        "format": "{}",
+        "rewrite": {
+            "^(.{60}).+": "$1...",
+            "^(.{1,60})$": "$1"
+        },
+        "icon": true,
+        "separate-outputs": true
+    },
+
+    "cava": {
+//        "cava_config": "$XDG_CONFIG_HOME/cava/cava.conf",
+        "framerate": 30,
+        "autosens": 1,
+        "sensitivity": 1,
+        "bars": 6,
+        "lower_cutoff_freq": 10,
+        "higher_cutoff_freq": 10000,
+        "method": "pulse",
+        "source": "auto",
+        "stereo": true,
+        "reverse": false,
+        "bar_delimiter": 0,
+        "monstercat": false,
+        "waves": false,
+        "noise_reduction": 0.2,
+        "input_delay": 2,
+        "format-icons" : ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█" ],
+        "actions": {
+                   "on-click-right": "mode"
+                   }
+    },
+
+    "mpris": {
+        "format": "{player_icon}   {title}",
+        "title-len": 30,
+        "format-paused": "{status_icon} <i>{title}</i>",
+        "player-icons": {
+            "spotify": "",
+            "default": "▶",
+            "mpv": "🎵"
+        },
+        "status-icons": {
+            "paused": "⏸"
+        },
+        "interval": 1,
+        "ignored-players": ["firefox"]
+    },
+
+    "clock": {
+        // "format": "{:%d.%m.%Y | %H:%M:%S}",
+        "format": "{:%A, %B %d     %H:%M:%S}",
+        "tooltip-format": "<tt><small>{calendar}</small></tt>",
+        "calendar": {
+                    "mode"          : "year",
+                    "mode-mon-col"  : 3,
+                    "weeks-pos"     : "right",
+                    "on-scroll"     : 1,
+                    "format": {
+                              "months":     "<span color='#ffead3'><b>{}</b></span>",
+                              "days":       "<span color='#ecc6d9'><b>{}</b></span>",
+                              "weeks":      "<span color='#99ffdd'><b>W{}</b></span>",
+                              "weekdays":   "<span color='#ffcc66'><b>{}</b></span>",
+                              "today":      "<span color='#ff6699'><b><u>{}</u></b></span>"
+                              }
+                    },
+        "actions":  {
+                    "on-click-right": "mode",
+                    "on-scroll-up": "tz_up",
+                    "on-scroll-down": "tz_down",
+                    "on-scroll-up": "shift_up",
+                    "on-scroll-down": "shift_down"
+                    },
+        "interval": 1
+    },
+
+    "wireplumber": {
+        "format": "\udb81\udd7e  {volume}%",
+        "max-volume": 100,
+        "scroll-step": 5,
+        "on-click": "pavucontrol -t 3"
+    },
+
+    "battery": {
+        "bat": "BAT0",
+        "interval": 60,
+        "format": "{icon}   {capacity}%",
+        "format-icons": ["\uf244", "\uf243", "\uf242", "\uf241", "\uf240"],
+    },
+
+    "backlight": {
+        "format": "\udb80\udcdf  {percent}%",
+        "scroll-step": 5,
+    },
+
+    "memory": {
+        "interval": 1,
+        "format": "   {percentage}%"
+    },
+
+    "cpu": {
+        "interval": 1,
+        "format": "   {usage}%",
+        "max-length": 10
+    },
+
+    "custom/weather": {
+        "exec": "${HOME}/.config/waybar/scripts/get_weather.sh São_Carlos+Brazil",
+        "return-type": "json",
+        "format": "{}",
+        "tooltip": true,
+        "interval": 3600
+    },
+
+    // "temperature": {
+    //     "format": "  {temperatureC}°C"
+    // },
+
+    // "hyprland/language": {
+    //     "format": "{short}"
+    // },
+
+    "tray": {
+        "icon-size": 16,
+        "spacing": 16
+    },
+
+    "custom/notification": {
+        "tooltip": false,
+        "format": "{icon}",
+        "format-icons": {
+          "notification": "<span foreground='red'><sup></sup></span>",
+          "none": "",
+          "dnd-notification": "<span foreground='red'><sup></sup></span>",
+          "dnd-none": "",
+          "inhibited-notification": "<span foreground='red'><sup></sup></span>",
+          "inhibited-none": "",
+          "dnd-inhibited-notification": "<span foreground='red'><sup></sup></span>",
+          "dnd-inhibited-none": ""
+        },
+        "return-type": "json",
+        "exec-if": "which swaync-client",
+        "exec": "swaync-client -swb",
+        "on-click": "swaync-client -t -sw",
+        "on-click-right": "swaync-client -d -sw",
+        "escape": true
+      },
+
+    "custom/power": {
+        "format": "⏻",
+        "tooltip": false,
+        "on-click": "wlogout"
+    }
+}

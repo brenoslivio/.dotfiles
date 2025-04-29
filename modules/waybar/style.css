@@ -1,0 +1,126 @@
+@define-color foreground #eeeeee;
+@define-color foreground-inactive #aaaaaa;
+@define-color background rgba(0, 0, 0, 0.1);
+@define-color active #de0be6;
+@define-color button #dba0d9;
+@define-color waybar-border #d891ed;
+@define-color workspace-background rgba(255, 255, 255, 0.1); 
+
+* {
+    font-family: Inter;
+    font-size: 12px;
+    padding: 0;
+    margin: 0;
+}
+
+#waybar {
+    color: @foreground;
+    background-color: @background;
+    border-radius: 10px;
+    border: 1px solid @waybar-border;
+}
+
+#custom-menu {
+    border-radius: 10px;
+    padding: 0px 20px;
+    font-size: 26px;
+}
+
+#custom-menu:hover {
+    background: @workspace-background;
+    border-radius: 10px;
+}
+
+#workspaces {
+    background: @workspace-background;
+    border-radius: 10px;
+    padding: 0 2px;
+    margin: 7px 10px;
+    border: 1px solid @foreground-inactive;
+}
+
+#workspaces * {
+    font-family: "FiraCode Nerd Font Mono";
+    font-size: 20px;
+}
+
+#workspaces button {
+    color: @button;
+    padding: 2px 10px;
+}
+
+#workspaces button.empty {
+    color: @foreground-inactive;
+}
+
+#workspaces button.active {
+    background: @workspace-background;
+    color: @active;
+    padding-right: 22px;
+    padding-left: 22px;
+    border-radius: 10px;
+}
+
+#workspaces button:hover {
+    background: @workspace-background;
+    padding-right: 22px;
+    padding-left: 22px;
+    border-radius: 10px;
+    border: none;
+}
+
+.modules-center {
+    background: @workspace-background;
+    border-radius: 20px;
+    padding: 0 10px;
+    margin: 7px 10px;
+    border: 1px solid @foreground-inactive;
+}
+
+#custom-notification {
+    font-family: "FiraCode Nerd Font Mono";
+    font-size: 24px;
+    padding: 0 2px 0 0;
+}
+
+#custom-weather {
+    margin: 0px 0px 0px 5px;
+}
+
+#mpris {
+    margin: 7px 0 7px 10px;
+}
+
+#cava {
+    margin: 0 15px; /* Same vertical margin, no weird shrinking */
+}
+
+#wireplumber {
+    margin: 7px 2px 7px 0;
+}
+
+#memory,
+#battery,
+#cpu
+#backlight {
+    padding: 10px;
+}
+
+/* #wireplumber,
+#battery,
+#backlight,
+#language, */
+
+#tray {
+    background: @workspace-background;
+    border-radius: 10px;
+    padding: 0 10px;
+    margin: 7px 10px;
+    border: 1px solid @foreground-inactive;
+}
+
+#custom-power {
+    margin-left: 0px;
+    margin-right: 20px;
+    font-size: 20px;
+}
