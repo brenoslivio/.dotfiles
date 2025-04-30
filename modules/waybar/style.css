@@ -21,13 +21,22 @@
 }
 
 #custom-menu {
+    background-image: url("/home/brenoslivio/Pictures/NixOS.svg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
     border-radius: 10px;
-    padding: 0px 20px;
-    font-size: 26px;
+    padding: 0px 14px;
+    margin-left: 15px;
+    font-size: 8px;
 }
 
 #custom-menu:hover {
     background: @workspace-background;
+    background-image: url("/home/brenoslivio/Pictures/NixOS.svg");
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
     border-radius: 10px;
 }
 
