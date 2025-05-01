@@ -127,6 +127,7 @@
     kdePackages.kcalc
     kdePackages.kate
     spotify
+    ncspot
     vlc
     vscode
     telegram-desktop
@@ -237,8 +238,17 @@
   # Auto system update
   system.autoUpgrade = {
     enable = true;
-    dates = "weekly";
+    flake = "${config.users.users.brenoslivio.home}/.dotfiles";
+    flags = [
+      "--update-input"
+      "nixpkgs"
+      "--commit-lock-file"
+      "-L" # print build logs
+    ];
+    dates = "02:00";
+    randomizedDelaySec = "45min";
   };
+
 
   fonts.packages = with pkgs; [
     inter

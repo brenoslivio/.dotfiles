@@ -1,7 +1,7 @@
 { config, pkgs, ... }:
 
 let
-  dotfiles = "/home/brenoslivio/dotfiles";
+  dotfiles = "/home/brenoslivio/.dotfiles";
   outOfStore = config.lib.file.mkOutOfStoreSymlink;
   
   importModule = name: import "${dotfiles}/modules/${name}/${name}.nix" {
