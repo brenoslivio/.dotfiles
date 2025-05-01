@@ -129,6 +129,12 @@ in
     };
   };
 
+  dconf.settings = {
+    "org/gnome/desktop/interface" = {
+      color-scheme = "prefer-dark";
+    };
+  };
+
   qt = {
     enable = true;
     platformTheme.name = "qtct";
@@ -138,14 +144,33 @@ in
     };
   };
 
+  systemd.user.services.flakeUpdate = {
+    Unit = {
+      Description = "Daily notification to warn about Flake updates";
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.bash}/bin/bash ${dotfiles}/notify-flake-updates.sh"; 
+      StandardOutput = "journal+console";
+      StandardError = "journal+console";
+    };
+  };
+
+  systemd.user.timers.flakeUpdate = {
+    Unit = {
+      Description = "Daily notification to warn about Flake updates";
+    };
+    Timer = {
+      OnCalendar = "21:00:00";
+      Persistent = true;
+    };
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
+
   # Let Home Manager install and manage itself.
   programs.home-manager = {
     enable = true;
-  };
-
-  dconf.settings = {
-    "org/gnome/desktop/interface" = {
-      color-scheme = "prefer-dark";
-    };
   };
 }
