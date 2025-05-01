@@ -87,8 +87,10 @@ in
     userName = "brenoslivio";
     userEmail = "brenoslivio@pm.me";
     extraConfig = {
+      init.defaultBranch = "main";
+      safe.directory = "/home/brenoslivio/.dotfiles";
       gpg.format = "ssh";
-      user.signingKey = "~/.ssh/id_ed25519.pub"; # example
+      user.signingKey = "/home/brenoslivio/.ssh/id_ed25519.pub"; # example
       commit.gpgSign = true;
     };
   };

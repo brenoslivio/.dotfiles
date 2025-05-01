@@ -126,8 +126,8 @@
     kdePackages.gwenview
     kdePackages.kcalc
     kdePackages.kate
-    spotify
     ncspot
+    cava
     vlc
     vscode
     telegram-desktop
@@ -235,20 +235,19 @@
     experimental-features = [ "nix-command" "flakes" ];
   };
 
-  # Auto system update
-  system.autoUpgrade = {
-    enable = true;
-    flake = "${config.users.users.brenoslivio.home}/.dotfiles";
-    flags = [
-      "--update-input"
-      "nixpkgs"
-      "--commit-lock-file"
-      "-L" # print build logs
-    ];
-    dates = "02:00";
-    randomizedDelaySec = "45min";
-  };
-
+  # Auto system update (now properly working with flake)
+  # system.autoUpgrade = {
+  #   enable = true;
+  #   flake = "${config.users.users.brenoslivio.home}/.dotfiles";
+  #   flags = [
+  #     # "--update-input"
+  #     # "nixpkgs"
+  #     # "--commit-lock-file"
+  #     "-L" # print build logs
+  #   ];
+  #   dates = "09:42";
+  #   allowReboot = true;
+  # };
 
   fonts.packages = with pkgs; [
     inter
