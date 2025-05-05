@@ -10,6 +10,7 @@ let
 in
 {
   imports = [
+    (importModule "cava")
     (importModule "fish")
     (importModule "hypr")
     (importModule "rofi")
@@ -22,9 +23,10 @@ in
 
   home.stateVersion = "24.11";
 
-  home.packages = [
-    pkgs.adwaita-qt
-    pkgs.adwaita-qt6
+  home.packages = with pkgs; [
+    adwaita-qt
+    adwaita-qt6
+    hyprpaper
     # # It is sometimes useful to fine-tune packages, for example, by applying
     # # overrides. You can do that directly here, just don't forget the
     # # parentheses. Maybe you want to install Nerd Fonts with a limited number of

@@ -8,7 +8,7 @@
       figlet $hostname | cowsay -f tux -n | lolcat
     '';
     shellAliases = {
-      up = "cd ${dotfiles} && nix flake update && sudo nixos-rebuild switch --flake ${dotfiles}#brenoslivio && cd";
+      up = "cd ${dotfiles} && nix flake update && sudo nixos-rebuild switch --flake .#brenoslivio && home-manager switch --flake .#brenoslivio -b backup --impure && cd";
       home = "home-manager switch --flake ${dotfiles}#brenoslivio -b backup --impure";
     };
   };
