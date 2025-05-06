@@ -97,10 +97,6 @@
     isNormalUser = true;
     description = "Breno Livio";
     extraGroups = [ "networkmanager" "wheel" ];
-    packages = with pkgs; [
-      #kdePackages.kate
-      #thunderbird      
-    ];
   };
 
   # Allow unfree packages
@@ -109,64 +105,7 @@
   # List packages installed in system profile. To search, run:
   # $ nix search wget
   environment.systemPackages = with pkgs; [
-    wget
-    btop
-    pavucontrol
-    fortune
-    cowsay
-    lolcat
-    git
-    nemo
-    file-roller
-    firefox
-    thunderbird
-    okular
-    libsForQt5.qt5ct
-    qt6Packages.qt6ct
-    kdePackages.gwenview
-    kdePackages.kcalc
-    kdePackages.kate
-    ncspot
-    cava
-    vlc
-    vscode
-    telegram-desktop
-    stremio
-    dropbox
-    obs-studio
-    gimp
-    popsicle
-    alacritty
     kitty
-    galaxy-buds-client
-    fastfetch
-    nerdfetch
-    figlet
-    devenv
-    pandoc
-    texlive.combined.scheme-full
-    libreoffice-qt6-fresh
-    hunspell
-    hunspellDicts.pt_BR
-    distrobox
-    mpvpaper
-    waybar
-    (pkgs.waybar.overrideAttrs (oldAttrs: {
-        mesonFlags = oldAttrs.mesonFlags ++ [ "-Dexperimental=true" ];
-      })
-    )
-    hyprshot
-    swaynotificationcenter
-    libnotify
-    hyprlock
-    hyprcursor
-    clipse
-    wl-clipboard
-    wlogout
-    rofi-wayland
-    networkmanagerapplet
-    blueman
-    playerctl
     lxqt.lxqt-policykit
     home-manager
   ];
@@ -174,8 +113,6 @@
   services.gvfs.enable = true;
 
   services.flatpak.enable = true;
-
-  programs.kdeconnect.enable = true;
 
   systemd.services.flatpak-repo = {
     wantedBy = [ "multi-user.target" ];
@@ -249,29 +186,11 @@
   #   allowReboot = true;
   # };
 
-  fonts.packages = with pkgs; [
-    inter
-    (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
-  ];
-
-  # Some programs need SUID wrappers, can be configured further or are
-  # started in user sessions.
-  # programs.mtr.enable = true;
-  # programs.gnupg.agent = {
-  #   enable = true;
-  #   enableSSHSupport = true;
-  # };
-
-  # List services that you want to enable:
-
-  # Enable the OpenSSH daemon.
-  # services.openssh.enable = true;
-
   # Open ports in the firewall.
   networking.firewall = {
     enable = true;
-    allowedTCPPortRanges = [ { from = 1714; to = 1764; } ]; # kde connect
-    allowedUDPPortRanges = [ { from = 1714; to = 1764; } ]; # kde connect
+    allowedTCPPortRanges = [ { from = 1714; to = 1764; } ];
+    allowedUDPPortRanges = [ { from = 1714; to = 1764; } ];
   };  
 
   system.stateVersion = "24.11"; # Did you read the comment?

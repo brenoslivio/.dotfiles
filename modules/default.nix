@@ -23,15 +23,80 @@ in
 
   home.stateVersion = "24.11";
 
+  # Allow unfree packages
+  nixpkgs.config.allowUnfree = true;
+
   home.packages = with pkgs; [
+    libsForQt5.qt5ct
+    qt6Packages.qt6ct
     adwaita-qt
     adwaita-qt6
+
+    pandoc
+    texlive.combined.scheme-full
+    
     hyprpaper
+    hyprshot
+    hyprlock
+    hyprcursor
+
+    git
+    wget
+    btop
+    fortune
+    cowsay
+    lolcat
+    figlet
+    cava
+    fastfetch
+    nerdfetch
+    distrobox
+
+    nemo
+    file-roller
+
+    firefox
+    thunderbird
+    telegram-desktop
+    stremio
+    dropbox
+    obs-studio
+    gimp
+    popsicle
+    vscode
+    ncspot
+    okular
+    vlc
+    galaxy-buds-client
+    libreoffice-qt6-fresh
+    hunspell
+    hunspellDicts.pt_BR
+    
+    kdePackages.gwenview
+    kdePackages.kcalc
+    kdePackages.kate
+
+    pavucontrol
+    networkmanagerapplet
+    blueman
+    playerctl
+
+    waybar
+    rofi-wayland
+    swaynotificationcenter
+    libnotify
+    clipse
+    wl-clipboard
+    wlogout
+
     # # It is sometimes useful to fine-tune packages, for example, by applying
     # # overrides. You can do that directly here, just don't forget the
     # # parentheses. Maybe you want to install Nerd Fonts with a limited number of
     # # fonts?
     # (pkgs.nerdfonts.override { fonts = [ "FantasqueSansMono" ]; })
+
+    inter
+    (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
 
     # # You can also create simple shell scripts directly inside your
     # # configuration. For example, this adds a command 'my-hello' to your
@@ -40,6 +105,8 @@ in
     #   echo "Hello, ${config.home.username}!"
     # '')
   ];
+
+  fonts.fontconfig.enable = true;
 
   # Home Manager is pretty good at managing dotfiles. The primary way to manage
   # plain files is through 'home.file'.
@@ -92,7 +159,7 @@ in
       init.defaultBranch = "main";
       safe.directory = "/home/brenoslivio/.dotfiles";
       gpg.format = "ssh";
-      user.signingKey = "/home/brenoslivio/.ssh/id_ed25519.pub"; # example
+      user.signingKey = "/home/brenoslivio/.ssh/id_ed25519.pub";
       commit.gpgSign = true;
     };
   };
@@ -106,8 +173,6 @@ in
   home.pointerCursor = {
     gtk.enable = true;
     x11.enable = true;
-    # name = "Bibata-Modern-Ice";
-    # package = pkgs.bibata-cursors;
     name = "oreo_purple_cursors";
     package = pkgs.oreo-cursors-plus;
     size = 30;

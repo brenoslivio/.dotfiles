@@ -97,11 +97,7 @@
 }
 
 #mpris {
-    margin: 7px 0 7px 10px;
-}
-
-#cava {
-    margin: 0 15px; /* Same vertical margin, no weird shrinking */
+    margin: 7px 12px 7px 10px;
 }
 
 #wireplumber {
