@@ -11,10 +11,16 @@ in
 {
   imports = [
     (importModule "cava")
+    (importModule "fastfetch")
     (importModule "fish")
+    (importModule "git")
     (importModule "hypr")
+    (importModule "kdeconnect")
+    (importModule "ncspot")
+    (importModule "nemo")
     (importModule "rofi")
     (importModule "waybar")
+    (importModule "wayland_flags")
     (importModule "wlogout")
   ];
 
@@ -27,19 +33,23 @@ in
   nixpkgs.config.allowUnfree = true;
 
   home.packages = with pkgs; [
+    # Qt packages and themes
     libsForQt5.qt5ct
     qt6Packages.qt6ct
     adwaita-qt
     adwaita-qt6
 
+    # Latex things
     pandoc
     texlive.combined.scheme-full
     
+    # Hypr ecosystem
     hyprpaper
     hyprshot
     hyprlock
     hyprcursor
 
+    # Terminal apps
     git
     wget
     btop
@@ -49,12 +59,15 @@ in
     figlet
     cava
     fastfetch
-    nerdfetch
+    pipes
+    hollywood
     distrobox
 
+    # File manager
     nemo
     file-roller
 
+    # GUI software
     firefox
     thunderbird
     telegram-desktop
@@ -71,16 +84,17 @@ in
     libreoffice-qt6-fresh
     hunspell
     hunspellDicts.pt_BR
-    
     kdePackages.gwenview
     kdePackages.kcalc
     kdePackages.kate
 
+    # Devices and audio
     pavucontrol
     networkmanagerapplet
     blueman
     playerctl
 
+    # Desktop aux
     waybar
     rofi-wayland
     swaynotificationcenter
@@ -88,13 +102,8 @@ in
     clipse
     wl-clipboard
     wlogout
-
-    # # It is sometimes useful to fine-tune packages, for example, by applying
-    # # overrides. You can do that directly here, just don't forget the
-    # # parentheses. Maybe you want to install Nerd Fonts with a limited number of
-    # # fonts?
-    # (pkgs.nerdfonts.override { fonts = [ "FantasqueSansMono" ]; })
-
+    
+    # Fonts
     inter
     (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
 
@@ -108,22 +117,7 @@ in
 
   fonts.fontconfig.enable = true;
 
-  # Home Manager is pretty good at managing dotfiles. The primary way to manage
-  # plain files is through 'home.file'.
-  home.file = {
-    # # Building this configuration will create a copy of 'dotfiles/screenrc' in
-    # # the Nix store. Activating the configuration will then make '~/.screenrc' a
-    # # symlink to the Nix store copy.
-    # ".screenrc".source = dotfiles/screenrc;
-
-    # Specific configs
-
-    ## Nemo file-roller
-    ".local/share/nemo/actions".source = outOfStore "${dotfiles}/config_files/nemo";
-
-    # Wayland flags
-    ".config/code-flags.conf".source = outOfStore "${dotfiles}/config_files/wayland_flags/code-flags.conf";
-
+  home.file = { 
     # # You can also set the file content immediately.
     # ".gradle/gradle.properties".text = ''
     #   org.gradle.console=verbose
@@ -149,25 +143,6 @@ in
   #
   home.sessionVariables = {
     # EDITOR = "emacs";
-  };
-
-  programs.git = {
-    enable = true;
-    userName = "brenoslivio";
-    userEmail = "brenoslivio@pm.me";
-    extraConfig = {
-      init.defaultBranch = "main";
-      safe.directory = "/home/brenoslivio/.dotfiles";
-      gpg.format = "ssh";
-      user.signingKey = "/home/brenoslivio/.ssh/id_ed25519.pub";
-      commit.gpgSign = true;
-    };
-  };
-
-  services.kdeconnect = {
-    enable = true;
-    package = pkgs.kdePackages.kdeconnect-kde;
-    indicator = true;
   };
 
   home.pointerCursor = {
