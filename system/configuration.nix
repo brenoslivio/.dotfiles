@@ -110,8 +110,6 @@
     home-manager
   ];
 
-  services.gvfs.enable = true;
-
   services.flatpak.enable = true;
 
   systemd.services.flatpak-repo = {
@@ -119,15 +117,10 @@
     path = [ pkgs.flatpak ];
     script = ''
       flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-
-      flatpak install -y flathub md.obsidian.Obsidian
     '';
   };
 
-  virtualisation.podman = {
-    enable = true;
-    dockerCompat = true;
-  };
+  services.gvfs.enable = true;
 
   virtualisation.docker.rootless = {
     enable = true;
@@ -148,16 +141,6 @@
         enable = true;
         settings.General.Experimental = true;
     };
-  };
-
-  programs.bash = {
-    interactiveShellInit = ''
-      if [[ $(${pkgs.procps}/bin/ps --no-header --pid=$PPID --format=comm) != "fish" && -z ''${BASH_EXECUTION_STRING} ]]
-      then
-        shopt -q login_shell && LOGIN_OPTION='--login' || LOGIN_OPTION=""
-        exec ${pkgs.fish}/bin/fish $LOGIN_OPTION
-      fi
-    '';
   };
 
   # Automatic Garbage Collection

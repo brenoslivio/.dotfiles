@@ -12,13 +12,12 @@ in
   imports = [
     (importModule "cava")
     (importModule "fastfetch")
-    (importModule "fish")
     (importModule "git")
     (importModule "hypr")
     (importModule "kdeconnect")
-    (importModule "ncspot")
     (importModule "nemo")
     (importModule "rofi")
+    (importModule "shell")
     (importModule "waybar")
     (importModule "wayland_flags")
     (importModule "wlogout")
@@ -69,6 +68,7 @@ in
 
     # GUI software
     firefox
+    obsidian
     thunderbird
     telegram-desktop
     stremio
@@ -77,7 +77,7 @@ in
     gimp
     popsicle
     vscode
-    ncspot
+    spotify
     okular
     vlc
     galaxy-buds-client

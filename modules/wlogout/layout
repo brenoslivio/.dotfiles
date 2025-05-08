@@ -5,6 +5,18 @@
     "keybind" : "l"
 }
 {
+    "label" : "hibernate",
+    "action" : "systemctl hibernate",
+    "text" : "Hibernate",
+    "keybind" : "h"
+}
+{
+    "label" : "logout",
+    "action" : "sleep 1; hyprctl dispatch exit",
+    "text" : "Logout",
+    "keybind" : "e"
+}
+{
     "label" : "shutdown",
     "action" : "systemctl poweroff",
     "text" : "Shutdown",
