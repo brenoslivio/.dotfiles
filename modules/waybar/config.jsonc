@@ -8,7 +8,7 @@
     "spacing": 2,
 
     "modules-left": ["custom/menu", "hyprland/workspaces", "hyprland/window"],
-    "modules-center": ["custom/notification", "clock", "custom/weather"],
+    "modules-center": ["custom/notification", "clock"],
     "modules-right": ["mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/power"],
 
     "custom/menu": {
@@ -119,14 +119,6 @@
         "interval": 1,
         "format": "   {usage}%",
         "max-length": 10
-    },
-
-    "custom/weather": {
-        "exec": "${HOME}/.config/waybar/scripts/get_weather.sh São+Carlos",
-        "return-type": "json",
-        "format": "{}",
-        "tooltip": true,
-        "interval": 3600
     },
 
     // "temperature": {

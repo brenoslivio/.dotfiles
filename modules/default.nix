@@ -68,7 +68,6 @@ in
 
     # GUI software
     brave
-    firefox
     obsidian
     thunderbird
     telegram-desktop
