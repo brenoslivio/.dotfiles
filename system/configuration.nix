@@ -96,7 +96,7 @@
   users.users.brenoslivio = {
     isNormalUser = true;
     description = "Breno Livio";
-    extraGroups = [ "networkmanager" "wheel" ];
+    extraGroups = [ "networkmanager" "wheel" "podman" ];
   };
 
   # Allow unfree packages
@@ -122,9 +122,19 @@
 
   services.gvfs.enable = true;
 
-  virtualisation.docker.rootless = {
-    enable = true;
-    setSocketVariable = true;
+  virtualisation.containers.enable = true;
+  
+  virtualisation = {
+    podman = {
+      enable = true;
+      dockerCompat = true;
+      defaultNetwork.settings.dns_enabled = true;
+    };
+
+    docker.rootless = {
+      enable = true;
+      setSocketVariable = true;
+    };
   };
 
   xdg.portal = {

@@ -67,6 +67,7 @@ in
     file-roller
 
     # GUI software
+    brave
     firefox
     obsidian
     thunderbird
