@@ -1,4 +1,4 @@
-{ config, pkgs, ... }:
+{ config, pkgs, spicetify-nix, ... }:
 
 let
   dotfiles = "/home/brenoslivio/.dotfiles";
@@ -21,6 +21,7 @@ in
     (importModule "waybar")
     (importModule "wayland_flags")
     (importModule "wlogout")
+    spicetify-nix.homeManagerModules.default
   ];
 
   home.username = "brenoslivio";
@@ -77,7 +78,6 @@ in
     gimp
     popsicle
     vscode
-    spotify
     okular
     vlc
     galaxy-buds-client
@@ -151,6 +151,24 @@ in
     name = "oreo_purple_cursors";
     package = pkgs.oreo-cursors-plus;
     size = 30;
+  };
+
+  programs.spicetify =
+  let
+    spicePkgs = spicetify-nix.legacyPackages.${pkgs.system};
+  in
+  {
+    enable = true;
+    enabledExtensions = with spicePkgs.extensions; [
+      adblock
+      history
+      hidePodcasts
+      betterGenres
+      wikify
+      songStats
+    ];
+    theme = spicePkgs.themes.orchis;
+    # colorScheme = "purple";
   };
 
   gtk = {

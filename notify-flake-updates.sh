@@ -18,7 +18,7 @@ flake_update_output=`nix flake update 2>&1`
 mv flake.lock{.bak,}
 
 if ( echo "$flake_update_output" | grep -q 'Updated' ); then 
-    notify-send "Sytem update" "$( echo "$flake_update_output" | grep -vE '^warning' )" -u critical -i software-update-urgent
+    notify-send "Sytem update" "Flake updated. Please update your system." -u critical -i software-update-urgent
 else
     notify-send "Sytem update" "No updates found." -i software-update-available
 fi

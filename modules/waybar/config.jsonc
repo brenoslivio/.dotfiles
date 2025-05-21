@@ -1,5 +1,5 @@
 {
-    "layer": "top",
+    "layer": "bottom",
     "position": "top",
     "margin-top": 10,
     "margin-left": 14,
@@ -61,7 +61,7 @@
             "paused": "⏸"
         },
         "interval": 1,
-        "ignored-players": ["firefox"]
+        "ignored-players": ["brave"]
     },
 
     "clock": {
