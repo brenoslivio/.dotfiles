@@ -58,6 +58,7 @@ in
     lolcat
     figlet
     cava
+    rclone
     fastfetch
     pipes
     hollywood
@@ -69,6 +70,7 @@ in
 
     # GUI software
     brave
+    xournalpp
     obsidian
     thunderbird
     telegram-desktop
@@ -222,6 +224,31 @@ in
     };
     Timer = {
       OnCalendar = "21:00:00";
+      Persistent = true;
+    };
+    Install = {
+      WantedBy = [ "timers.target" ];
+    };
+  };
+
+  systemd.user.services.rcloneSync = {
+    Unit = {
+      Description = "Sync local Documents/Ikiru folder to remote storage";
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${pkgs.rclone}/bin/rclone sync ${config.home.homeDirectory}/Documents/Ikiru remote:Ikiru"; 
+      StandardOutput = "journal+console";
+      StandardError = "journal+console";
+    };
+  };
+
+  systemd.user.timers.rcloneSync = {
+    Unit = {
+      Description = "Timer for syncing local Documents/Ikiru folder to remote storage every hour";
+    };
+    Timer = {
+      OnCalendar = "hourly";
       Persistent = true;
     };
     Install = {
