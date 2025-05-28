@@ -162,9 +162,6 @@ in
   {
     enable = true;
     enabledExtensions = with spicePkgs.extensions; [
-      adblock
-      history
-      hidePodcasts
       betterGenres
       wikify
       songStats
@@ -231,30 +228,30 @@ in
     };
   };
 
-  systemd.user.services.rcloneSync = {
-    Unit = {
-      Description = "Sync local Documents/Ikiru folder to remote storage";
-    };
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${pkgs.rclone}/bin/rclone sync ${config.home.homeDirectory}/Documents/Ikiru remote:Ikiru"; 
-      StandardOutput = "journal+console";
-      StandardError = "journal+console";
-    };
-  };
+  # systemd.user.services.rclone = {
+  #   Unit = {
+  #     Description = "Sync local folder to remote storage";
+  #   };
+  #   Service = {
+  #     Type = "oneshot";
+  #     ExecStart = "${pkgs.rclone}/bin/rclone sync ${config.home.homeDirectory}/Documents/Ikiru remote:Ikiru"; 
+  #     StandardOutput = "journal+console";
+  #     StandardError = "journal+console";
+  #   };
+  # };
 
-  systemd.user.timers.rcloneSync = {
-    Unit = {
-      Description = "Timer for syncing local Documents/Ikiru folder to remote storage every hour";
-    };
-    Timer = {
-      OnCalendar = "hourly";
-      Persistent = true;
-    };
-    Install = {
-      WantedBy = [ "timers.target" ];
-    };
-  };
+  # systemd.user.timers.rclone = {
+  #   Unit = {
+  #     Description = "Timer for syncing local folder to remote storage every 10 minutes";
+  #   };
+  #   Timer = {
+  #     OnCalendar = "*:0/10:00";  # Every 10 minutes
+  #     Persistent = true;
+  #   };
+  #   Install = {
+  #     WantedBy = [ "timers.target" ];
+  #   };
+  # };
 
   # Let Home Manager install and manage itself.
   programs.home-manager = {

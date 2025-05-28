@@ -21,10 +21,11 @@
         "format": "<span size='large'>{icon}</span>",
         "on-click": "activate",
         "format-icons": {
-            "1": "󰖟",
-            "2": "",
-            "3": "",
-            "4": "",
+            "1": "⌂",
+            "2": "󰖟",
+            "3": "",
+            "4": "",
+            "5": "",
             // "active": "\uf444",
             "default": "\uf4c3"
         },
