@@ -90,6 +90,8 @@ in
     kdePackages.okular
     kdePackages.kcalc
     kdePackages.kate
+    protonvpn-gui
+    authenticator
 
     # Devices and audio
     pavucontrol
