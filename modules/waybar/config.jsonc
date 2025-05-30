@@ -21,8 +21,8 @@
         "format": "<span size='large'>{icon}</span>",
         "on-click": "activate",
         "format-icons": {
-            "1": "⌂",
-            "2": "󰖟",
+            "1": "󰖟",
+            "2": "✎",
             "3": "",
             "4": "",
             "5": "",

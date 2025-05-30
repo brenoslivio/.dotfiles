@@ -74,8 +74,8 @@
   services.printing.enable = true;
 
   # Enable sound with pipewire.
-  hardware.pulseaudio.enable = false;
   security.rtkit.enable = true;
+  services.pulseaudio.enable = false;
   services.pipewire = {
     enable = true;
     alsa.enable = true;
@@ -115,9 +115,9 @@
   systemd.services.flatpak-repo = {
     wantedBy = [ "multi-user.target" ];
     path = [ pkgs.flatpak ];
-    script = ''
-      flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    '';
+    # script = ''
+    #   flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    # '';
   };
 
   services.gvfs.enable = true;
@@ -141,7 +141,7 @@
     enable = true;
     extraPortals = with pkgs; [
       xdg-desktop-portal-wlr
-      xdg-desktop-portal-kde
+      kdePackages.xdg-desktop-portal-kde
       xdg-desktop-portal-gtk
     ];
   };
@@ -186,6 +186,6 @@
     allowedUDPPortRanges = [ { from = 1714; to = 1764; } ];
   };  
 
-  system.stateVersion = "24.11"; # Did you read the comment?
+  system.stateVersion = "25.05";
   
 }

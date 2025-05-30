@@ -1,6 +1,6 @@
 configuration {
     show-icons: true;
-    display-drun: "";
+    display-drun: "apps";
     disable-history: false;
     terminal: "kitty";
     show-match: false;

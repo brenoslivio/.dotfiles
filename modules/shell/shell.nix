@@ -5,7 +5,7 @@
     enable = true;
     interactiveShellInit = ''
       set fish_greeting # Disable greeting
-      cat ${dotfiles}/modules/shell/intro.txt | lolcat
+      cat ${dotfiles}/modules/shell/intro.txt | lolcat 2> /dev/null
     '';
     shellAliases = {
       up = "cd ${dotfiles} && sudo nixos-rebuild switch --flake .#brenoslivio && home-manager switch --flake .#brenoslivio -b backup --impure && cd";

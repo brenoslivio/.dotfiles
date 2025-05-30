@@ -27,7 +27,7 @@ in
   home.username = "brenoslivio";
   home.homeDirectory = "/home/brenoslivio";
 
-  home.stateVersion = "24.11";
+  home.stateVersion = "25.05";
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
@@ -51,6 +51,7 @@ in
 
     # Terminal apps
     git
+    jp2a
     wget
     btop
     fortune
@@ -80,13 +81,13 @@ in
     gimp
     popsicle
     vscode
-    okular
     vlc
     galaxy-buds-client
     libreoffice-qt6-fresh
     hunspell
     hunspellDicts.pt_BR
     kdePackages.gwenview
+    kdePackages.okular
     kdePackages.kcalc
     kdePackages.kate
 
@@ -98,7 +99,6 @@ in
 
     # Desktop aux
     waybar
-    rofi-wayland
     swaynotificationcenter
     libnotify
     clipse
@@ -107,7 +107,8 @@ in
     
     # Fonts
     inter
-    (nerdfonts.override { fonts = [ "FiraCode" "DroidSansMono" ]; })
+    nerd-fonts.fira-code
+    nerd-fonts.droid-sans-mono
 
     # # You can also create simple shell scripts directly inside your
     # # configuration. For example, this adds a command 'my-hello' to your
