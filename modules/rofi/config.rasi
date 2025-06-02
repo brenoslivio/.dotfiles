@@ -140,7 +140,6 @@ configuration {
     children: [ textbox-prompt-colon, prompt, entry ];
 }
 
-
 #case-indicator {
     spacing: 0;
     text-color: @foreground;
@@ -149,8 +148,8 @@ configuration {
 
 #prompt {
     text-color: @foreground;
-    font: "FiraCode Nerd Font Mono 16";
-    padding: 0 10px 0 0;
+    font: "Inter 16";
+    padding: 5px 0px 0 5px;
     background-color: transparent;    
 }
 

@@ -47,6 +47,7 @@ in
     hyprpaper
     hyprshot
     hyprlock
+    hyprpicker
     hyprcursor
 
     # Terminal apps
