@@ -16,8 +16,7 @@
 
   security.polkit.enable = true;
 
-  boot.initrd.luks.devices."luks-4de7db73-acb9-40bd-8c1c-4b09c7d7f3be".device = "/dev/disk/by-uuid/4de7db73-acb9-40bd-8c1c-4b09c7d7f3be";
-  networking.hostName = "ahimsa"; # Define your hostname.
+  networking.hostName = "ahimsa";
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Configure network proxy if necessary
@@ -172,25 +171,11 @@
     experimental-features = [ "nix-command" "flakes" ];
   };
 
-  # Auto system update (now properly working with flake)
-  # system.autoUpgrade = {
-  #   enable = true;
-  #   flake = "${config.users.users.brenoslivio.home}/.dotfiles";
-  #   flags = [
-  #     # "--update-input"
-  #     # "nixpkgs"
-  #     # "--commit-lock-file"
-  #     "-L" # print build logs
-  #   ];
-  #   dates = "09:42";
-  #   allowReboot = true;
-  # };
-
   # Open ports in the firewall.
   networking.firewall = {
     enable = true;
-    allowedTCPPortRanges = [ { from = 1714; to = 1764; } ];
-    allowedUDPPortRanges = [ { from = 1714; to = 1764; } ];
+    allowedTCPPortRanges = [ { from = 1714; to = 1764; } ]; # KDE Connect
+    allowedUDPPortRanges = [ { from = 1714; to = 1764; } ]; # KDE Connect
   };  
 
   system.stateVersion = "24.11";
