@@ -10,6 +10,7 @@
     shellAliases = {
       up = "cd ${dotfiles} && sudo nixos-rebuild switch --flake .#brenoslivio && home-manager switch --flake .#brenoslivio -b backup --impure && cd";
       home = "home-manager switch --flake ${dotfiles}#brenoslivio -b backup --impure";
+      rollback = "cd ${dotfiles} && sudo nixos-rebuild switch --flake .#brenoslivio --commit $(git rev-parse HEAD) && home-manager switch --flake .#brenoslivio --commit $(git rev-parse HEAD) -b backup --impure && cd";
     };
   };
 

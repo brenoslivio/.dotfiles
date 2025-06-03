@@ -27,7 +27,7 @@ in
   home.username = "brenoslivio";
   home.homeDirectory = "/home/brenoslivio";
 
-  home.stateVersion = "25.05";
+  home.stateVersion = "24.11";
 
   # Allow unfree packages
   nixpkgs.config.allowUnfree = true;
@@ -229,7 +229,7 @@ in
 
   systemd.user.services.flakeUpdate = {
     Unit = {
-      Description = "Daily notification to warn about Flake updates";
+      Description = "Weekly notification to warn about Flake updates";
     };
     Service = {
       Type = "oneshot";
@@ -241,10 +241,10 @@ in
 
   systemd.user.timers.flakeUpdate = {
     Unit = {
-      Description = "Daily notification to warn about Flake updates";
+      Description = "Weekly notification to warn about Flake updates";
     };
     Timer = {
-      OnCalendar = "21:00:00";
+      OnCalendar = "Fri 21:00:00";
       Persistent = true;
     };
     Install = {
