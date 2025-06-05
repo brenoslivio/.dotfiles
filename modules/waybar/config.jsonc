@@ -8,13 +8,22 @@
     "spacing": 2,
 
     "modules-left": ["custom/menu", "hyprland/workspaces", "hyprland/window"],
-    "modules-center": ["custom/notification", "clock"],
+    "modules-center": ["custom/notification", "clock", "custom/tasks"],
     "modules-right": ["cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/power"],
 
     "custom/menu": {
         "format": "    ",
         "on-click": "rofi -show drun -show-icons",
         "tooltip": false
+    },
+
+    "custom/tasks": {
+        "exec": "~/.dotfiles/modules/waybar/scripts/tasks.sh",
+        "interval": 60,
+        "return-type": "json",
+        "format": "  <span size='large'>󰊪</span>    {}",
+        "tooltip": true,
+        "on-click": "obsidian"
     },
 
     "hyprland/workspaces": {
@@ -26,6 +35,7 @@
             "3": "",
             "4": "",
             "5": "",
+            "6": "",
             // "active": "\uf444",
             "default": "\uf4c3"
         },

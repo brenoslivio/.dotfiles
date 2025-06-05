@@ -72,6 +72,7 @@ in
 
     # GUI software
     brave
+    zoom-us
     xournalpp
     obsidian
     thunderbird
