@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-file="$HOME/Dropbox/Ikiru/Ikiru.md"
+file="$HOME/Dropbox/Ikiru/Research/SMART.md"
 
 tasks=$(awk -F'|' '
   function parse_date(d,m,y) {

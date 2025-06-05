@@ -8,22 +8,13 @@
     "spacing": 2,
 
     "modules-left": ["custom/menu", "hyprland/workspaces", "hyprland/window"],
-    "modules-center": ["custom/notification", "custom/clock", "custom/tasks"],
+    "modules-center": ["custom/notification", "custom/clock", "custom/research", "custom/tasks"],
     "modules-right": ["cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/power"],
 
     "custom/menu": {
         "format": "    ",
         "on-click": "rofi -show drun -show-icons",
         "tooltip": false
-    },
-
-    "custom/tasks": {
-        "exec": "~/.dotfiles/modules/waybar/scripts/tasks.sh",
-        "interval": 60,
-        "return-type": "json",
-        "format": "  <span size='large'>󰊪</span>    {}",
-        "tooltip": true,
-        "on-click": "obsidian"
     },
 
     "hyprland/workspaces": {
@@ -97,41 +88,33 @@
         "ignored-players": ["brave"]
     },
 
-"custom/clock": {
-    "format": "{}",
-    "interval": 1,
-    "exec": "~/.dotfiles/modules/waybar/scripts/clock.sh",
-    "exec-if": "~/.dotfiles/modules/waybar/scripts/clock.sh check",
-    "return-type": "json",
-    "on-click": "~/.dotfiles/modules/waybar/scripts/clock.sh toggle",
-    "signal": 1
-},
-    // "clock": {
-    //     // "format": "{:%d.%m.%Y | %H:%M:%S}",
-    //     "format": "{}",
-    //     "exec": "~/.dotfiles/modules/waybar/scripts/clock.sh",
-    //     "timezones": ["America/Sao_Paulo", "Europe/Berlin"],
-    //     "tooltip-format": "<tt><small>{calendar}</small></tt>",
-    //     "calendar": {
-    //                 "mode"          : "year",
-    //                 "mode-mon-col"  : 3,
-    //                 "weeks-pos"     : "right",
-    //                 "on-scroll"     : 1,
-    //                 "format": {
-    //                           "months":     "<span color='#ffead3'><b>{}</b></span>",
-    //                           "days":       "<span color='#ecc6d9'><b>{}</b></span>",
-    //                           "weeks":      "<span color='#99ffdd'><b>W{}</b></span>",
-    //                           "weekdays":   "<span color='#ffcc66'><b>{}</b></span>",
-    //                           "today":      "<span color='#ff6699'><b><u>{}</u></b></span>"
-    //                           }
-    //                 },
-    //     "actions":  {
-    //                 "on-click": "tz_up", // mode
-    //                 "on-scroll-up": "shift_up",
-    //                 "on-scroll-down": "shift_down"
-    //                 },
-    //     "interval": 1
-    // },
+    "custom/research": {
+        "exec": "~/.dotfiles/modules/waybar/scripts/research.sh",
+        "interval": 1,
+        "return-type": "json",
+        "format": "  <span size='large'>󰊪</span>    {}",
+        "tooltip": true,
+        "on-click": "obsidian"
+    },
+
+    "custom/tasks": {
+        "exec": "~/.dotfiles/modules/waybar/scripts/tasks.sh",
+        "interval": 1,
+        "return-type": "json",
+        "format": "  <span size='large'></span>   {}",
+        "tooltip": true,
+        "on-click": "obsidian"
+    },
+
+    "custom/clock": {
+        "format": "{}",
+        "interval": 1,
+        "exec": "~/.dotfiles/modules/waybar/scripts/clock.sh",
+        "exec-if": "~/.dotfiles/modules/waybar/scripts/clock.sh check",
+        "return-type": "json",
+        "on-click": "~/.dotfiles/modules/waybar/scripts/clock.sh toggle",
+        "signal": 1
+    },
 
     "wireplumber": {
         "format": "\udb81\udd7e  {volume}%",

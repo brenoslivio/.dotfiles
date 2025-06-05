@@ -52,7 +52,7 @@ in
 
     # Terminal apps
     git
-    jp2a
+    openssl
     wget
     btop
     fortune
@@ -72,6 +72,7 @@ in
 
     # GUI software
     brave
+    firefox
     zoom-us
     xournalpp
     obsidian
