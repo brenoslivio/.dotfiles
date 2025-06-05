@@ -39,7 +39,7 @@ tasks=$(awk -F'|' '
 ' "$file" | sort)
 
 task_count=$(echo "$tasks" | grep -c '^')
-text="${task_count} task(s)"
+text="${task_count} Aufgabe(n)"
 
 # Show top 5 tasks in tooltip
 tooltip=$(echo "$tasks" | head -n 5 | awk -F'|' '{printf "• %s (%s)\n", $2, $3}')
