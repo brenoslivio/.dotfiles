@@ -1,4 +1,4 @@
-{ dotfiles, config, pkgs, ... }:
+{ config, pkgs, ... }:
 
 {
   services.kdeconnect = {
