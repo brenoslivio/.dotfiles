@@ -16,6 +16,7 @@ in
     (importModule "hypr")
     (importModule "kdeconnect")
     (importModule "nemo")
+    (importModule "niri")
     (importModule "rofi")
     (importModule "shell")
     (importModule "spicetify")
@@ -104,6 +105,7 @@ in
 
     # Desktop aux
     waybar
+    xwayland-satellite
     swaynotificationcenter
     libnotify
     clipse

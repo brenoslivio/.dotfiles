@@ -52,6 +52,10 @@
   # You can disable this if you're only using the Wayland session.
   services.xserver.enable = true;
 
+  programs.niri = {
+    enable = true;
+  };
+
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;

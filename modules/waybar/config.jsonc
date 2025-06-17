@@ -13,7 +13,7 @@
 
     "custom/menu": {
         "format": "    ",
-        "on-click": "rofi -show drun -show-icons",
+        "on-click": "~/.dotfiles/modules/rofi/launch.sh",
         "tooltip": false
     },
 
