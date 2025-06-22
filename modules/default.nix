@@ -50,6 +50,7 @@ in
     hyprlock
     hyprpicker
     hyprcursor
+    hyprsunset
 
     # Terminal apps
     git
@@ -218,6 +219,21 @@ in
     };
     Install = {
       WantedBy = [ "timers.target" ];
+    };
+  };
+
+  systemd.user.services.hyprsunset = {
+    Install = {
+      WantedBy = [ "default.target" ];
+    };
+    Service = {
+      ExecStart = "${pkgs.bash}/bin/bash ${dotfiles}/modules/hypr/hyprsunset.sh";
+      Restart = "always";
+      RuntimeMaxSec = 3600;
+      Type = "simple";
+    };
+    Unit = {
+      Description = "Run hyprsunset script 1h";
     };
   };
 
