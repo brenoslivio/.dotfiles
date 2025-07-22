@@ -7,7 +7,8 @@
 {
   imports =
     [ # Include the results of the hardware scan.
-      ./hardware-configuration.nix
+      # ./hardware-ahimsa.nix
+      ./hardware-ahimsa-ufz.nix
     ];
 
   # Bootloader.
@@ -27,7 +28,8 @@
   networking.networkmanager.enable = true;
 
   # Set your time zone.
-  time.timeZone = "America/Sao_Paulo";
+  time.timeZone = "Europe/Berlin";
+  # time.timeZone = "America/Sao_Paulo";
 
   # Select internationalisation properties.
   i18n = {
