@@ -17,7 +17,7 @@
 
   security.polkit.enable = true;
 
-  networking.hostName = "ahimsa";
+  networking.hostName = "ahimsa-ufz";
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Configure network proxy if necessary
@@ -72,12 +72,12 @@
 
   # Configure keymap in X11
   services.xserver.xkb = {
-    layout = "br";
-    variant = "thinkpad";
+    layout = "de";
+    #variant = "thinkpad";
   };
 
   # Configure console keymap
-  console.keyMap = "br-abnt2";
+  console.keyMap = "de";
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
