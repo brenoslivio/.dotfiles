@@ -30,7 +30,7 @@ display_time() {
     current_tz=$(get_current_tz)
     
     # Set the timezone for this command only
-    time=$(TZ=$current_tz LC_TIME=de_DE.UTF-8 date +"%A, %d. %B     %H:%M:%S")
+    time=$(TZ=$current_tz LC_TIME=de_DE.UTF-8 date +"%A, %d. %B  %H:%M:%S")
     calendar=$(TZ=$current_tz LC_TIME=de_DE.UTF-8 date +"%d.%m.%Y")
     
     calendar="$calendar ($current_tz)"

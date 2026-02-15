@@ -88,20 +88,20 @@
         "ignored-players": ["brave"]
     },
 
-    "custom/research": {
-        "exec": "~/.dotfiles/modules/waybar/scripts/research.sh",
-        "interval": 1,
-        "return-type": "json",
-        "format": "  <span size='large'>󰊪</span>    {}",
-        "tooltip": true,
-        "on-click": "obsidian"
-    },
+    // "custom/research": {
+    //     "exec": "~/.dotfiles/modules/waybar/scripts/research.sh",
+    //     "interval": 1,
+    //     "return-type": "json",
+    //     "format": "  <span size='large'>󰊪</span>    {}",
+    //     "tooltip": true,
+    //     "on-click": "obsidian"
+    // },
 
     "custom/tasks": {
         "exec": "~/.dotfiles/modules/waybar/scripts/tasks.sh",
         "interval": 1,
         "return-type": "json",
-        "format": "  <span size='large'></span>   {}",
+        "format": " <span size='large'></span> {}",
         "tooltip": true,
         "on-click": "obsidian"
     },

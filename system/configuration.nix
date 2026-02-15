@@ -7,8 +7,8 @@
 {
   imports =
     [ # Include the results of the hardware scan.
-      # ./hardware-ahimsa.nix
-      ./hardware-ahimsa-ufz.nix
+      ./hardware-ahimsa.nix
+      #./hardware-ahimsa-ufz.nix
     ];
 
   # Bootloader.
@@ -17,7 +17,7 @@
 
   security.polkit.enable = true;
 
-  networking.hostName = "ahimsa-ufz";
+  networking.hostName = "ahimsa";
   # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Configure network proxy if necessary
@@ -33,11 +33,11 @@
 
   # Select internationalisation properties.
   i18n = {
-    defaultLocale = "de_DE.UTF-8";
+    defaultLocale = "en_US.UTF-8";
     extraLocales = [ "de_DE.UTF-8/UTF-8" "en_US.UTF-8/UTF-8" "pt_BR.UTF-8/UTF-8"];
 
     extraLocaleSettings = {
-      LC_ALL = "de_DE.UTF-8";
+      LC_ALL = "en_US.UTF-8";
     #   LC_ADDRESS = "pt_BR.UTF-8";
     #   LC_IDENTIFICATION = "pt_BR.UTF-8";
     #   LC_MEASUREMENT = "pt_BR.UTF-8";
@@ -72,12 +72,14 @@
 
   # Configure keymap in X11
   services.xserver.xkb = {
-    layout = "de";
-    #variant = "thinkpad";
+    #layout = "de";
+    layout = "br";
+    variant = "thinkpad";
   };
 
   # Configure console keymap
-  console.keyMap = "de";
+  # console.keyMap = "de";
+  console.keyMap = "br-abnt2";
 
   # Enable CUPS to print documents.
   services.printing.enable = true;
@@ -127,6 +129,11 @@
     # script = ''
     #   flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
     # '';
+  };
+
+  services.syncplay = {
+    enable = true;
+    port = 8999;
   };
 
   programs.steam = {
@@ -186,6 +193,8 @@
     enable = true;
     allowedTCPPortRanges = [ { from = 1714; to = 1764; } ]; # KDE Connect
     allowedUDPPortRanges = [ { from = 1714; to = 1764; } ]; # KDE Connect
+    allowedTCPPorts = [ config.services.syncplay.port ];
+    allowedUDPPorts = [ config.services.syncplay.port ];
   };  
 
   system.stateVersion = "24.11";

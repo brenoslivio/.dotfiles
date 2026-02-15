@@ -74,6 +74,7 @@ in
 
     # GUI software
     brave
+    zotero
     firefox
     zoom-us
     xournalpp
@@ -115,6 +116,8 @@ in
     
     # Fonts
     inter
+    corefonts
+    vista-fonts
     nerd-fonts.fira-code
     nerd-fonts.droid-sans-mono
 
