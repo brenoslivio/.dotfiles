@@ -63,7 +63,21 @@
     xwayland.enable = true;
   };
 
-  services.displayManager.sddm.enable = true;
+  services.displayManager.sddm = {
+    enable = true;
+    wayland.enable = true;
+    package = pkgs.kdePackages.sddm;
+
+    extraPackages = with pkgs; [
+      kdePackages.qtsvg
+      kdePackages.qtvirtualkeyboard
+      kdePackages.qtmultimedia
+      sddm-astronaut
+    ];
+
+    theme = "sddm-astronaut-theme";
+  };
+
   security.pam.services.sddm.enableGnomeKeyring = true;
 
   environment.sessionVariables = {
@@ -119,6 +133,8 @@
     kitty
     lxqt.lxqt-policykit
     home-manager
+    sddm-astronaut
+    kdePackages.qtmultimedia
   ];
 
   services.flatpak.enable = true;
