@@ -74,6 +74,7 @@ in
 
     # GUI software
     brave
+    qbittorrent
     zotero
     firefox
     zoom-us
