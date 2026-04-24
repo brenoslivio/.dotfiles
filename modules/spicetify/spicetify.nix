@@ -17,7 +17,7 @@ in
       songStats
     ];
 
-    theme = spicePkgs.themes.orchis;
+    theme = spicePkgs.themes.nightlight;
     colorScheme = "custom";
     customColorScheme = {
       text = "f5d9f6";             # Soft light pink for text contrast

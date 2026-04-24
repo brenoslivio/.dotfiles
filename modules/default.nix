@@ -82,7 +82,7 @@ in
     obsidian
     thunderbird
     telegram-desktop
-    stremio
+    stremio-linux-shell
     dropbox
     obs-studio
     gimp

@@ -24,9 +24,9 @@ in
 
   programs.git = {
     enable = true;
-    userName = username;
-    userEmail = principal; # use the extracted email if desired
-    extraConfig = {
+    settings = {
+      user.name = username;
+      user.email = principal; # use the extracted email if desired
       init.defaultBranch = "main";
       safe.directory = dotfiles;
       gpg.format = "ssh";
