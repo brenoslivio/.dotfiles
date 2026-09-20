@@ -103,7 +103,6 @@ in
     # Devices and audio
     pavucontrol
     networkmanagerapplet
-    blueman
     playerctl
 
     # Desktop aux

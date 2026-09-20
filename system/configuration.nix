@@ -26,10 +26,14 @@
 
   # Enable networking
   networking.networkmanager.enable = true;
+  networking.networkmanager.plugins = with pkgs; [
+    networkmanager-fortisslvpn
+    networkmanager-openvpn
+  ];
 
   # Set your time zone.
-  time.timeZone = "Europe/Berlin";
-  # time.timeZone = "America/Sao_Paulo";
+  # time.timeZone = "Europe/Berlin";
+  time.timeZone = "America/Sao_Paulo";
 
   # Select internationalisation properties.
   i18n = {
@@ -135,6 +139,9 @@
     home-manager
     sddm-astronaut
     kdePackages.qtmultimedia
+    bluez
+    bluez-tools
+    blueman
   ];
 
   services.flatpak.enable = true;
@@ -185,12 +192,24 @@
     ];
   };
 
-  hardware = {
-    bluetooth = {
-        enable = true;
-        settings.General.Experimental = true;
+  hardware.bluetooth = {
+    enable = true;
+    powerOnBoot = true;
+
+    settings = {
+      General = {
+        Experimental = true;
+        ControllerMode = "dual";
+        FastConnectable = true;
+      };
+
+      Policy = {
+        AutoEnable = true;
+      };
     };
   };
+
+  services.blueman.enable = true;
 
   boot.kernelParams = [
     "zswap.enabled=1" # enables zswap
