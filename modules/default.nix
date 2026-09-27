@@ -51,6 +51,7 @@ in
     hyprpicker
     hyprcursor
     hyprsunset
+    socat
 
     # Terminal apps
     git
