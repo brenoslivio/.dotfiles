@@ -209,6 +209,12 @@
     };
   };
 
+  # The RTL8822CE's USB Bluetooth controller becomes unstable when btusb
+  # runtime-suspends it (HCI timeouts, malformed events, and brief reconnects).
+  boot.extraModprobeConfig = ''
+    options btusb enable_autosuspend=0
+  '';
+
   services.blueman.enable = true;
 
   boot.kernelParams = [
