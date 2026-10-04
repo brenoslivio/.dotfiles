@@ -109,8 +109,10 @@
     margin: 7px 12px 7px 10px;
 }
 
-#cava {
+#custom-cava {
     margin: 0 10px;
+    font-family: "FiraCode Nerd Font Mono";
+    font-size: 14px;
 }
 
 #wireplumber {

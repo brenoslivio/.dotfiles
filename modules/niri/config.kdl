@@ -261,9 +261,8 @@ layout {
 // which may be more convenient to use.
 // See the binds section below for more spawn examples.
 
-// This line starts waybar, a commonly used bar for Wayland compositors.
 spawn-at-startup "hyprpaper"
-spawn-at-startup "waybar"
+// Waybar is started by its graphical-session systemd user service.
 spawn-at-startup "lxqt-policykit-agent"
 spawn-at-startup "clipse" "-listen"
 spawn-at-startup "dropbox"

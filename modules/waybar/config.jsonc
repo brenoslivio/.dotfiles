@@ -9,7 +9,7 @@
 
     "modules-left": ["custom/menu", "hyprland/workspaces", "hyprland/window"],
     "modules-center": ["custom/notification", "custom/clock", "custom/research", "custom/tasks"],
-    "modules-right": ["cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/power"],
+    "modules-right": ["custom/cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/power"],
 
     "custom/menu": {
         "format": "    ",
@@ -49,26 +49,10 @@
         "separate-outputs": true
     },
 
-    "cava": {
-        "framerate": 30,
-        "autosens": 1,
-        "sensitivity": 1,
-        "bars": 10,
-        "lower_cutoff_freq": 10,
-        "higher_cutoff_freq": 10000,
-        "method": "pulse",
-        "source": "auto",
-        "stereo": true,
-        "reverse": false,
-        "bar_delimiter": 0,
-        "monstercat": false,
-        "waves": false,
-        "noise_reduction": 0.2,
-        "input_delay": 2,
-        "format-icons" : ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█" ],
-        "actions": {
-                    "on-click-right": "mode"
-                }
+    "custom/cava": {
+        "exec": "~/.config/waybar/scripts/cava.sh",
+        "restart-interval": 1,
+        "tooltip": false
     },
 
     "mpris": {
