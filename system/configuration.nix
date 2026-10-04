@@ -176,7 +176,9 @@
 
     settings = {
       General = {
-        Experimental = true;
+        # Experimental profiles advertise unsupported services such as RAP on
+        # this controller and cause errors every time an HID device reconnects.
+        Experimental = false;
         ControllerMode = "dual";
         FastConnectable = true;
       };

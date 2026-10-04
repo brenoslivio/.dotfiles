@@ -36,7 +36,12 @@
             echo "Warning: building from a dirty dotfiles worktree." >&2
           end
 
-          sudo nixos-rebuild switch --flake "path:$repo#$host"
+          sudo nixos-rebuild switch --flake "path:$repo#$host"; or return 1
+
+          # Home Manager replaces the profile during the rebuild. Refresh the
+          # prompt so this already-running shell does not retain Starship's old
+          # profile path until the next terminal is opened.
+          ${pkgs.starship}/bin/starship init fish | source
         '';
       };
 
