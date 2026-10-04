@@ -1,37 +1,34 @@
-{ config, pkgs, ...}@extras:
+{ config, lib, pkgs, primaryUser, primaryUserDescription, ... }:
 
 let
-  dotfiles = "/home/brenoslivio/.dotfiles";
-  outOfStore = config.lib.file.mkOutOfStoreSymlink;
-
-  importModule = name: import "${dotfiles}/modules/${name}/${name}.nix" {
-    inherit config pkgs dotfiles outOfStore extras;
+  flakeUpdateCheck = pkgs.writeShellApplication {
+    name = "flake-update-check";
+    runtimeInputs = with pkgs; [ coreutils git libnotify nix ];
+    text = builtins.readFile ../notify-flake-updates.sh;
   };
 in
 {
   imports = [
-    (importModule "cava")
-    (importModule "fastfetch")
-    (importModule "git")
-    (importModule "hypr")
-    (importModule "kdeconnect")
-    (importModule "nemo")
-    (importModule "niri")
-    (importModule "rofi")
-    (importModule "shell")
-    (importModule "spicetify")
-    (importModule "waybar")
-    (importModule "wayland_flags")
-    (importModule "wlogout")
+    ./assets/assets.nix
+    ./cava/cava.nix
+    ./fastfetch/fastfetch.nix
+    ./git/git.nix
+    ./hypr/hypr.nix
+    ./kdeconnect/kdeconnect.nix
+    ./nemo/nemo.nix
+    ./niri/niri.nix
+    ./rofi/rofi.nix
+    ./shell/shell.nix
+    ./spicetify/spicetify.nix
+    ./waybar/waybar.nix
+    ./wayland_flags/wayland_flags.nix
+    ./wlogout/wlogout.nix
   ];
 
-  home.username = "brenoslivio";
-  home.homeDirectory = "/home/brenoslivio";
+  home.username = primaryUser;
+  home.homeDirectory = "/home/${primaryUser}";
 
   home.stateVersion = "24.11";
-
-  # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
 
   home.packages = with pkgs; [
     # Qt packages and themes
@@ -98,13 +95,15 @@ in
     kdePackages.okular
     kdePackages.kcalc
     kdePackages.kate
-    protonvpn-gui
+    gnome-clocks
+    proton-vpn
     authenticator
 
     # Devices and audio
     pavucontrol
     networkmanagerapplet
     playerctl
+    brightnessctl
 
     # Desktop aux
     waybar
@@ -140,6 +139,18 @@ in
     # '';
   };
 
+  # Brave currently ships two equivalent desktop IDs. Keep the canonical
+  # com.brave.Browser entry and mask the legacy ID to avoid duplicate launchers.
+  xdg.dataFile."applications/brave-browser.desktop" = {
+    force = true;
+    text = ''
+      [Desktop Entry]
+      Type=Application
+      Name=Brave Web Browser
+      Hidden=true
+    '';
+  };
+
   # Home Manager can also manage your environment variables through
   # 'home.sessionVariables'. These will be explicitly sourced when using a
   # shell provided by Home Manager. If you don't want to manage your shell
@@ -156,9 +167,7 @@ in
   #
   #  /etc/profiles/per-user/brenoslivio/etc/profile.d/hm-session-vars.sh
   #
-  home.sessionVariables = {
-    # EDITOR = "emacs";
-  };
+  home.sessionVariables.DOTFILES_REPO = "${config.home.homeDirectory}/.dotfiles";
 
   home.pointerCursor = {
     gtk.enable = true;
@@ -170,6 +179,7 @@ in
 
   gtk = {
     enable = true;
+    gtk4.theme = config.gtk.theme;
     theme = {
       package = pkgs.orchis-theme;
       name = "Orchis-Purple-Dark";
@@ -207,7 +217,7 @@ in
     };
     Service = {
       Type = "oneshot";
-      ExecStart = "${pkgs.bash}/bin/bash ${dotfiles}/notify-flake-updates.sh"; 
+      ExecStart = lib.getExe flakeUpdateCheck;
       StandardOutput = "journal+console";
       StandardError = "journal+console";
     };
@@ -228,16 +238,19 @@ in
 
   systemd.user.services.hyprsunset = {
     Install = {
-      WantedBy = [ "default.target" ];
+      WantedBy = [ "wayland-session@hyprland.desktop.target" ];
     };
     Service = {
-      ExecStart = "${pkgs.bash}/bin/bash ${dotfiles}/modules/hypr/hyprsunset.sh";
+      ExecStart = "${pkgs.bash}/bin/bash ${./hypr/hyprsunset.sh}";
       Restart = "always";
+      RestartSec = 5;
       RuntimeMaxSec = 3600;
       Type = "simple";
     };
     Unit = {
       Description = "Run hyprsunset script 1h";
+      After = [ "wayland-session-waitenv.service" ];
+      PartOf = [ "wayland-session@hyprland.desktop.target" ];
     };
   };
 

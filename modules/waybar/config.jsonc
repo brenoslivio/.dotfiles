@@ -13,7 +13,7 @@
 
     "custom/menu": {
         "format": "    ",
-        "on-click": "~/.dotfiles/modules/rofi/launch.sh",
+        "on-click": "~/.config/rofi/launch.sh",
         "tooltip": false
     },
 
@@ -89,7 +89,7 @@
     },
 
     // "custom/research": {
-    //     "exec": "~/.dotfiles/modules/waybar/scripts/research.sh",
+    //     "exec": "~/.config/waybar/scripts/research.sh",
     //     "interval": 1,
     //     "return-type": "json",
     //     "format": "  <span size='large'>󰊪</span>    {}",
@@ -98,7 +98,7 @@
     // },
 
     "custom/tasks": {
-        "exec": "~/.dotfiles/modules/waybar/scripts/tasks.sh",
+        "exec": "~/.config/waybar/scripts/tasks.sh",
         "interval": 1,
         "return-type": "json",
         "format": " <span size='large'></span> {}",
@@ -109,10 +109,10 @@
     "custom/clock": {
         "format": "{}",
         "interval": 1,
-        "exec": "~/.dotfiles/modules/waybar/scripts/clock.sh",
-        "exec-if": "~/.dotfiles/modules/waybar/scripts/clock.sh check",
+        "exec": "~/.config/waybar/scripts/clock.sh",
+        "exec-if": "~/.config/waybar/scripts/clock.sh check",
         "return-type": "json",
-        "on-click": "~/.dotfiles/modules/waybar/scripts/clock.sh toggle",
+        "on-click": "~/.config/waybar/scripts/clock.sh toggle",
         "signal": 1
     },
 

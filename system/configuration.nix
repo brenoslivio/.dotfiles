@@ -2,23 +2,14 @@
 # your system.  Help is available in the configuration.nix(5) man page
 # and in the NixOS manual (accessible by running ‘nixos-help’).
 
-{ config, pkgs, ... }:
+{ config, pkgs, primaryUser, primaryUserDescription, ... }:
 
 {
-  imports =
-    [ # Include the results of the hardware scan.
-      ./hardware-ahimsa.nix
-      #./hardware-ahimsa-ufz.nix
-    ];
-
   # Bootloader.
   boot.loader.systemd-boot.enable = true;
   boot.loader.efi.canTouchEfiVariables = true;
 
   security.polkit.enable = true;
-
-  networking.hostName = "ahimsa";
-  # networking.wireless.enable = true;  # Enables wireless support via wpa_supplicant.
 
   # Configure network proxy if necessary
   # networking.proxy.default = "http://user:password@proxy:port/";
@@ -27,7 +18,6 @@
   # Enable networking
   networking.networkmanager.enable = true;
   networking.networkmanager.plugins = with pkgs; [
-    networkmanager-fortisslvpn
     networkmanager-openvpn
   ];
 
@@ -65,6 +55,9 @@
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
+    # Hyprland exposes an UWSM login entry. Enable its systemd units so that
+    # selecting that session in SDDM starts a complete graphical session.
+    withUWSM = true;
   };
 
   services.displayManager.sddm = {
@@ -122,9 +115,9 @@
   # services.xserver.libinput.enable = true;
 
   # Define a user account. Don't forget to set a password with ‘passwd’.
-  users.users.brenoslivio = {
+  users.users.${primaryUser} = {
     isNormalUser = true;
-    description = "Breno Livio";
+    description = primaryUserDescription;
     extraGroups = [ "networkmanager" "wheel" "podman" ];
   };
 
@@ -146,14 +139,6 @@
 
   services.flatpak.enable = true;
 
-  systemd.services.flatpak-repo = {
-    wantedBy = [ "multi-user.target" ];
-    path = [ pkgs.flatpak ];
-    # script = ''
-    #   flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
-    # '';
-  };
-
   services.syncplay = {
     enable = true;
     port = 8999;
@@ -170,17 +155,10 @@
 
   virtualisation.containers.enable = true;
   
-  virtualisation = {
-    podman = {
-      enable = true;
-      dockerCompat = true;
-      defaultNetwork.settings.dns_enabled = true;
-    };
-
-    docker.rootless = {
-      enable = true;
-      setSocketVariable = true;
-    };
+  virtualisation.podman = {
+    enable = true;
+    dockerCompat = true;
+    defaultNetwork.settings.dns_enabled = true;
   };
 
   xdg.portal = {

@@ -1,7 +1,7 @@
-{ dotfiles, outOfStore, config, pkgs, ... }:
+{ ... }:
 
 {
   home.file = {
-    ".config/niri".source = outOfStore "${dotfiles}/modules/niri";
+    ".config/niri/config.kdl".source = ./config.kdl;
   };
 }

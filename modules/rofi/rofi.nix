@@ -1,8 +1,12 @@
-{ dotfiles, outOfStore, config, pkgs, ... }:
+{ pkgs, ... }:
 
 {
   home.file = {
-    ".config/rofi".source = outOfStore "${dotfiles}/modules/rofi";
+    ".config/rofi/config.rasi".source = ./config.rasi;
+    ".config/rofi/launch.sh" = {
+      source = ./launch.sh;
+      executable = true;
+    };
   };
 
   programs.rofi = {
@@ -11,6 +15,7 @@
     plugins = [
         pkgs.rofi-calc
     ];
-    configPath = "";
+    # Keep Home Manager's generated file separate from the hand-written theme.
+    configPath = "hm-generated.rasi";
   };
 }

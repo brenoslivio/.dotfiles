@@ -1,8 +1,8 @@
-{ dotfiles, outOfStore, config, pkgs, extras, ... }:
+{ inputs, pkgs, ... }:
 
 let
-  spicetifyModule = extras.spicetify-nix.homeManagerModules.default;
-  spicePkgs = extras.spicetify-nix.legacyPackages.${pkgs.system};
+  spicetifyModule = inputs.spicetify-nix.homeManagerModules.default;
+  spicePkgs = inputs.spicetify-nix.legacyPackages.${pkgs.stdenv.hostPlatform.system};
 in
 {
   imports = [
@@ -12,7 +12,6 @@ in
   programs.spicetify = {
     enable = true;
     enabledExtensions = with spicePkgs.extensions; [
-      betterGenres
       wikify
       songStats
     ];

@@ -1,6 +1,11 @@
 #!/usr/bin/env bash
 
-file="$HOME/Dropbox/Ikiru/Research/SMART.md"
+file="${RESEARCH_FILE:-$HOME/Dropbox/Ikiru/Research/SMART.md}"
+
+if [[ ! -r "$file" ]]; then
+    printf '{"text":"0","tooltip":"Research file not found: %s"}\n' "$file"
+    exit 0
+fi
 
 tasks=$(awk -F'|' '
   function parse_date(d,m,y) {
@@ -38,15 +43,19 @@ tasks=$(awk -F'|' '
   }
 ' "$file" | sort)
 
-task_count=$(echo "$tasks" | grep -c '^')
+if [[ -n "$tasks" ]]; then
+  task_count=$(printf '%s\n' "$tasks" | grep -c '^')
+else
+  task_count=0
+fi
 text="${task_count}"
 
 # Show top 5 tasks in tooltip
-tooltip=$(echo "$tasks" | head -n 5 | awk -F'|' '{printf "• %s - %s (%s)\n", $2, $3, $4}')
+tooltip=$(printf '%s\n' "$tasks" | head -n 5 | awk -F'|' 'NF > 1 {printf "• %s - %s (%s)\n", $2, $3, $4}')
 
 # Escape JSON special characters
 escape_json() {
-  echo "$1" | sed \
+  printf '%s' "$1" | sed \
     -e 's/\\/\\\\/g' \
     -e 's/"/\\"/g' \
     -e ':a;N;$!ba;s/\n/\\n/g'
@@ -55,4 +64,4 @@ escape_json() {
 escaped_text=$(escape_json "$text")
 escaped_tooltip=$(escape_json "$tooltip")
 
-echo "{\"text\": \"$escaped_text\", \"tooltip\": \"$escaped_tooltip\"}"
+printf '{"text":"%s","tooltip":"%s"}\n' "$escaped_text" "$escaped_tooltip"

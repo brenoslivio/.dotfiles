@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Config file to store the current timezone state
-CONFIG_FILE=~/.config/waybar/clock_timezone
+CONFIG_FILE="${XDG_STATE_HOME:-$HOME/.local/state}/waybar/clock_timezone"
 
 # Default timezone (when not set)
 DEFAULT_TZ="America/Sao_Paulo"
@@ -17,6 +17,7 @@ get_current_tz() {
 
 # Function to toggle timezone
 toggle_timezone() {
+    mkdir -p "$(dirname "$CONFIG_FILE")"
     current_tz=$(get_current_tz)
     if [ "$current_tz" = "Europe/Berlin" ]; then
         echo "America/Sao_Paulo" > "$CONFIG_FILE"
@@ -30,8 +31,10 @@ display_time() {
     current_tz=$(get_current_tz)
     
     # Set the timezone for this command only
-    time=$(TZ=$current_tz LC_TIME=de_DE.UTF-8 date +"%A, %d. %B  %H:%M:%S")
-    calendar=$(TZ=$current_tz LC_TIME=de_DE.UTF-8 date +"%d.%m.%Y")
+    # NixOS stores timezone data in /etc/zoneinfo rather than
+    # /usr/share/zoneinfo, which glibc otherwise searches by default.
+    time=$(TZDIR=/etc/zoneinfo TZ="$current_tz" LC_TIME=de_DE.UTF-8 date +"%A, %d. %B  %H:%M:%S")
+    calendar=$(TZDIR=/etc/zoneinfo TZ="$current_tz" LC_TIME=de_DE.UTF-8 date +"%d.%m.%Y")
     
     calendar="$calendar ($current_tz)"
     
@@ -39,7 +42,7 @@ display_time() {
 }
 
 # Handle different commands
-case "$1" in
+case "${1:-}" in
     "toggle")
         toggle_timezone
         # Send signal to waybar to update the module
