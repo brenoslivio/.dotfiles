@@ -186,7 +186,7 @@ in
     };
 
     iconTheme = {
-      package = pkgs.papirus-icon-theme;
+      package = pkgs.papirus-icon-theme.override { color = "magenta"; };
       name = "Papirus-Dark";
     };
 

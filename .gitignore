@@ -6,3 +6,4 @@ result-*
 *.bak
 *.swp
 .DS_Store
+vpn.ovpn

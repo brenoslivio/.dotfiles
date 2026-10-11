@@ -189,6 +189,12 @@
     };
   };
 
+  # NixOS does not restart BlueZ automatically when main.conf changes. Make
+  # future Bluetooth setting changes take effect during `up` without a reboot.
+  systemd.services.bluetooth.restartTriggers = [
+    config.environment.etc."bluetooth/main.conf".source
+  ];
+
   # The RTL8822CE's USB Bluetooth controller becomes unstable when btusb
   # runtime-suspends it (HCI timeouts, malformed events, and brief reconnects).
   boot.extraModprobeConfig = ''
