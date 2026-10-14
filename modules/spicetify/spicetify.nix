@@ -16,25 +16,25 @@ in
       songStats
     ];
 
-    theme = spicePkgs.themes.nightlight;
+    theme = spicePkgs.themes.ziro;
     colorScheme = "custom";
     customColorScheme = {
-      text = "f5d9f6";             # Soft light pink for text contrast
-      subtext = "d3a4d9";          # Muted lavender subtext
-      sidebar-text = "e0b0f6";     # Light magenta-tinted tone
-      main = "1a0a1f";             # Very dark purple, stylish base
-      sidebar = "2a1a2f";          # Deep plum tone for sidebar
-      player = "1a0a1f";           # Matches main for visual unity
-      card = "2a1a2f";             # Slight contrast from player
-      shadow = "100815";           # Subtle shadow, not too harsh
-      selected-row = "de0be6";     # Use the main magenta for highlight
-      button = "a64ac9";           # Complementary purple
-      button-active = "de0be6";    # Your chosen magenta
-      button-disabled = "59405c";  # Muted plum-gray
-      tab-active = "de0be6";       # Keep magenta as active tab indicator
-      notification = "29c46f";     # Contrasting green for alerts
-      notification-error = "ff4fa1"; # Vibrant pink-red for errors
-      misc = "7e6786";             # Dusty lavender tone
+      # Match the magenta accents in Waybar, Rofi, Hyprland, and Niri.
+      text = "eeeeee";
+      subtext = "dba0d9";
+      main = "221b24";
+      sidebar = "221b24";
+      player = "221b24";
+      card = "19131c";
+      shadow = "19131c"; # Ziro also uses this for text on selected rows/buttons.
+      selected-row = "de0be6";
+      button = "d891ed";
+      button-active = "de0be6";
+      button-disabled = "443248";
+      tab-active = "de0be6";
+      notification = "19131c";
+      notification-error = "ff4fa1";
+      misc = "221b24";
     };
   };
 }
