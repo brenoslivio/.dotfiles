@@ -37,9 +37,11 @@ in
     adwaita-qt
     adwaita-qt6
 
-    # Latex things
+    # Documents and typesetting
     pandoc
     texlive.combined.scheme-full
+    typst
+    tinymist
     
     # Hypr ecosystem
     hyprpaper
