@@ -141,8 +141,21 @@ in
     # '';
   };
 
-  # Brave currently ships two equivalent desktop IDs. Keep the canonical
-  # com.brave.Browser entry and mask the legacy ID to avoid duplicate launchers.
+  # Native Wayland avoids the sluggish accelerated rendering seen under XWayland.
+  xdg.dataFile."applications/com.brave.Browser.desktop" = {
+    force = true;
+    source = pkgs.runCommand "brave-wayland.desktop" {
+      nativeBuildInputs = [ pkgs.desktop-file-utils ];
+    } ''
+      cp ${pkgs.brave}/share/applications/com.brave.Browser.desktop "$out"
+      chmod u+w "$out"
+      substituteInPlace "$out" \
+        --replace-fail 'Exec=${pkgs.brave}/bin/brave' 'Exec=${pkgs.brave}/bin/brave --ozone-platform=wayland' \
+        --replace-fail 'NoDisplay=true' 'NoDisplay=false'
+      desktop-file-validate "$out"
+    '';
+  };
+
   xdg.dataFile."applications/brave-browser.desktop" = {
     force = true;
     text = ''

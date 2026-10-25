@@ -3,6 +3,7 @@
 {
   home.file = {
     ".config/hypr/hyprland.conf".source = ./hyprland.conf;
+    ".config/hypr/hypridle.conf".source = ./hypridle.conf;
     ".config/hypr/hyprlock.conf".source = ./hyprlock.conf;
     ".config/hypr/hyprpaper.conf".source = ./hyprpaper.conf;
     ".config/hypr/hyprdocked.sh" = {
@@ -15,11 +16,11 @@
   services.hypridle = {
     enable = true;
     systemdTarget = "wayland-session@hyprland.desktop.target";
-    settings.general = {
-      lock_cmd = "${pkgs.procps}/bin/pidof hyprlock || ${pkgs.hyprlock}/bin/hyprlock --grace 0";
-      before_sleep_cmd = "${pkgs.systemd}/bin/loginctl lock-session";
-      after_sleep_cmd = "${pkgs.hyprland}/bin/hyprctl dispatch dpms on";
-    };
+  };
+
+  systemd.user.services.hypridle = {
+    Unit.X-Restart-Triggers = [ "${./hypridle.conf}" ];
+    Service.Environment = "PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.procps pkgs.hyprlock pkgs.systemd pkgs.hyprland ]}";
   };
 
   # Keep dock handling alive and reconcile DRM connector changes.

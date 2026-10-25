@@ -21,7 +21,7 @@
 }
 
 #custom-menu {
-    background-image: url("assets/nixos.svg");
+    background-image: url("@nixosIcon@");
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;
@@ -33,7 +33,7 @@
 
 #custom-menu:hover {
     background: @workspace-background;
-    background-image: url("assets/nixos.svg");
+    background-image: url("@nixosIcon@");
     background-position: center;
     background-repeat: no-repeat;
     background-size: contain;

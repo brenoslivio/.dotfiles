@@ -3,9 +3,10 @@
 {
   home.file = {
     ".config/waybar/config.jsonc".source = ./config.jsonc;
-    ".config/waybar/style.css".source = ./style.css;
+    ".config/waybar/style.css".source = pkgs.replaceVars ./style.css {
+      nixosIcon = ../../assets/icons/nixos.svg;
+    };
     ".config/waybar/cava.conf".source = ./cava.conf;
-    ".config/waybar/assets/nixos.svg".source = ../../assets/icons/nixos.svg;
     ".config/waybar/launch.sh" = {
       source = ./launch.sh;
       executable = true;
