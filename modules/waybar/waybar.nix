@@ -4,7 +4,8 @@
   home.file = {
     ".config/waybar/config.jsonc".source = ./config.jsonc;
     ".config/waybar/style.css".source = pkgs.replaceVars ./style.css {
-      nixosIcon = ../../assets/icons/nixos.svg;
+      # Copy the icon into the store and retain it as a CSS dependency.
+      nixosIcon = "${../../assets/icons/nixos.svg}";
     };
     ".config/waybar/cava.conf".source = ./cava.conf;
     ".config/waybar/launch.sh" = {
