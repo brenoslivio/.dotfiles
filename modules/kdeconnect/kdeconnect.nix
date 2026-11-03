@@ -12,7 +12,9 @@
   systemd.user.services.kdeconnect-disable-bluetooth = {
     Unit = {
       Description = "Disable KDE Connect Bluetooth discovery";
-      After = [ "kdeconnect.service" ];
+      # Both services must start after the session target, otherwise its
+      # implicit ordering creates a cycle and this workaround is skipped.
+      After = [ "graphical-session.target" "kdeconnect.service" ];
       PartOf = [ "graphical-session.target" ];
     };
     Service = {

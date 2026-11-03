@@ -2,11 +2,11 @@
 
 {
   home.file = {
-    ".config/waybar/config.jsonc".source = ./config.jsonc;
-    ".config/waybar/style.css".source = pkgs.replaceVars ./style.css {
-      # Copy the icon into the store and retain it as a CSS dependency.
+    ".config/waybar/config.jsonc".source = pkgs.replaceVars ./config.jsonc {
+      # Keep the image available independently of home-file activation order.
       nixosIcon = "${../../assets/icons/nixos.svg}";
     };
+    ".config/waybar/style.css".source = ./style.css;
     ".config/waybar/cava.conf".source = ./cava.conf;
     ".config/waybar/launch.sh" = {
       source = ./launch.sh;

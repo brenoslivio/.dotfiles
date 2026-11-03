@@ -7,12 +7,15 @@
     "height": 24,
     "spacing": 2,
 
-    "modules-left": ["custom/menu", "hyprland/workspaces", "hyprland/window"],
+    "modules-left": ["image#menu", "hyprland/workspaces", "hyprland/window"],
     "modules-center": ["custom/notification", "custom/clock", "custom/research", "custom/tasks"],
     "modules-right": ["custom/cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/power"],
 
-    "custom/menu": {
-        "format": "    ",
+    "image#menu": {
+        "path": "@nixosIcon@",
+        "size": 36,
+        // Re-render after transient image or output/scale changes.
+        "interval": 30,
         "on-click": "~/.config/rofi/launch.sh",
         "tooltip": false
     },

@@ -20,24 +20,15 @@
     border: 1px solid @waybar-border;
 }
 
-#custom-menu {
-    background-image: url("@nixosIcon@");
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
+#image.menu {
+    min-width: 36px;
+    min-height: 36px;
     border-radius: 10px;
-    padding: 0px 14px;
     margin-left: 15px;
-    font-size: 8px;
 }
 
-#custom-menu:hover {
-    background: @workspace-background;
-    background-image: url("@nixosIcon@");
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: contain;
-    border-radius: 10px;
+#image.menu:hover {
+    background-color: @workspace-background;
 }
 
 #workspaces {
