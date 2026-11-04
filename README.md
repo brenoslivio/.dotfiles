@@ -28,6 +28,11 @@ dotfiles-check    # evaluate and build-check without activating
 
 The functions use `$DOTFILES_REPO`, which defaults to `~/.dotfiles`.
 
+Rootless Podman (including the `docker` compatibility command) defaults to
+`userns = "keep-id"` through Home Manager's `~/.config/containers/containers.conf`.
+This preserves your UID/GID for bind-mounted files. Apply with `home` or `up`;
+the setting affects newly created containers. Override per run with `--userns`.
+
 ## Existing installation
 
 To rebuild a running host from the repository:

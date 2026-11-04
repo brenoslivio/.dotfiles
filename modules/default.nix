@@ -30,6 +30,12 @@ in
 
   home.stateVersion = "24.11";
 
+  # Preserve host ownership for bind mounts used by rootless Podman and dockerCompat.
+  xdg.configFile."containers/containers.conf".text = ''
+    [containers]
+    userns = "keep-id"
+  '';
+
   home.packages = with pkgs; [
     # Qt packages and themes
     libsForQt5.qt5ct
