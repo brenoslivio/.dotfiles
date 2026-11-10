@@ -30,7 +30,7 @@
     };
   };
 
-  # Run one bar for either compositor and recover automatically from crashes.
+  # Run the Hyprland bar and recover automatically from crashes.
   systemd.user.services.waybar = {
     Unit = {
       Description = "Highly customizable Wayland bar";

@@ -4,6 +4,15 @@ Reproducible NixOS and Home Manager configuration for my machines. The flake
 supports existing-host reinstalls and can generate a new host from a freshly
 mounted device's hardware.
 
+The flake uses `nixos-unstable` and Home Manager `master`, with exact
+revisions pinned in `flake.lock`. Both state versions remain `24.11`.
+Brave temporarily uses `release-26.05`, where its
+[restoration](https://github.com/NixOS/nixpkgs/pull/584534) is already merged,
+pending propagation to `nixos-unstable`. This is the stable development branch,
+ahead of the tested `nixos-26.05` channel. Its dependencies also use that input.
+Once the restoration reaches the locked unstable revision, remove the stable
+input and use `pkgs.brave` again.
+
 ## Hosts
 
 - `ahimsa`: primary AMD machine.
@@ -123,9 +132,7 @@ After installation:
    chmod 600 ~/.ssh/allowed_signers
    ```
 
-4. Sign in to Dropbox, Proton VPN, and other personal applications as needed.
-
-Waybar's tasks and research integrations handle missing Dropbox files without
+4. Sign in to Dropbox, Proton VPN, and other personal research integrations handle missing Dropbox files without
 preventing the bar from starting. Their paths can be overridden with
 `TASKS_FILE` and `RESEARCH_FILE`.
 

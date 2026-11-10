@@ -1,6 +1,34 @@
-{ config, lib, pkgs, primaryUser, primaryUserDescription, ... }:
+{ config, inputs, lib, pkgs, primaryUser, primaryUserDescription, ... }:
 
 let
+  # Temporary stable exception until Brave's restoration reaches unstable.
+  bravePackage = (import inputs.nixpkgs-stable {
+    system = pkgs.stdenv.hostPlatform.system;
+    config.allowUnfree = true;
+  }).brave;
+  # Hollywood only plays a soundtrack. Its MPlayer's old DVD navigation
+  # library conflicts with FFmpeg's newer one in this Nixpkgs revision.
+  hollywoodPackage = pkgs.hollywood.override {
+    mplayer = pkgs.mplayer.override { dvdnavSupport = false; };
+  };
+  # Preserve existing desktop associations when Home Manager takes ownership.
+  desktopDefaults = {
+    "text/html" = [ "com.brave.Browser.desktop" ];
+    "x-scheme-handler/http" = [ "com.brave.Browser.desktop" ];
+    "x-scheme-handler/https" = [ "com.brave.Browser.desktop" ];
+    "x-scheme-handler/about" = [ "com.brave.Browser.desktop" ];
+    "x-scheme-handler/unknown" = [ "com.brave.Browser.desktop" ];
+    "x-scheme-handler/tg" = [ "org.telegram.desktop.desktop" ];
+    "x-scheme-handler/tonsite" = [ "org.telegram.desktop.desktop" ];
+    "x-scheme-handler/codex" = [ "chatgpt.desktop" ];
+    "video/mp4" = [ "vlc.desktop" ];
+    "image/png" = [ "org.kde.gwenview.desktop" ];
+    "application/pdf" = [ "okularApplication_pdf.desktop" ];
+    "application/x-shellscript" = [ "org.kde.kate.desktop" ];
+    "text/css" = [ "org.kde.kate.desktop" ];
+    "text/x-csrc" = [ "org.kde.kate.desktop" ];
+    "text/plain" = [ "org.kde.kate.desktop" ];
+  };
   flakeUpdateCheck = pkgs.writeShellApplication {
     name = "flake-update-check";
     runtimeInputs = with pkgs; [ coreutils git libnotify nix ];
@@ -16,7 +44,6 @@ in
     ./hypr/hypr.nix
     ./kdeconnect/kdeconnect.nix
     ./nemo/nemo.nix
-    ./niri/niri.nix
     ./rofi/rofi.nix
     ./shell/shell.nix
     ./spicetify/spicetify.nix
@@ -29,6 +56,14 @@ in
   home.homeDirectory = "/home/${primaryUser}";
 
   home.stateVersion = "24.11";
+
+  xdg.mimeApps = {
+    enable = true;
+    defaultApplications = desktopDefaults;
+    associations.added = desktopDefaults // {
+      "application/x-zerosize" = [ "org.kde.kate.desktop" ];
+    };
+  };
 
   # Preserve host ownership for bind mounts used by rootless Podman and dockerCompat.
   xdg.configFile."containers/containers.conf".text = ''
@@ -45,7 +80,7 @@ in
 
     # Documents and typesetting
     pandoc
-    texlive.combined.scheme-full
+    texliveFull
     typst
     tinymist
     
@@ -71,7 +106,7 @@ in
     rclone
     fastfetch
     pipes
-    hollywood
+    hollywoodPackage
     distrobox
 
     # File manager
@@ -79,9 +114,8 @@ in
     file-roller
 
     # GUI software
-    brave
+    bravePackage
     qbittorrent
-    zotero
     firefox
     zoom-us
     xournalpp
@@ -96,7 +130,7 @@ in
     vscode
     vlc
     galaxy-buds-client
-    libreoffice-qt6-fresh
+    libreoffice-qt-stable
     hunspell
     hunspellDicts.pt_BR
     kdePackages.gwenview
@@ -108,6 +142,7 @@ in
     authenticator
 
     # Devices and audio
+    android-tools # adb and fastboot for Android/Chromecast management
     pavucontrol
     networkmanagerapplet
     playerctl
@@ -115,7 +150,6 @@ in
 
     # Desktop aux
     waybar
-    xwayland-satellite
     swaynotificationcenter
     libnotify
     clipse
@@ -153,10 +187,10 @@ in
     source = pkgs.runCommand "brave-wayland.desktop" {
       nativeBuildInputs = [ pkgs.desktop-file-utils ];
     } ''
-      cp ${pkgs.brave}/share/applications/com.brave.Browser.desktop "$out"
+      cp ${bravePackage}/share/applications/com.brave.Browser.desktop "$out"
       chmod u+w "$out"
       substituteInPlace "$out" \
-        --replace-fail 'Exec=${pkgs.brave}/bin/brave' 'Exec=${pkgs.brave}/bin/brave --ozone-platform=wayland' \
+        --replace-fail 'Exec=${bravePackage}/bin/brave' 'Exec=${bravePackage}/bin/brave --ozone-platform=wayland' \
         --replace-fail 'NoDisplay=true' 'NoDisplay=false'
       desktop-file-validate "$out"
     '';
@@ -189,8 +223,10 @@ in
   #  /etc/profiles/per-user/brenoslivio/etc/profile.d/hm-session-vars.sh
   #
   home.sessionVariables.DOTFILES_REPO = "${config.home.homeDirectory}/.dotfiles";
+  home.sessionVariables.BROWSER = "brave";
 
   home.pointerCursor = {
+    enable = true;
     gtk.enable = true;
     x11.enable = true;
     name = "oreo_purple_cursors";

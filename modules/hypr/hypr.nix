@@ -2,7 +2,12 @@
 
 {
   home.file = {
-    ".config/hypr/hyprland.conf".source = ./hyprland.conf;
+    # The watchdog's safe-mode restart bypasses hyprland.lua, so this must
+    # reach start-hyprland before it launches any compositor instance.
+    ".config/uwsm/env-hyprland".text = ''
+      export HYPRLAND_NO_RT=1
+    '';
+    ".config/hypr/hyprland.lua".source = ./hyprland.lua;
     ".config/hypr/hypridle.conf".source = ./hypridle.conf;
     ".config/hypr/hyprlock.conf".source = ./hyprlock.conf;
     ".config/hypr/hyprpaper.conf".source = ./hyprpaper.conf;
@@ -12,7 +17,7 @@
     };
   };
 
-  # Route manual locks and suspend/lid locks through one supervised listener.
+  # Listen for system lock requests and coordinate locking before suspend.
   services.hypridle = {
     enable = true;
     systemdTarget = "wayland-session@hyprland.desktop.target";
@@ -33,7 +38,7 @@
     };
     Service = {
       ExecStart = "${pkgs.bash}/bin/bash ${./hyprdocked.sh}";
-      Environment = "PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.gnugrep pkgs.hyprland ]}";
+      Environment = "PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.gnugrep pkgs.hyprland pkgs.jq ]}";
       Restart = "on-failure";
       RestartSec = 2;
     };

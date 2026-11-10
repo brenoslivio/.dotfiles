@@ -19,7 +19,26 @@
   networking.networkmanager.enable = true;
   networking.networkmanager.plugins = with pkgs; [
     networkmanager-openvpn
+    # OpenConnect supports USP's Fortinet protocol. The dedicated FortiSSL
+    # plugin in this pinned release is marked insecure (CVE-2026-91839).
+    networkmanager-openconnect
   ];
+
+  networking.networkmanager.ensureProfiles.profiles.usp-openconnect = {
+    connection = {
+      id = "VPN USP (OpenConnect)";
+      uuid = "97c8ef64-33a3-4b37-b099-d3b10e8d508c";
+      type = "vpn";
+      autoconnect = false;
+    };
+    vpn = {
+      service-type = "org.freedesktop.NetworkManager.openconnect";
+      gateway = "https://orion.uspnet.usp.br:31443";
+      protocol = "fortinet";
+    };
+    ipv4.method = "auto";
+    ipv6.method = "auto";
+  };
 
   # Set your time zone.
   # time.timeZone = "Europe/Berlin";
@@ -48,10 +67,6 @@
   # You can disable this if you're only using the Wayland session.
   services.xserver.enable = true;
 
-  programs.niri = {
-    enable = true;
-  };
-
   programs.hyprland = {
     enable = true;
     xwayland.enable = true;
@@ -59,6 +74,8 @@
     # selecting that session in SDDM starts a complete graphical session.
     withUWSM = true;
   };
+
+  services.displayManager.defaultSession = "hyprland-uwsm";
 
   services.displayManager.sddm = {
     enable = true;
@@ -76,6 +93,7 @@
   };
 
   security.pam.services.sddm.enableGnomeKeyring = true;
+  security.pam.services.hyprlock = {};
 
   environment.sessionVariables = {
     NIXOS_OZONE_WL = "1";

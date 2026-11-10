@@ -1,18 +1,18 @@
 {
     "label" : "lock",
-    "action" : "hyprlock --immediate",
+    "action" : "hyprlock --grace 0",
     "text" : "Lock",
     "keybind" : "l"
 }
 {
     "label" : "hibernate",
-    "action" : "systemctl hibernate; hyprlock --immediate",
+    "action" : "systemctl hibernate; hyprlock --grace 0",
     "text" : "Hibernate",
     "keybind" : "h"
 }
 {
     "label" : "logout",
-    "action": "sleep 1; if pgrep Hyprland > /dev/null; then hyprctl dispatch exit; else niri msg action quit; fi",
+    "action": "sleep 1; hyprctl dispatch 'hl.dsp.exit()'",
     "text" : "Logout",
     "keybind" : "e"
 }
@@ -24,7 +24,7 @@
 }
 {
     "label" : "suspend",
-    "action" : "systemctl suspend; hyprlock --immediate",
+    "action" : "systemctl suspend; hyprlock --grace 0",
     "text" : "Suspend",
     "keybind" : "u"
 }

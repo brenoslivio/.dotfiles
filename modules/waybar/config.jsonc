@@ -7,7 +7,7 @@
     "height": 24,
     "spacing": 2,
 
-    "modules-left": ["image#menu", "hyprland/workspaces", "hyprland/window"],
+    "modules-left": ["image#menu", "ext/workspaces", "hyprland/window"],
     "modules-center": ["custom/notification", "custom/clock", "custom/research", "custom/tasks"],
     "modules-right": ["custom/cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/power"],
 
@@ -20,7 +20,9 @@
         "tooltip": false
     },
 
-    "hyprland/workspaces": {
+    // Use the Wayland workspace protocol: Waybar 0.15's Hyprland click
+    // handler sends legacy dispatch commands that Hyprland's Lua API rejects.
+    "ext/workspaces": {
         "format": "<span size='large'>{icon}</span>",
         "on-click": "activate",
         "format-icons": {
@@ -33,13 +35,10 @@
             // "active": "\uf444",
             "default": "\uf4c3"
         },
-        "sort-by-number": true,
-        "persistent-workspaces": {
-            "1": [],
-            "2": [],
-            "3": [],
-            "4": []
-        }
+        "sort-by-name": true,
+        // Hyprland marks special workspaces hidden; keep them off the bar.
+        // Persistent workspaces 1-6 are defined in hyprland.lua.
+        "ignore-hidden": true
     },
 
     "hyprland/window": {

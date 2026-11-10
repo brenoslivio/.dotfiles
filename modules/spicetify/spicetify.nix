@@ -19,7 +19,7 @@ in
     theme = spicePkgs.themes.ziro;
     colorScheme = "custom";
     customColorScheme = {
-      # Match the magenta accents in Waybar, Rofi, Hyprland, and Niri.
+      # Match the magenta accents in Waybar, Rofi, and Hyprland.
       text = "eeeeee";
       subtext = "dba0d9";
       main = "221b24";
