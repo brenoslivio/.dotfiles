@@ -1,0 +1,62 @@
+name: NixOS CI
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ci-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Prepare capacity and KVM
+        run: |
+          # Hosted runner only: remove unused preinstalled SDKs, never user data.
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
+          df -h /
+          test "$(df --output=avail -B1 / | tail -1)" -ge 42949672960 || {
+            echo 'At least 40 GiB free is required; use a larger runner.' >&2
+            exit 1
+          }
+          test -c /dev/kvm
+          sudo chmod a+rw /dev/kvm
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
+        with:
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+            max-jobs = 2
+            cores = 2
+            system-features = nixos-test benchmark big-parallel kvm
+      - name: Evaluate, build, validate, and test ahimsa
+        run: |
+          export DOTFILES_FLAKE="git+file://$GITHUB_WORKSPACE?rev=$GITHUB_SHA"
+          /usr/bin/time -v bash scripts/check.sh
+          df -h /
+      - name: Record post-merge evidence
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: python3 scripts/ci-manifest.py
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: ahimsa-${{ github.sha }}-${{ github.run_attempt }}
+          path: manifest.json
+          if-no-files-found: error
+          retention-days: 90
+  ahimsa-ready:
+    if: always()
+    needs: [checks]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require every mandatory check
+        env:
+          CHECKS_RESULT: ${{ needs.checks.result }}
+        run: test "$CHECKS_RESULT" = success

@@ -7,3 +7,5 @@ result-*
 *.swp
 .DS_Store
 vpn.ovpn
+__pycache__/
+manifest.json

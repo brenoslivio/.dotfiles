@@ -1,0 +1,26 @@
+name: Propose flake update
+on:
+  schedule:
+    - cron: '23 15 * * 5' # Friday 12:23 in Sao Paulo (UTC-3)
+  workflow_dispatch:
+permissions:
+  contents: write
+  pull-requests: write
+  actions: write
+concurrency:
+  group: weekly-flake-proposal
+  cancel-in-progress: false
+jobs:
+  propose:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
+      - name: Create proposal and dispatch CI
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/weekly-update.sh

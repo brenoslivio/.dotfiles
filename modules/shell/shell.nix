@@ -1,6 +1,10 @@
 { config, pkgs, ... }:
 
+let
+  updater = import ../../scripts/updater-package.nix { inherit pkgs; };
+in
 {
+  home.packages = [ updater ];
   programs.fish = {
     enable = true;
     interactiveShellInit = ''
@@ -26,56 +30,44 @@
       };
 
       up = {
-        description = "Build and activate NixOS and Home Manager";
+        description = "Review and activate the latest CI-tested system";
         body = ''
-          set -l repo (__dotfiles_repo); or return 1
-          set -l host (hostname)
-          set -l dirty_worktree (${pkgs.git}/bin/git -C "$repo" status --porcelain | string collect)
-
-          if test -n "$dirty_worktree"
-            echo "Warning: building from a dirty dotfiles worktree." >&2
-          end
-
-          sudo nixos-rebuild switch --flake "path:$repo#$host"; or return 1
-
-          # Home Manager replaces the profile during the rebuild. Refresh the
-          # prompt so this already-running shell does not retain Starship's old
-          # profile path until the next terminal is opened.
+          ${updater}/bin/dotfiles-update up; or return 1
           ${pkgs.starship}/bin/starship init fish | source
         '';
       };
-
       home = {
-        description = "Build and activate only the Home Manager configuration";
-        body = ''
-          set -l repo (__dotfiles_repo); or return 1
-          home-manager switch --flake "path:$repo#$USER"
-        '';
+        description = "Activate the CI-tested standalone Home Manager environment";
+        body = "${updater}/bin/dotfiles-update home";
       };
-
       flake-update = {
-        description = "Update flake inputs and validate without activating";
+        description = "Update inputs on a clean proposal branch";
         body = ''
           set -l repo (__dotfiles_repo); or return 1
-          ${pkgs.nix}/bin/nix flake update --flake "$repo"; or return 1
-          ${pkgs.nix}/bin/nix flake check --no-build "path:$repo"
+          ${pkgs.bash}/bin/bash "$repo/scripts/propose-update.sh"
         '';
       };
-
       rollback = {
-        description = "Roll back the previous integrated NixOS generation";
-        body = ''
-          sudo nixos-rebuild switch --rollback
-        '';
+        description = "Restore the previous NixOS generation offline";
+        body = "${updater}/bin/dotfiles-update rollback";
       };
-
+      rollback-good = {
+        description = "Restore the protected known-good system offline";
+        body = "${updater}/bin/dotfiles-update rollback-good";
+      };
+      dotfiles-status = {
+        description = "Show pending, active, and next-boot systems";
+        body = "${updater}/bin/dotfiles-update status";
+      };
+      dotfiles-mark-good = {
+        description = "Protect the active system after hardware verification";
+        body = "${updater}/bin/dotfiles-update mark-good";
+      };
       dotfiles-check = {
-        description = "Check the current host configuration without activating";
+        description = "Run shared local and CI checks (optional: quick)";
         body = ''
           set -l repo (__dotfiles_repo); or return 1
-          set -l host (hostname)
-          ${pkgs.nix}/bin/nix flake check --no-build "path:$repo"; or return 1
-          ${pkgs.nix}/bin/nix build --no-link "path:$repo#nixosConfigurations.$host.config.system.build.toplevel"
+          ${pkgs.bash}/bin/bash "$repo/scripts/check.sh" $argv
         '';
       };
     };

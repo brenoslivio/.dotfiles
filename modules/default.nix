@@ -31,7 +31,7 @@ let
   };
   flakeUpdateCheck = pkgs.writeShellApplication {
     name = "flake-update-check";
-    runtimeInputs = with pkgs; [ coreutils git libnotify nix ];
+    runtimeInputs = [ (import ../scripts/updater-package.nix { inherit pkgs; }) ];
     text = builtins.readFile ../notify-flake-updates.sh;
   };
 in
@@ -95,6 +95,7 @@ in
 
     # Terminal apps
     git
+    gh
     openssl
     wget
     btop
@@ -270,7 +271,7 @@ in
 
   systemd.user.services.flakeUpdate = {
     Unit = {
-      Description = "Weekly notification to warn about Flake updates";
+      Description = "Notify about CI-tested NixOS updates";
     };
     Service = {
       Type = "oneshot";
@@ -282,10 +283,11 @@ in
 
   systemd.user.timers.flakeUpdate = {
     Unit = {
-      Description = "Weekly notification to warn about Flake updates";
+      Description = "Notify about CI-tested NixOS updates";
     };
     Timer = {
-      OnCalendar = "Fri 21:00:00";
+      OnCalendar = [ "*-*-* 09:15:00 America/Sao_Paulo" "Fri 21:00:00 America/Sao_Paulo" ];
+      RandomizedDelaySec = "10m";
       Persistent = true;
     };
     Install = {
