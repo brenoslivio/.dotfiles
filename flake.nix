@@ -18,7 +18,7 @@
     };
   };
 
-  outputs = inputs@{ nixpkgs, home-manager, ... }:
+  outputs = inputs@{ self, nixpkgs, home-manager, ... }:
     let
       system = "x86_64-linux";
       pkgs = import nixpkgs {
@@ -43,27 +43,28 @@
         inherit (metadata) primaryUser primaryUserDescription primaryUserEmail;
       };
 
-      mkHost = hostName:
-        let
-          metadata = hostMetadata hostName;
-          specialArgs = specialArgsFor metadata;
-        in
-        nixpkgs.lib.nixosSystem {
-          inherit system specialArgs;
-          modules = [
-            ./system/configuration.nix
-            (hostPath hostName)
-            home-manager.nixosModules.home-manager
-            {
-              home-manager = {
-                useGlobalPkgs = true;
-                useUserPackages = true;
-                extraSpecialArgs = specialArgs;
-                users.${metadata.primaryUser} = import ./modules;
-              };
-            }
-          ];
-        };
+      # Production and VM tests share these modules; only hardware differs.
+      sharedModules = hostName:
+        let metadata = hostMetadata hostName;
+        in [
+          ./system/configuration.nix
+          home-manager.nixosModules.home-manager
+          {
+            system.configurationRevision = self.rev or null;
+            home-manager = {
+              useGlobalPkgs = true;
+              useUserPackages = true;
+              extraSpecialArgs = specialArgsFor metadata;
+              users.${metadata.primaryUser} = import ./modules;
+            };
+          }
+        ];
+
+      mkHost = hostName: nixpkgs.lib.nixosSystem {
+        inherit system;
+        specialArgs = specialArgsFor (hostMetadata hostName);
+        modules = sharedModules hostName ++ [ (hostPath hostName) ];
+      };
 
       userNames = lib.unique (map (hostName: (hostMetadata hostName).primaryUser) hostNames);
       metadataForUser = userName:
@@ -83,5 +84,14 @@
 
       # Kept intentionally for the fast, user-only `home` Fish function.
       homeConfigurations = lib.genAttrs userNames mkHome;
+
+      packages.${system}.updater = import ./scripts/updater-package.nix { inherit pkgs; };
+
+      checks.${system} = import ./tests {
+        inherit pkgs;
+        home = self.homeConfigurations.brenoslivio;
+        vmModules = sharedModules "ahimsa";
+        vmSpecialArgs = specialArgsFor (hostMetadata "ahimsa");
+      };
     };
 }
