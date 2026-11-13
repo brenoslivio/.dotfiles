@@ -15,6 +15,8 @@ in {
       ssh = vps.config.services.openssh.settings;
       interfaces = vps.config.services.media-stack.jellyfinLanInterfaces;
       requires = vps.config.systemd.services.caddy.requires;
+      sharedPackages = builtins.all (name: vps.pkgs.${name}.outPath == pkgs.${name}.outPath)
+        [ "jellyfin" "jellyfin-web" "seerr" "radarr" "sonarr" "lidarr" "bazarr" ];
     })})
     assert sorted(cfg['ports']) == [22, 80, 443]
     assert not cfg['interfaces']
@@ -22,6 +24,7 @@ in {
     assert not cfg['ssh']['KbdInteractiveAuthentication']
     assert cfg['ssh']['PermitRootLogin'] == 'prohibit-password'
     assert 'media-stack-setup.service' in cfg['requires']
+    assert cfg['sharedPackages'], 'Both hosts must use the same pinned media packages'
     PY
     touch "$out"
   '';
@@ -42,7 +45,7 @@ in {
   '';
 
   updater = pkgs.runCommand "updater-checks" {
-    nativeBuildInputs = [ pkgs.python3 pkgs.git pkgs.bash pkgs.shellcheck pkgs.actionlint ];
+    nativeBuildInputs = [ pkgs.python3 pkgs.git pkgs.bash pkgs.shellcheck pkgs.actionlint pkgs.age ];
   } ''
     cp -R ${../scripts} scripts
     cp -R ${./.} tests

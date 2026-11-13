@@ -4,8 +4,7 @@ branch=automation/flake-update
 # Keep an outstanding proposal intact, including failures and manual repairs.
 existing=$(gh pr list --repo "$GITHUB_REPOSITORY" --state open --base main --head "$branch" --json number --jq '.[0].number // empty')
 if [[ -n $existing ]]; then
-  echo "Keeping existing proposal #$existing; dispatching CI without rewriting it." >> "$GITHUB_STEP_SUMMARY"
-  gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$branch"
+  echo "Keeping existing proposal #$existing and its CI unchanged." >> "$GITHUB_STEP_SUMMARY"
   exit 0
 fi
 # Do not overwrite an orphan branch that may contain unfinished work.
@@ -42,6 +41,4 @@ git -c commit.gpgsign=false commit -m 'Update pinned flake inputs'
 git push origin "$branch"
 gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" \
   --title 'Update pinned flake inputs' --body-file /tmp/proposal-body.md
-# GITHUB_TOKEN can explicitly dispatch CI without an extra App secret.
-# This tests the proposal only; installation still requires a push run on main.
-gh workflow run ci.yml --repo "$GITHUB_REPOSITORY" --ref "$branch"
+# The pull_request event starts CI; approve the bot-triggered run in GitHub if requested.
