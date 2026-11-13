@@ -97,6 +97,12 @@ def prepare(cfg):
         credentials.setdefault(name, initial)
     if 'jellyfin' in cfg['enabled']:
         viewers = credentials['jellyfin'].setdefault('viewers', {})
+        # Retain old entries until the API rename succeeds; this is restart-safe.
+        for old, new in cfg.get('viewerRenames', {}).items():
+            if old in viewers:
+                if new in viewers and viewers[new] != viewers[old]:
+                    raise RuntimeError(f'Conflicting saved credentials for viewer rename {old} -> {new}.')
+                viewers[new] = viewers[old]
         for name in cfg['viewers']:
             viewers.setdefault(name, secrets.token_urlsafe(24))
     write_json(path, credentials)
@@ -486,6 +492,25 @@ def music(cfg, credentials):
         api.call('/indexer/'+str(source['id'])+'?forceSave=true', source, 'PUT')
 
 
+def rename_viewers(api, cfg, credentials):
+    users = api.call('/Users')
+    for old, new in cfg.get('viewerRenames', {}).items():
+        source = next((u for u in users if u['Name'] == old), None)
+        target = next((u for u in users if u['Name'] == new), None)
+        if source and target:
+            raise RuntimeError(f'Both {old} and {new} exist; refusing to merge Jellyfin accounts.')
+        if source:
+            if source.get('Policy', {}).get('IsAdministrator'):
+                raise RuntimeError('Refusing to rename an administrator as a viewer.')
+            updated = {**source, 'Name': new}
+            api.call('/Users/'+source['Id'], updated, 'POST')
+            source['Name'] = new
+        if source or target:
+            credentials['jellyfin']['viewers'].pop(old, None)
+    write_json(Path(cfg['stateDir'])/'credentials.json', credentials)
+    return users
+
+
 def jellyfin(cfg, credentials):
     remote_access = bool(cfg.get('jellyfinDomain'))
     api = API(cfg['ports']['jellyfin'], headers={'Authorization': 'MediaBrowser Client="Media stack", Device="localhost", DeviceId="media-stack", Version="1"'})
@@ -509,7 +534,7 @@ def jellyfin(cfg, credentials):
         api.call('/Startup/Complete', {}, 'POST')
     login = api.call('/Users/AuthenticateByName', {'Username': 'admin', 'Pw': creds['password']})
     api.headers['Authorization'] = api.headers['Authorization'].split(', Token=')[0] + ', Token="' + login['AccessToken'] + '"'
-    users = api.call('/Users')
+    users = rename_viewers(api, cfg, credentials)
     for name in cfg['viewers']:
         if not any(x['Name'] == name for x in users):
             user = api.call('/Users/New', {'Name': name, 'Password': creds['viewers'][name]})

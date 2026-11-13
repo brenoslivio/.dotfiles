@@ -82,7 +82,7 @@ def assert_host(status):
         raise u.UpdateError('SSH target is not ahimsa-vps.')
 
 
-def offsite_backup(directory, status, helper):
+def offsite_backup(directory, status, helper, acknowledge=True):
     record = status.get('backup')
     if record is None:
         if not status.get('backup_ack'):
@@ -112,8 +112,10 @@ def offsite_backup(directory, status, helper):
     with destination.open('rb') as stream:
         if hashlib.file_digest(stream, 'sha256').hexdigest() != record['sha256']:
             raise u.UpdateError('Local backup checksum differs; activation refused.')
-    remote('ack', {'token': status['token'], 'sha256': record['sha256']}, helper)
+    if acknowledge:
+        remote('ack', {'token': status['token'], 'sha256': record['sha256']}, helper)
     print(f'Private backup saved locally: {destination}', flush=True)
+    return destination
 
 
 def public_health(helper):
@@ -172,7 +174,7 @@ def update(repo, directory):
         deploy(path, sha, manifest, directory)
 
 
-def deploy(path, sha, manifest, directory):
+def prepare_deployment(path, sha, manifest, directory):
     env = dict(os.environ, NIX_SSHOPTS=shlex.join(SSH_OPTIONS))
     # Local module outputs are unsigned. This authenticated root SSH transfer
     # follows CI/output verification; leave normal cache signature checks intact.
@@ -192,21 +194,40 @@ def deploy(path, sha, manifest, directory):
     state = u.read_state(directory)
     state['pending_system'] = {'sha': sha, 'path': path, 'ci_url': manifest['ci_url'], 'token': transaction['token']}
     u.atomic_json(directory / 'state.json', state)
+    return state['pending_system']
+
+
+def deploy(path, sha, manifest, directory):
+    pending = prepare_deployment(path, sha, manifest, directory)
+    if pending is None:
+        return
+    helper = path + '/sw/bin/dotfiles-vps-control'
     choice = u.activation_choice()
     if choice == 'later':
         print('VPS candidate retained; active system and boot default are unchanged.')
         return
     print('Backing up VPS application state before activation…', flush=True)
-    remote('backup', {'token': transaction['token']}, helper, timeout=1950)
+    remote('backup', {'token': pending['token']}, helper, timeout=1950)
     offsite_backup(directory, remote('status', helper=helper), helper)
+    activate_prepared(directory, choice)
+
+
+def activate_prepared(directory, choice='switch'):
+    state = u.read_state(directory)
+    pending = state['pending_system']
+    helper = pending['path'] + '/sw/bin/dotfiles-vps-control'
+    status = remote('status', helper=helper)
+    assert_host(status)
+    if status.get('phase') != 'prepared' or any(status.get(k) != pending[k] for k in ('token', 'sha', 'path')):
+        raise u.UpdateError('VPS transaction changed before activation.')
     state['activation_intent'] = {**state['pending_system'], 'choice': choice}
     u.atomic_json(directory / 'state.json', state)
-    remote('begin', {'token': transaction['token'], 'choice': choice}, helper)
+    remote('begin', {'token': pending['token'], 'choice': choice}, helper)
     print('Server-side recovery armed. Waiting for activation…', flush=True)
     deadline = time.monotonic() + 650
     while time.monotonic() < deadline:
         status = remote('status', helper=helper)
-        if status.get('token') != transaction['token']:
+        if status.get('token') != pending['token']:
             raise u.UpdateError('VPS transaction changed during activation.')
         if status.get('phase') == 'boot_pending':
             print('Scheduled for next boot. After reboot, run up-vps-confirm within 15 minutes. No reboot requested.')
@@ -228,7 +249,7 @@ def deploy(path, sha, manifest, directory):
         except (subprocess.CalledProcessError, OSError, ValueError, u.UpdateError) as error:
             last_error = error
             time.sleep(5)
-    remote('rollback', {'token': transaction['token']}, helper, timeout=300)
+    remote('rollback', {'token': pending['token']}, helper, timeout=300)
     raise u.UpdateError(f'VPS health checks failed; software rollback requested: {last_error}')
 
 

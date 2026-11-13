@@ -40,13 +40,8 @@
     ipv6.method = "auto";
   };
 
-  # Set your time zone.
-  # time.timeZone = "Europe/Berlin";
-  time.timeZone = "America/Sao_Paulo";
-
   # Select internationalisation properties.
   i18n = {
-    defaultLocale = "en_US.UTF-8";
     extraLocales = [ "de_DE.UTF-8/UTF-8" "en_US.UTF-8/UTF-8" "pt_BR.UTF-8/UTF-8"];
 
     extraLocaleSettings = {
@@ -140,7 +135,6 @@
   };
 
   # Allow unfree packages
-  nixpkgs.config.allowUnfree = true;
 
   # List packages installed in system profile. To search, run:
   # $ nix search wget
@@ -233,11 +227,6 @@
     automatic = true;
     dates = "daily";
     options = "--delete-older-than 60d";
-  };
-
-  nix.settings = {
-    auto-optimise-store = true;
-    experimental-features = [ "nix-command" "flakes" ];
   };
 
   # Open ports in the firewall.

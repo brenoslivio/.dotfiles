@@ -6,7 +6,6 @@ on:
 permissions:
   contents: write
   pull-requests: write
-  actions: write
 concurrency:
   group: weekly-flake-proposal
   cancel-in-progress: false
@@ -20,7 +19,7 @@ jobs:
           ref: main
           fetch-depth: 0
       - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
-      - name: Create proposal and dispatch CI
+      - name: Create update proposal
         env:
           GH_TOKEN: ${{ github.token }}
         run: bash scripts/weekly-update.sh

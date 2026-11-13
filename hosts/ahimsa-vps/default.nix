@@ -1,27 +1,18 @@
-{ inputs, primaryUserEmail, ... }:
+{ lib, pkgs, primaryUserEmail, ... }:
 let
+  deploymentKey = "restrict ${lib.trim (builtins.readFile ../../config/vps-deploy-key.pub)}";
   # Existing VPS administrator key; public, safe to keep in Git.
   administratorKeys = [
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIM+eg7lGNdzVMiScG3nbI8qZQBebhJpGHFRjnXHBxx46"
+    # Dedicated GitHub deployment key: no forwarding, agent, X11, or PTY.
+    deploymentKey
   ];
 in {
   imports = [
     ./hardware.nix
     ../../system/services/media-stack.nix
     ../../system/services/vps-updates.nix
-    # Backport declarative Bazarr credentials/settings, missing from 26.05.
-    (inputs.nixpkgs + "/nixos/modules/services/misc/bazarr.nix")
   ];
-  disabledModules = [ "services/misc/bazarr.nix" ];
-
-  # Keep the working media versions and plugin APIs; the OS and other tools
-  # use stable. Downgrading these applications would also risk migrated data.
-  nixpkgs.overlays = [ (_final: _prev:
-    let media = inputs.nixpkgs.legacyPackages.x86_64-linux;
-    in {
-      inherit (media) jellyfin jellyfin-web jellyfin-ffmpeg seerr radarr sonarr
-        lidarr prowlarr qbittorrent-nox bazarr;
-    }) ];
 
   boot.loader.systemd-boot = {
     enable = true;
@@ -47,10 +38,33 @@ in {
     linkConfig.RequiredForOnline = "routable";
   };
   users.users.root.openssh.authorizedKeys.keys = administratorKeys;
+  # The first deployment uses a temporary copy in root's personal key file.
+  # Remove it only once both generations have the key, so first-deploy rollback
+  # retains GitHub's SSH access too.
+  system.activationScripts.vps-deployment-key = {
+    deps = [ "etc" ];
+    text = ''
+      ${pkgs.python3}/bin/python3 - <<'PY'
+      import os, tempfile
+      from pathlib import Path
+      key = ${builtins.toJSON deploymentKey}
+      managed = Path('/etc/ssh/authorized_keys.d/root')
+      previous = Path('/run/current-system/etc/ssh/authorized_keys.d/root')
+      bootstrap = Path('/root/.ssh/authorized_keys')
+      if all(p.exists() and key in p.read_text().splitlines() for p in (managed, previous)) and bootstrap.is_file() and not bootstrap.is_symlink():
+          lines = bootstrap.read_text().splitlines()
+          if key in lines:
+              with tempfile.NamedTemporaryFile('w', dir=bootstrap.parent, delete=False) as stream:
+                  stream.write("".join(line+'\n' for line in lines if line != key))
+                  temporary = stream.name
+              os.replace(temporary, bootstrap)
+      PY
+    '';
+  };
 
   services.qemuGuest.enable = true;
   services.fstrim.enable = true;
-  services.journald.extraConfig = "SystemMaxUse=200M";
+  services.journald.settings.Journal.SystemMaxUse = "200M";
   zramSwap.enable = true;
   services.caddy.email = primaryUserEmail;
 
@@ -66,7 +80,8 @@ in {
     cpuQuota = "180%";
     maxSizeMBPerMinute = null;
     allowAllQualities = true;
-    viewers = [ "brenoslivio" "partner" ];
+    viewers = [ "breno" "bianca" ];
+    viewerRenames = { brenoslivio = "breno"; partner = "bianca"; };
     indexers = [ "yts" "knaben" "torrentdownloads" "torrentdownload" ];
     automaticSearch = false;
     manualReleaseSelection = true;
