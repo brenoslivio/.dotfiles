@@ -3,10 +3,8 @@
 Reproducible NixOS and Home Manager configuration, with support for existing-host
 reinstalls and fresh devices using their own detected hardware.
 
-The desktop uses `nixos-unstable` and Home Manager `master`; the VPS uses
-`nixos-26.05`. All inputs are pinned in `flake.lock`.
-The VPS keeps the working media applications on the unstable pin for Jellyfin
-plugin and migration compatibility; its OS and CLI tools use stable.
+Both hosts share the pinned `nixos-unstable` input; only the desktop uses Home
+Manager `master`. All inputs are pinned in `flake.lock`.
 Desktop state versions remain `24.11`; the VPS retains `26.05`. Brave temporarily uses `release-26.05` and
 its dependencies; remove that extra input once Brave is available in the locked
 unstable revision.
@@ -26,7 +24,7 @@ These Fish functions use `$DOTFILES_REPO`, which defaults to `~/.dotfiles`:
 
 ```console
 up                  # verified system + home update: now, next boot, or later
-up-vps              # verified remote VPS update from ahimsa
+up-vps              # manual fallback for automatic VPS deployments
 up-vps-status       # VPS pending/active/boot systems and recovery state
 up-vps-confirm      # confirm a scheduled update after reboot
 rollback-vps        # restore the previous VPS configuration over SSH
@@ -41,6 +39,18 @@ rollback-good       # protected known-good system, offline
 
 VPS commands prompt for your SSH key passphrase when needed; the temporary
 agent is removed when the command exits.
+
+After main CI passes, GitHub automatically deploys the exact tested VPS revision
+over SSH, checks services and HTTPS, and confirms it without rebooting. Builds
+run in parallel and share the optional cache in `config/cache.json`.
+Failures retain recovery backups; software rollback does not restore databases.
+`VPS_SSH_KEY` is the dedicated Actions secret; server identity is pinned in
+`config/vps-known-hosts`. Never reuse that key for backup decryption.
+
+Deployment artifacts retain encrypted state backups for 30 days (media excluded).
+Keep your original administrator SSH private key. Use `nix shell --inputs-from . nixpkgs#age`,
+then `age -d -i <private-key> -o backup.tar.gz <backup.tar.gz.age>`. Viewer logins are
+`breno` and `bianca`; existing passwords and watch history are preserved.
 
 Rootless Podman, including the `docker` compatibility command, defaults to
 `userns = "keep-id"` in `~/.config/containers/containers.conf`. This preserves

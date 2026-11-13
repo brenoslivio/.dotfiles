@@ -7,6 +7,7 @@ let
   settings = pkgs.writeText "media-stack.json" (builtins.toJSON {
     inherit (cfg) root ports budgetGiB minFreeGiB downloadKiB uploadKiB viewers indexers automaticSearch libraryScanMinutes jellyfinEnhanced subtitleLanguages manualReleaseSelection releasePort jellyfinLanInterfaces jellyfinDomain personalHome recommendationCount recommendationSeedLimit recommendationRefreshHours;
     inherit enabled;
+    inherit (cfg) viewerRenames;
     inherit (cfg) maxSizeMBPerMinute allowAllQualities playbackPolish;
     stateDir = "/var/lib/media-stack";
   });
@@ -104,6 +105,11 @@ in {
       jellyfin = 8096; seerr = 5055; radarr = 7878; sonarr = 8989; prowlarr = 9696; qbittorrent = 8080; bazarr = 6767; lidarr = 8686;
     };
     viewers = mkOption { type = types.listOf types.str; default = [ "viewer" "partner" ]; };
+    viewerRenames = mkOption {
+      type = types.attrsOf types.str;
+      default = {};
+      description = "Rename existing Jellyfin viewers in place, preserving IDs, passwords and history.";
+    };
     indexers = mkOption {
       type = types.listOf (types.enum [ "internetarchive" "1337x" "nyaasi" "yts" "knaben" "torrentdownloads" "torrentdownload" ]);
       default = [];
@@ -173,6 +179,10 @@ in {
         message = "Media stack web ports must be distinct."; }
       { assertion = builtins.all (n: builtins.match "[a-z][a-z0-9_-]*" n != null && n != "admin") cfg.viewers && builtins.length (lib.unique cfg.viewers) == builtins.length cfg.viewers;
         message = "Media viewer names must be unique lowercase names, excluding admin."; }
+      { assertion = lib.all (old: old != "admin" && !(builtins.elem old cfg.viewers)) (builtins.attrNames cfg.viewerRenames)
+          && lib.all (new: builtins.elem new cfg.viewers) (builtins.attrValues cfg.viewerRenames)
+          && lib.unique (builtins.attrValues cfg.viewerRenames) == builtins.attrValues cfg.viewerRenames;
+        message = "Viewer renames must map old non-admin names to distinct configured viewers."; }
       { assertion = cfg.cacheMiB >= 3072; message = "Jellyfin needs more than 2 GiB available in its cache at startup."; }
       { assertion = builtins.length (lib.unique cfg.indexers) == builtins.length cfg.indexers;
         message = "Media stack indexers must be unique."; }

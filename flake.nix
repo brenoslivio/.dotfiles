@@ -3,7 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    nixpkgs-vps.url = "github:nixos/nixpkgs/nixos-26.05";
     # Temporary Brave exception: its restoration is on release-26.05 but
     # has not reached the nixos-unstable channel yet (NixOS/nixpkgs#584534).
     nixpkgs-stable.url = "github:nixos/nixpkgs/release-26.05";
@@ -48,7 +47,7 @@
       # Production and VM tests share these modules; only hardware differs.
       sharedModules = hostName:
         let metadata = hostMetadata hostName;
-        in [ ./system/cache.nix ] ++ (if isServer hostName then [
+        in [ ./system/common.nix ./system/cache.nix ] ++ (if isServer hostName then [
           ./system/server.nix
           { system.configurationRevision = self.rev or null; }
         ] else [
@@ -65,9 +64,7 @@
           }
         ]);
 
-      mkHost = hostName:
-        let hostNixpkgs = inputs.${(hostMetadata hostName).nixpkgsInput or "nixpkgs"};
-        in hostNixpkgs.lib.nixosSystem {
+      mkHost = hostName: nixpkgs.lib.nixosSystem {
           inherit system;
           specialArgs = specialArgsFor (hostMetadata hostName);
           modules = sharedModules hostName ++ [ (hostPath hostName) ];

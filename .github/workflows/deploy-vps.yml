@@ -1,0 +1,77 @@
+name: Deploy VPS
+on:
+  workflow_run:
+    workflows: [NixOS CI]
+    types: [completed]
+    branches: [main]
+permissions:
+  contents: read
+  actions: read
+concurrency:
+  group: deploy-ahimsa-vps
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      CI_SHA: ${{ github.event.workflow_run.head_sha }}
+      CI_RUN_ID: ${{ github.event.workflow_run.id }}
+      CI_RUN_ATTEMPT: ${{ github.event.workflow_run.run_attempt }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify successful CI evidence and current main
+        id: revision
+        run: python3 scripts/ci_vps_deploy.py verify
+      - uses: ./.github/actions/nix-setup
+        if: steps.revision.outputs.current == 'true'
+      - name: Configure dedicated deployment SSH identity
+        if: steps.revision.outputs.current == 'true'
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          test -n "$VPS_SSH_KEY" || { echo 'Missing VPS_SSH_KEY secret.' >&2; exit 1; }
+          umask 077
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/vps_deploy
+          cp config/vps-known-hosts ~/.ssh/known_hosts
+          cat > ~/.ssh/config <<'EOF'
+          Host 95.217.8.248
+            IdentityFile ~/.ssh/vps_deploy
+            IdentitiesOnly yes
+            StrictHostKeyChecking yes
+            ForwardAgent no
+          EOF
+      - name: Prepare tested system and encrypted backup
+        id: prepare
+        if: steps.revision.outputs.current == 'true'
+        run: nix shell --no-update-lock-file --no-write-lock-file --inputs-from . nixpkgs#age -c python3 scripts/ci_vps_deploy.py prepare
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        id: backup
+        if: steps.prepare.outputs.prepared == 'true'
+        with:
+          name: vps-backup-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/vps-deploy/encrypted/*.age
+          if-no-files-found: error
+          compression-level: 0
+          retention-days: 30
+      - name: Activate, verify and confirm
+        if: steps.prepare.outputs.prepared == 'true'
+        env:
+          BACKUP_ARTIFACT_ID: ${{ steps.backup.outputs.artifact-id }}
+        run: python3 scripts/ci_vps_deploy.py activate
+      - name: Remove runner credentials and plaintext backup
+        if: always()
+        run: |
+          rm -f ~/.ssh/vps_deploy
+          rm -rf "$RUNNER_TEMP/vps-deploy"
