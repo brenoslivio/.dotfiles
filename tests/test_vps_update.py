@@ -1,4 +1,5 @@
 import copy
+from contextlib import nullcontext
 import hashlib
 import io
 import json
@@ -249,13 +250,15 @@ class ClientTests(unittest.TestCase):
                 patch.object(u, 'git', side_effect=lambda repo, *args: SHA if args[0] == 'rev-parse' else ''), \
                 patch.object(u, 'evidence', return_value={'system_path': NEW, 'ci_url': 'ci'}), \
                 patch.object(u, 'build_candidate', return_value=NEW), patch.object(u, 'activation_choice', return_value='later'), \
-                patch.object(client.subprocess, 'check_output', return_value='ahimsa-vps\n'), \
+                patch.object(client, 'ssh_session', return_value=nullcontext()), \
                 patch.object(client.subprocess, 'run') as run, patch.object(client, 'remote', side_effect=remote):
             client.update(Path(temp), Path(temp))
             self.assertEqual(actions, ['status', 'preview', 'stage'])
             self.assertEqual(u.read_state(Path(temp))['pending_system']['token'], TOKEN)
             run.assert_called_once()
-            self.assertEqual(run.call_args.args[0][:3], ['nix', 'copy', '--to'])
+            self.assertEqual(run.call_args.args[0],
+                             ['nix', 'copy', '--no-check-sigs', '--to', 'ssh-ng://root@95.217.8.248', NEW])
+            self.assertIn('StrictHostKeyChecking=yes', run.call_args.kwargs['env']['NIX_SSHOPTS'])
 
     def test_unverified_revision_never_contacts_vps(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(u, 'clean_checkout'), \
@@ -309,6 +312,80 @@ class ClientTests(unittest.TestCase):
             with self.assertRaises(u.UpdateError):
                 client.confirm(Path(temp), verify=False, expected={'token': TOKEN, 'path': NEW, 'sha': SHA})
             backup.assert_not_called()
+
+
+class SSHSessionTests(unittest.TestCase):
+    def setUp(self):
+        self.original = client.SSH_OPTIONS[:]
+        self.addCleanup(lambda: client.SSH_OPTIONS.__setitem__(slice(None), self.original))
+
+    def test_unlocked_key_reuses_existing_authentication(self):
+        success = subprocess.CompletedProcess([], 0, 'ahimsa-vps\n', '')
+        with patch.object(client.subprocess, 'run', return_value=success), \
+                patch.object(client.subprocess, 'Popen') as agent:
+            with client.ssh_session():
+                self.assertEqual(client.SSH_OPTIONS, self.original)
+            agent.assert_not_called()
+
+    def test_network_and_host_key_failures_do_not_prompt(self):
+        for message in ['Connection timed out', 'Host key verification failed.']:
+            with self.subTest(message=message), \
+                    patch.object(client.subprocess, 'run', return_value=subprocess.CompletedProcess([], 255, '', message)), \
+                    patch.object(client.subprocess, 'Popen') as agent:
+                with self.assertRaises(u.UpdateError), client.ssh_session():
+                    self.fail('Unavailable server must not allow deployment')
+                agent.assert_not_called()
+
+    def test_wrong_host_stops_before_deployment(self):
+        with patch.object(client.subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, 'another-host', '')):
+            with self.assertRaises(u.UpdateError), client.ssh_session():
+                self.fail('Wrong host must not allow deployment')
+
+    def test_noninteractive_locked_key_fails_without_prompt(self):
+        denied = subprocess.CompletedProcess([], 255, '', 'Permission denied (publickey).')
+        with patch.object(client.subprocess, 'run', return_value=denied), \
+                patch.object(client.sys.stdin, 'isatty', return_value=False), \
+                patch.object(client.subprocess, 'Popen') as agent:
+            with self.assertRaisesRegex(u.UpdateError, 'terminal'), client.ssh_session():
+                self.fail('Locked key must not allow unattended deployment')
+            agent.assert_not_called()
+
+    def test_unlock_is_reused_by_fresh_connections_and_agent_is_cleaned_up(self):
+        denied = subprocess.CompletedProcess([], 255, '', 'Permission denied (publickey).')
+        with patch.object(client.subprocess, 'run', side_effect=[denied, subprocess.CompletedProcess([], 0, '{}')]) as run, \
+                patch.object(client.sys.stdin, 'isatty', return_value=True), \
+                patch.object(client.Path, 'is_socket', return_value=True), \
+                patch.object(client.subprocess, 'Popen') as agent, \
+                patch.object(client.subprocess, 'check_output', return_value='ahimsa-vps\n') as login:
+            with client.ssh_session():
+                identity = next(option for option in client.SSH_OPTIONS if option.startswith('IdentityAgent='))
+                client.remote('status')
+                self.assertIn(identity, run.call_args.args[0])
+                self.assertIn('BatchMode=yes', run.call_args.args[0])
+                self.assertIn('ControlPath=none', run.call_args.args[0])
+            interactive, unattended = [call.args[0] for call in login.call_args_list]
+            self.assertLess(interactive.index('BatchMode=no'), interactive.index('BatchMode=yes'))
+            self.assertIn('AddKeysToAgent=yes', interactive)
+            self.assertIn('PreferredAuthentications=publickey', interactive)
+            self.assertIn('StrictHostKeyChecking=yes', interactive)
+            self.assertNotIn('BatchMode=no', unattended)
+            agent.return_value.terminate.assert_called_once()
+            agent.return_value.wait.assert_called_once_with(timeout=5)
+            self.assertFalse(Path(identity.split('=', 1)[1]).parent.exists())
+        self.assertEqual(client.SSH_OPTIONS, self.original)
+
+    def test_cancelled_or_rejected_unlock_cleans_up_before_deployment(self):
+        for error in [KeyboardInterrupt(), subprocess.CalledProcessError(255, 'ssh')]:
+            with self.subTest(error=type(error).__name__), \
+                    patch.object(client.subprocess, 'run', return_value=subprocess.CompletedProcess([], 255, '', 'Permission denied (publickey).')), \
+                    patch.object(client.sys.stdin, 'isatty', return_value=True), \
+                    patch.object(client.Path, 'is_socket', return_value=True), \
+                    patch.object(client.subprocess, 'Popen') as agent, \
+                    patch.object(client.subprocess, 'check_output', side_effect=error):
+                with self.assertRaises(type(error)), client.ssh_session():
+                    self.fail('Failed authentication must not allow deployment')
+                agent.return_value.terminate.assert_called_once()
+                self.assertEqual(client.SSH_OPTIONS, self.original)
 
 
 if __name__ == '__main__':

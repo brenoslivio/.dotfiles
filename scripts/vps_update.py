@@ -1,4 +1,5 @@
 """Local client for exact-commit VPS deployments over authenticated SSH."""
+from contextlib import contextmanager
 import hashlib
 import json
 import os
@@ -6,6 +7,7 @@ from pathlib import Path
 import shlex
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.request
@@ -16,8 +18,56 @@ import update as u
 HOST = 'ahimsa-vps'
 TARGET = 'root@95.217.8.248'
 SSH_OPTIONS = ['-o', 'BatchMode=yes', '-o', 'StrictHostKeyChecking=yes',
+               '-o', 'PreferredAuthentications=publickey', '-o', 'ForwardAgent=no',
                '-o', 'ConnectTimeout=15', '-o', 'ControlMaster=no', '-o', 'ControlPath=none',
                '-o', 'ServerAliveInterval=15', '-o', 'ServerAliveCountMax=3']
+
+
+@contextmanager
+def ssh_session():
+    """Unlock through OpenSSH once; keep subsequent recovery connections unattended."""
+    probe = subprocess.run(['ssh', *SSH_OPTIONS, TARGET, 'hostname'],
+                           text=True, capture_output=True, timeout=60)
+    if probe.returncode == 0:
+        assert_host({'host': probe.stdout.strip()})
+        yield
+        return
+    if 'permission denied (publickey' not in probe.stderr.lower():
+        raise u.UpdateError(f'Cannot connect to VPS: {probe.stderr.strip()}')
+    if not sys.stdin.isatty():
+        raise u.UpdateError('SSH key is locked or unavailable. Run this command in a terminal to unlock it.')
+    print('Unlock your SSH key to connect to the VPS. OpenSSH will ask for its passphrase.', flush=True)
+    # A foreground child avoids evaluating ssh-agent shell output or leaving an
+    # unlocked agent behind. Its private socket exists only for this operation.
+    with tempfile.TemporaryDirectory(prefix='dotfiles-vps-ssh-') as directory:
+        socket = Path(directory) / 'agent'
+        agent = subprocess.Popen(['ssh-agent', '-D', '-a', str(socket)],
+                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        original = SSH_OPTIONS[:]
+        try:
+            deadline = time.monotonic() + 5
+            while not socket.is_socket():
+                if agent.poll() is not None or time.monotonic() >= deadline:
+                    raise u.UpdateError('Could not start the temporary SSH agent.')
+                time.sleep(0.05)
+            SSH_OPTIONS[:] = ['-o', f'IdentityAgent={socket}', *original]
+            hostname = subprocess.check_output(
+                ['ssh', '-o', 'BatchMode=no', '-o', 'AddKeysToAgent=yes',
+                 *SSH_OPTIONS, TARGET, 'hostname'], text=True).strip()
+            assert_host({'host': hostname})
+            # Check that fresh connections work without another prompt before
+            # copying anything or arming an activation/recovery transaction.
+            hostname = subprocess.check_output(['ssh', *SSH_OPTIONS, TARGET, 'hostname'], text=True).strip()
+            assert_host({'host': hostname})
+            yield
+        finally:
+            SSH_OPTIONS[:] = original
+            agent.terminate()
+            try:
+                agent.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                agent.kill()
+                agent.wait(timeout=5)
 
 
 def remote(action, payload=None, helper='/run/current-system/sw/bin/dotfiles-vps-control', timeout=120):
@@ -118,10 +168,15 @@ def update(repo, directory):
     if u.git(repo, 'rev-parse', 'HEAD') != sha:
         raise u.UpdateError('Checkout changed during VPS preparation.')
     path = u.build_candidate(repo, sha, manifest, directory, False, HOST)
-    hostname = subprocess.check_output(['ssh', *SSH_OPTIONS, TARGET, 'hostname'], text=True).strip()
-    assert_host({'host': hostname})
+    with ssh_session():
+        deploy(path, sha, manifest, directory)
+
+
+def deploy(path, sha, manifest, directory):
     env = dict(os.environ, NIX_SSHOPTS=shlex.join(SSH_OPTIONS))
-    subprocess.run(['nix', 'copy', '--to', f'ssh-ng://{TARGET}', path], env=env, check=True)
+    # Local module outputs are unsigned. This authenticated root SSH transfer
+    # follows CI/output verification; leave normal cache signature checks intact.
+    subprocess.run(['nix', 'copy', '--no-check-sigs', '--to', f'ssh-ng://{TARGET}', path], env=env, check=True)
     helper = path + '/sw/bin/dotfiles-vps-control'
     status = remote('status', helper=helper)
     assert_host(status)
@@ -178,14 +233,20 @@ def update(repo, directory):
 
 
 def dispatch(command, repo, directory):
+    if command == 'up-vps':
+        update(repo, directory)
+    else:
+        with ssh_session():
+            inspect_deployment(command, directory)
+
+
+def inspect_deployment(command, directory):
     pending = u.read_state(directory).get('pending_system', {}).get('path', '')
     helper = '/run/current-system/sw/bin/dotfiles-vps-control'
     if u.STORE_PATH.fullmatch(pending) and '-nixos-system-ahimsa-vps-' in pending:
         # Remains usable after bootstrap rolls back to a system without this helper.
         helper = pending + '/sw/bin/dotfiles-vps-control'
-    if command == 'up-vps':
-        update(repo, directory)
-    elif command == 'status-vps':
+    if command == 'status-vps':
         status = remote('status', helper=helper)
         assert_host(status)
         print(json.dumps({'local': u.read_state(directory), 'remote': status}, indent=2))
