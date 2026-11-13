@@ -3,18 +3,22 @@
 Reproducible NixOS and Home Manager configuration, with support for existing-host
 reinstalls and fresh devices using their own detected hardware.
 
-The flake uses `nixos-unstable` and Home Manager `master`, pinned in `flake.lock`.
-Both state versions remain `24.11`. Brave temporarily uses `release-26.05` and
+The desktop uses `nixos-unstable` and Home Manager `master`; the VPS uses
+`nixos-26.05`. All inputs are pinned in `flake.lock`.
+The VPS keeps the working media applications on the unstable pin for Jellyfin
+plugin and migration compatibility; its OS and CLI tools use stable.
+Desktop state versions remain `24.11`; the VPS retains `26.05`. Brave temporarily uses `release-26.05` and
 its dependencies; remove that extra input once Brave is available in the locked
 unstable revision.
 
 ## Hosts
 
 - `ahimsa`: primary AMD machine.
+- `ahimsa-vps`: headless media server; root SSH login with your existing key.
 
 Each host lives under `hosts/<hostname>` with `default.nix`, `hardware.nix`, and
-non-secret user metadata in `metadata.nix`. Home Manager is integrated with
-NixOS and also exposed separately for user-only changes.
+non-secret user metadata in `metadata.nix`. Desktop hosts include Home Manager,
+also exposed separately for user-only changes; servers use a minimal profile.
 
 ## Daily commands
 
@@ -22,6 +26,10 @@ These Fish functions use `$DOTFILES_REPO`, which defaults to `~/.dotfiles`:
 
 ```console
 up                  # verified system + home update: now, next boot, or later
+up-vps              # verified remote VPS update from ahimsa
+up-vps-status       # VPS pending/active/boot systems and recovery state
+up-vps-confirm      # confirm a scheduled update after reboot
+rollback-vps        # restore the previous VPS configuration over SSH
 home                # verified standalone Home Manager update
 flake-update        # update inputs and run quick checks on a proposal branch
 dotfiles-check      # full local checks; add quick to skip system/home/VM builds
@@ -77,7 +85,7 @@ sudo ./install-nixos.sh --new-device new-laptop --root /mnt --dry-run
 
 Run `./install-nixos.sh --help` for all options. Generated files are never
 automatically staged or committed. New hosts need their own CI/update policy
-before using the guarded updater, which currently targets `ahimsa` only.
+before using the guarded updater, which supports `ahimsa` and `ahimsa-vps`.
 
 ## Adding a host manually
 
@@ -155,29 +163,12 @@ differ; `dotfiles-status` shows actual system links and recorded intent.
 After interrupted activation, the actual links are authoritative.
 
 Only successful **push** CI on the exact current `main` commit qualifies.
-Both `checks` and `ahimsa-ready` must succeed; PR/dispatch runs, skipped jobs,
+Shared checks, the selected host's build, and its ready gate must succeed; PR/dispatch runs, skipped jobs,
 missing evidence, or an unsuccessful latest run do not qualify. Evidence binds
 the repository, commit, host, platform, user, run/attempt, and build output paths.
 It expires after 90 days; rerun the original push run if needed. GitHub/API
 failure stops normal updates. Matching store paths verify output identity,
 not independent byte-for-byte reproducibility.
-
-### Checks and hardware testing
-
-Full checks evaluate the flake, build `ahimsa` and standalone Home Manager,
-validate generated configuration, test updater failures, and boot a VM using
-the actual shared modules. `dotfiles-check quick` skips system/home builds and
-the VM, but still runs configuration and updater checks.
-
-Generated checks cover Fish, Lua, Hyprland, shell syntax, JSONC, TOML, wlogout,
-and desktop entries. The VM checks console login, Home Manager, NetworkManager,
-D-Bus, CUPS, rootless Podman, and PipeWire/WirePlumber. It uses virtual hardware
-and disposable credentials, with graphical login, personal VPN profiles,
-update notifications, and automatic garbage collection disabled.
-
-Verify GPU, monitors, Wi-Fi/Bluetooth, audio, lock/unlock, and suspend locally.
-CI requires KVM and at least 40 GiB free after runner cleanup. Only upstream
-binary caches are configured; missing outputs may need local builds.
 
 ### Recovery
 
@@ -201,7 +192,7 @@ dependencies. Duplicate notices are suppressed; inspect failures with
 For repository setup, publish the workflows and run CI first. Then review and
 run `scripts/configure-github.sh` with an authenticated administrator account.
 It enables automated PRs and merged-branch deletion, and protects `main` with
-PRs, up-to-date branches, and required `ahimsa-ready` checks, including admins.
+PRs, up-to-date branches, and both host ready checks, including admins.
 Force pushes and deletion are disabled; zero required reviewers allows solo
 maintenance. Proposal automation dispatches CI using `GITHUB_TOKEN`; no extra
 App key is needed. The local updater only needs repository and Actions read access.

@@ -7,7 +7,7 @@ policy=$(mktemp)
 trap 'rm -f "$policy"' EXIT
 cat > "$policy" <<'JSON'
 {
-  "required_status_checks": {"strict": true, "contexts": ["ahimsa-ready"]},
+  "required_status_checks": {"strict": true, "contexts": ["ahimsa-ready", "ahimsa-vps-ready"]},
   "enforce_admins": true,
   "required_pull_request_reviews": {
     "dismiss_stale_reviews": true,

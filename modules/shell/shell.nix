@@ -40,6 +40,22 @@ in
         description = "Activate the CI-tested standalone Home Manager environment";
         body = "${updater}/bin/dotfiles-update home";
       };
+      up-vps = {
+        description = "Review and deploy the CI-tested VPS over SSH";
+        body = "${updater}/bin/dotfiles-update up-vps";
+      };
+      up-vps-status = {
+        description = "Inspect the VPS pending, active, and boot-default systems";
+        body = "${updater}/bin/dotfiles-update status-vps";
+      };
+      up-vps-confirm = {
+        description = "Verify and confirm a VPS update after reboot";
+        body = "${updater}/bin/dotfiles-update confirm-vps";
+      };
+      rollback-vps = {
+        description = "Recover the VPS using its previous protected system";
+        body = "${updater}/bin/dotfiles-update rollback-vps";
+      };
       flake-update = {
         description = "Update inputs on a clean proposal branch";
         body = ''

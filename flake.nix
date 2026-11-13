@@ -3,6 +3,7 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs-vps.url = "github:nixos/nixpkgs/nixos-26.05";
     # Temporary Brave exception: its restoration is on release-26.05 but
     # has not reached the nixos-unstable channel yet (NixOS/nixpkgs#584534).
     nixpkgs-stable.url = "github:nixos/nixpkgs/release-26.05";
@@ -37,6 +38,7 @@
       );
       hostPath = hostName: hostsDirectory + "/${hostName}";
       hostMetadata = hostName: import (hostPath hostName + "/metadata.nix");
+      isServer = hostName: ((hostMetadata hostName).profile or "desktop") == "server";
 
       specialArgsFor = metadata: {
         inherit inputs;
@@ -46,7 +48,10 @@
       # Production and VM tests share these modules; only hardware differs.
       sharedModules = hostName:
         let metadata = hostMetadata hostName;
-        in [
+        in [ ./system/cache.nix ] ++ (if isServer hostName then [
+          ./system/server.nix
+          { system.configurationRevision = self.rev or null; }
+        ] else [
           ./system/configuration.nix
           home-manager.nixosModules.home-manager
           {
@@ -58,18 +63,21 @@
               users.${metadata.primaryUser} = import ./modules;
             };
           }
-        ];
+        ]);
 
-      mkHost = hostName: nixpkgs.lib.nixosSystem {
-        inherit system;
-        specialArgs = specialArgsFor (hostMetadata hostName);
-        modules = sharedModules hostName ++ [ (hostPath hostName) ];
-      };
+      mkHost = hostName:
+        let hostNixpkgs = inputs.${(hostMetadata hostName).nixpkgsInput or "nixpkgs"};
+        in hostNixpkgs.lib.nixosSystem {
+          inherit system;
+          specialArgs = specialArgsFor (hostMetadata hostName);
+          modules = sharedModules hostName ++ [ (hostPath hostName) ];
+        };
 
-      userNames = lib.unique (map (hostName: (hostMetadata hostName).primaryUser) hostNames);
+      desktopHosts = builtins.filter (hostName: !(isServer hostName)) hostNames;
+      userNames = lib.unique (map (hostName: (hostMetadata hostName).primaryUser) desktopHosts);
       metadataForUser = userName:
         hostMetadata (builtins.head (
-          builtins.filter (hostName: (hostMetadata hostName).primaryUser == userName) hostNames
+          builtins.filter (hostName: (hostMetadata hostName).primaryUser == userName) desktopHosts
         ));
 
       mkHome = userName:
@@ -92,6 +100,9 @@
         home = self.homeConfigurations.brenoslivio;
         vmModules = sharedModules "ahimsa";
         vmSpecialArgs = specialArgsFor (hostMetadata "ahimsa");
+        vps = self.nixosConfigurations.ahimsa-vps;
+        vpsModules = sharedModules "ahimsa-vps" ++ [ (hostPath "ahimsa-vps") ];
+        vpsSpecialArgs = specialArgsFor (hostMetadata "ahimsa-vps");
       };
     };
 }

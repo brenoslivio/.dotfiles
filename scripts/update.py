@@ -18,7 +18,11 @@ REPOSITORY = "brenoslivio/.dotfiles"
 WORKFLOW = "ci.yml"
 HOST = "ahimsa"
 USER = "brenoslivio"
-REQUIRED_JOBS = {"checks", "ahimsa-ready"}
+HOSTS = {
+    "ahimsa": {"user": USER, "jobs": {"checks", "ahimsa-build", "ahimsa-ready"}},
+    "ahimsa-vps": {"user": "root", "jobs": {"checks", "vps-build", "ahimsa-vps-ready"}},
+}
+REQUIRED_JOBS = HOSTS[HOST]["jobs"]
 STORE_PATH = re.compile(r"/nix/store/[0-9a-df-np-sv-z]{32}-[^/\s]+")
 SHA = re.compile(r"[0-9a-f]{40}")
 
@@ -65,26 +69,26 @@ def validate_run(workflow, candidate, sha):
         raise UpdateError("The latest post-merge CI run has not passed for this exact revision.")
 
 
-def validate_jobs(jobs):
-    for name in REQUIRED_JOBS:
+def validate_jobs(jobs, host=HOST):
+    for name in HOSTS[host]["jobs"]:
         matches = [job for job in jobs if job["name"] == name]
         if len(matches) != 1 or matches[0].get("status") != "completed" or matches[0].get("conclusion") != "success":
             raise UpdateError(f"Required CI job did not pass: {name}")
 
 
-def validate_manifest(manifest, sha, candidate):
-    expected = {"schema": 1, "repository": REPOSITORY, "sha": sha, "host": HOST,
-                "system": "x86_64-linux", "user": USER, "event": "push",
+def validate_manifest(manifest, sha, candidate, host=HOST):
+    expected = {"schema": 1, "repository": REPOSITORY, "sha": sha, "host": host,
+                "system": "x86_64-linux", "user": HOSTS[host]["user"], "event": "push",
                 "run_id": str(candidate["id"]), "run_attempt": str(candidate["run_attempt"])}
     if any(manifest.get(key) != value for key, value in expected.items()):
         raise UpdateError("CI evidence does not identify this revision, host, and run attempt.")
-    for key in ("system_path", "home_path"):
+    for key in (("system_path", "home_path") if host == HOST else ("system_path",)):
         if not STORE_PATH.fullmatch(manifest.get(key, "")):
             raise UpdateError(f"Invalid {key} in CI evidence.")
     return manifest
 
 
-def evidence(sha):
+def evidence(sha, host=HOST):
     if not SHA.fullmatch(sha):
         raise UpdateError("Invalid commit SHA.")
     workflow = api_json(f"actions/workflows/{WORKFLOW}")
@@ -94,8 +98,8 @@ def evidence(sha):
     candidate = max(candidates, key=lambda item: (item["id"], item["run_attempt"]))
     validate_run(workflow, candidate, sha)
     attempt = candidate["run_attempt"]
-    validate_jobs(pages(f"actions/runs/{candidate['id']}/attempts/{attempt}/jobs", "jobs"))
-    name = f"ahimsa-{sha}-{attempt}"
+    validate_jobs(pages(f"actions/runs/{candidate['id']}/attempts/{attempt}/jobs", "jobs"), host)
+    name = f"{host}-{sha}-{attempt}"
     artifacts = [item for item in pages(f"actions/runs/{candidate['id']}/artifacts", "artifacts")
                  if item["name"] == name and not item["expired"]]
     if len(artifacts) != 1:
@@ -105,7 +109,7 @@ def evidence(sha):
         if info.file_size > 16384:
             raise UpdateError("CI evidence is unexpectedly large.")
         manifest = json.loads(archive.read(info))
-    manifest = validate_manifest(manifest, sha, candidate)
+    manifest = validate_manifest(manifest, sha, candidate, host)
     manifest["ci_url"] = candidate["html_url"]
     return manifest
 
@@ -168,8 +172,8 @@ def preserve_good():
     print(f"Protected known-good system: {active}")
 
 
-def build_candidate(repo, sha, manifest, directory, home):
-    attr = f"homeConfigurations.{USER}.activationPackage" if home else f"nixosConfigurations.{HOST}.config.system.build.toplevel"
+def build_candidate(repo, sha, manifest, directory, home, host=HOST):
+    attr = f"homeConfigurations.{USER}.activationPackage" if home else f"nixosConfigurations.{host}.config.system.build.toplevel"
     link = directory / ("pending-home" if home else "pending-system")
     staging = directory / ("building-home" if home else "building-system")
     result = json.loads(run("nix", "build", "--json", "--no-update-lock-file", "--no-write-lock-file",
@@ -246,31 +250,32 @@ def update(repo, directory, home=False):
     print("Activation completed." if choice == "switch" else "Scheduled for next boot; no reboot requested.")
 
 
-def notify(directory):
+def notify(directory, host=HOST):
     sha = api_json("git/ref/heads/main")["object"]["sha"]
-    manifest = evidence(sha)
-    status = system_status()
+    manifest = evidence(sha) if host == HOST else evidence(sha, host)
+    status = system_status() if host == HOST else {}
     state = read_state(directory)
     path = manifest["system_path"]
-    if status["active"] == path:
+    command = "up" if host == HOST else "up-vps"
+    if status.get("active") == path:
         label = "active"
-    elif status["boot_default"] == path:
+    elif status.get("boot_default") == path:
         label = "scheduled for next boot"
     elif state.get("pending_system", {}).get("path") == path:
-        label = "postponed; run up to activate"
+        label = f"prepared; run {command} to review"
     else:
-        label = "available; run up to review"
+        label = f"available; run {command} to review"
     key = f"{sha}:{label}"
     if state.get("notified") != key:
         if label != "active":
-            run("notify-send", "Tested NixOS update", f"{sha[:12]}: {label}", capture=False)
+            run("notify-send", f"Tested NixOS update: {host}", f"{sha[:12]}: {label}", capture=False)
         state["notified"] = key
         atomic_json(directory / "state.json", state)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["up", "home", "notify", "status", "mark-good", "rollback", "rollback-good"], nargs="?", default="up")
+    parser.add_argument("command", choices=["up", "home", "up-vps", "status-vps", "confirm-vps", "rollback-vps", "notify", "status", "mark-good", "rollback", "rollback-good"], nargs="?", default="up")
     args = parser.parse_args()
     if socket.gethostname() != HOST:
         raise UpdateError(f"This updater supports {HOST} only.")
@@ -285,12 +290,25 @@ def main():
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError as exc:
             raise UpdateError("Another updater operation is running.") from exc
-        if args.command == "status":
+        if args.command.endswith("-vps"):
+            # Share exception types when this file is launched as a CLI script.
+            sys.modules["update"] = sys.modules[__name__]
+            import vps_update
+            repo = Path(os.environ.get("DOTFILES_REPO", str(Path.home() / ".dotfiles"))).resolve()
+            vps_update.dispatch(args.command, repo, directory / "ahimsa-vps")
+        elif args.command == "status":
             print(json.dumps({**read_state(directory), **system_status()}, indent=2))
         elif args.command == "mark-good":
             preserve_good()
         elif args.command == "notify":
-            notify(directory)
+            errors = []
+            for host, target in [(HOST, directory), ("ahimsa-vps", directory / "ahimsa-vps")]:
+                try:
+                    notify(target, host)
+                except (UpdateError, subprocess.CalledProcessError, OSError, ValueError, KeyError) as exc:
+                    errors.append(f"{host}: {exc}")
+            if errors:
+                raise UpdateError("; ".join(errors))
         elif args.command == "rollback":
             run("sudo", "nixos-rebuild", "switch", "--rollback", capture=False)
         elif args.command == "rollback-good":
@@ -306,7 +324,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except (UpdateError, subprocess.CalledProcessError, OSError, ValueError, KeyError, zipfile.BadZipFile) as error:
+    except (UpdateError, subprocess.SubprocessError, OSError, ValueError, KeyError, zipfile.BadZipFile) as error:
         sys.exit(f"Update stopped: {error}")
     except (KeyboardInterrupt, EOFError):
         sys.exit("Update interrupted. Run dotfiles-status to inspect the current state.")
