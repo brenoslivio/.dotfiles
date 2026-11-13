@@ -12,38 +12,34 @@ concurrency:
 jobs:
   checks:
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: ./.github/actions/nix-setup
+        with:
+          cache-token: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CACHIX_AUTH_TOKEN || '' }}
+      - name: Shared evaluation and fast checks
+        env:
+          DOTFILES_FLAKE: git+file://${{ github.workspace }}?rev=${{ github.sha }}
+        run: /usr/bin/time -v bash scripts/check.sh quick
+  ahimsa-build:
+    runs-on: ubuntu-24.04
     timeout-minutes: 180
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: ./.github/actions/nix-setup
         with:
-          fetch-depth: 0
-          persist-credentials: false
-      - name: Prepare capacity and KVM
-        run: |
-          # Hosted runner only: remove unused preinstalled SDKs, never user data.
-          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache
-          df -h /
-          test "$(df --output=avail -B1 / | tail -1)" -ge 42949672960 || {
-            echo 'At least 40 GiB free is required; use a larger runner.' >&2
-            exit 1
-          }
-          test -c /dev/kvm
-          sudo chmod a+rw /dev/kvm
-      - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
-        with:
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-            max-jobs = 2
-            cores = 2
-            system-features = nixos-test benchmark big-parallel kvm
-      - name: Evaluate, build, validate, and test ahimsa
-        run: |
-          export DOTFILES_FLAKE="git+file://$GITHUB_WORKSPACE?rev=$GITHUB_SHA"
-          /usr/bin/time -v bash scripts/check.sh
-          df -h /
-      - name: Record post-merge evidence
+          kvm: 'true'
+          cache-token: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CACHIX_AUTH_TOKEN || '' }}
+      - name: Build desktop, Home Manager, and desktop VM
+        env:
+          DOTFILES_FLAKE: git+file://${{ github.workspace }}?rev=${{ github.sha }}
+        run: /usr/bin/time -v bash scripts/check.sh ahimsa
+      - name: Record post-merge desktop evidence
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: python3 scripts/ci-manifest.py
+        run: python3 scripts/ci-manifest.py ahimsa
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         with:
@@ -51,12 +47,47 @@ jobs:
           path: manifest.json
           if-no-files-found: error
           retention-days: 90
+  vps-build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: {fetch-depth: 0, persist-credentials: false}
+      - uses: ./.github/actions/nix-setup
+        with:
+          cache-token: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CACHIX_AUTH_TOKEN || '' }}
+      - name: Build server and validate proxy configuration
+        env:
+          DOTFILES_FLAKE: git+file://${{ github.workspace }}?rev=${{ github.sha }}
+        run: /usr/bin/time -v bash scripts/check.sh ahimsa-vps
+      - name: Record post-merge VPS evidence
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: python3 scripts/ci-manifest.py ahimsa-vps
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        with:
+          name: ahimsa-vps-${{ github.sha }}-${{ github.run_attempt }}
+          path: manifest.json
+          if-no-files-found: error
+          retention-days: 90
   ahimsa-ready:
     if: always()
-    needs: [checks]
+    needs: [checks, ahimsa-build, vps-build]
     runs-on: ubuntu-24.04
     steps:
-      - name: Require every mandatory check
+      - name: Require shared checks and both hosts
         env:
-          CHECKS_RESULT: ${{ needs.checks.result }}
-        run: test "$CHECKS_RESULT" = success
+          CHECKS: ${{ needs.checks.result }}
+          DESKTOP: ${{ needs.ahimsa-build.result }}
+          VPS: ${{ needs.vps-build.result }}
+        run: test "$CHECKS" = success && test "$DESKTOP" = success && test "$VPS" = success
+  ahimsa-vps-ready:
+    if: always()
+    needs: [checks, vps-build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Require VPS checks
+        env:
+          CHECKS: ${{ needs.checks.result }}
+          VPS: ${{ needs.vps-build.result }}
+        run: test "$CHECKS" = success && test "$VPS" = success

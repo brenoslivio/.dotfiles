@@ -1,0 +1,24 @@
+name: VPS extended smoke test
+on:
+  schedule:
+    - cron: '17 6 * * 6'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: vps-smoke-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  vps-vm:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: {persist-credentials: false}
+      - uses: ./.github/actions/nix-setup
+        with:
+          kvm: 'true'
+      - name: Boot isolated VPS with local TLS and disposable accounts
+        env:
+          DOTFILES_FLAKE: git+file://${{ github.workspace }}?rev=${{ github.sha }}
+        run: /usr/bin/time -v bash scripts/check.sh vps-vm

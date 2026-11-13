@@ -1,7 +1,31 @@
-{ pkgs, home, vmModules, vmSpecialArgs }:
+{ pkgs, home, vmModules, vmSpecialArgs, vps, vpsModules, vpsSpecialArgs }:
 let
   python = pkgs.python3.withPackages (p: [ p.json5 ]);
 in {
+  vps-config = vps.pkgs.runCommand "vps-config-checks" {
+    nativeBuildInputs = [ vps.config.services.caddy.package vps.pkgs.python3 ];
+  } ''
+    export XDG_DATA_HOME="$TMPDIR/data"
+    export XDG_CONFIG_HOME="$TMPDIR/config"
+    caddy validate --adapter caddyfile --config ${vps.config.services.caddy.configFile}
+    python - <<'PY'
+    import json
+    cfg = json.loads(${builtins.toJSON (builtins.toJSON {
+      ports = vps.config.networking.firewall.allowedTCPPorts;
+      ssh = vps.config.services.openssh.settings;
+      interfaces = vps.config.services.media-stack.jellyfinLanInterfaces;
+      requires = vps.config.systemd.services.caddy.requires;
+    })})
+    assert sorted(cfg['ports']) == [22, 80, 443]
+    assert not cfg['interfaces']
+    assert not cfg['ssh']['PasswordAuthentication']
+    assert not cfg['ssh']['KbdInteractiveAuthentication']
+    assert cfg['ssh']['PermitRootLogin'] == 'prohibit-password'
+    assert 'media-stack-setup.service' in cfg['requires']
+    PY
+    touch "$out"
+  '';
+  vps-vm = import ./vps-vm.nix { inherit vps vpsModules vpsSpecialArgs; };
   generated-config = pkgs.runCommand "generated-config-checks" {
     nativeBuildInputs = [ python pkgs.bash pkgs.fish pkgs.lua pkgs.desktop-file-utils pkgs.hyprland ];
   } ''
