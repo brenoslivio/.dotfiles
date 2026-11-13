@@ -39,6 +39,9 @@ rollback            # previous system generation, offline
 rollback-good       # protected known-good system, offline
 ```
 
+VPS commands prompt for your SSH key passphrase when needed; the temporary
+agent is removed when the command exits.
+
 Rootless Podman, including the `docker` compatibility command, defaults to
 `userns = "keep-id"` in `~/.config/containers/containers.conf`. This preserves
 your UID/GID for bind-mounted files in new containers. Override with `--userns`.
