@@ -174,7 +174,9 @@ def update(repo, directory):
 
 def deploy(path, sha, manifest, directory):
     env = dict(os.environ, NIX_SSHOPTS=shlex.join(SSH_OPTIONS))
-    subprocess.run(['nix', 'copy', '--to', f'ssh-ng://{TARGET}', path], env=env, check=True)
+    # Local module outputs are unsigned. This authenticated root SSH transfer
+    # follows CI/output verification; leave normal cache signature checks intact.
+    subprocess.run(['nix', 'copy', '--no-check-sigs', '--to', f'ssh-ng://{TARGET}', path], env=env, check=True)
     helper = path + '/sw/bin/dotfiles-vps-control'
     status = remote('status', helper=helper)
     assert_host(status)

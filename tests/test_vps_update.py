@@ -256,7 +256,9 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(actions, ['status', 'preview', 'stage'])
             self.assertEqual(u.read_state(Path(temp))['pending_system']['token'], TOKEN)
             run.assert_called_once()
-            self.assertEqual(run.call_args.args[0][:3], ['nix', 'copy', '--to'])
+            self.assertEqual(run.call_args.args[0],
+                             ['nix', 'copy', '--no-check-sigs', '--to', 'ssh-ng://root@95.217.8.248', NEW])
+            self.assertIn('StrictHostKeyChecking=yes', run.call_args.kwargs['env']['NIX_SSHOPTS'])
 
     def test_unverified_revision_never_contacts_vps(self):
         with tempfile.TemporaryDirectory() as temp, patch.object(u, 'clean_checkout'), \
