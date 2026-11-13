@@ -154,7 +154,7 @@ Normal edits follow the same path: branch, edit, commit, push a PR, then merge
 after CI. `dotfiles-check` runs the shared suite locally before pushing.
 
 Weekly proposals run Friday at 15:23 UTC (12:23 São Paulo). Existing PRs and
-manual fixes are retained; subsequent runs retry CI without rewriting them.
+manual fixes and their CI runs are retained. Approve bot-triggered PR CI if GitHub asks.
 Merge or close the proposal and delete its branch before the next one. Use
 Actions' “Run workflow” for an earlier proposal, or `flake-update` on a clean
 proposal branch to update inputs locally and run quick checks.
@@ -207,8 +207,8 @@ run `scripts/configure-github.sh` with an authenticated administrator account.
 It enables automated PRs and merged-branch deletion, and protects `main` with
 PRs, up-to-date branches, and both host ready checks, including admins.
 Force pushes and deletion are disabled; zero required reviewers allows solo
-maintenance. Proposal automation dispatches CI using `GITHUB_TOKEN`; no extra
-App key is needed. The local updater only needs repository and Actions read access.
+maintenance. Proposal automation uses `GITHUB_TOKEN`; CI starts from the PR event.
+The local updater only needs repository and Actions read access.
 
 If the installed system predates the guarded updater, start from a clean checkout
 after the final `main` push CI passes. Run these commands in Bash:
