@@ -9,6 +9,7 @@ let
     inherit enabled;
     inherit (cfg) viewerRenames;
     inherit (cfg) maxSizeMBPerMinute allowAllQualities playbackPolish;
+    vpnInterface = if cfg.vpn.enable then "proton0" else "";
     stateDir = "/var/lib/media-stack";
   });
   releasePlugin = import ./media-releases/package.nix { inherit pkgs; };
@@ -93,6 +94,7 @@ let
     };
   };
 in {
+  imports = [ ./media-vpn.nix ];
   options.services.media-stack = {
     enable = mkEnableOption "a local media stack";
     components = lib.genAttrs names (name: mkOption { type = types.bool; default = name != "lidarr"; });
@@ -210,7 +212,7 @@ in {
     networking.firewall.interfaces = mkIf cfg.components.jellyfin (lib.genAttrs cfg.jellyfinLanInterfaces (_: {
       allowedTCPPorts = [ cfg.ports.jellyfin ];
     }));
-    users.users.jellyfin.extraGroups = mkIf cfg.components.jellyfin [ "media" ];
+    users.users.jellyfin = mkIf cfg.components.jellyfin { extraGroups = [ "media" ]; };
     services.jellyfin = mkIf cfg.components.jellyfin {
       enable = true;
       package = mkIf cfg.manualReleaseSelection mediaJellyfin;

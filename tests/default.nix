@@ -28,6 +28,7 @@ in {
     PY
     touch "$out"
   '';
+  media-vpn-vm = import ./media-vpn.nix { inherit pkgs; };
   vps-vm = import ./vps-vm.nix { inherit vps vpsModules vpsSpecialArgs; };
   generated-config = pkgs.runCommand "generated-config-checks" {
     nativeBuildInputs = [ python pkgs.bash pkgs.fish pkgs.lua pkgs.desktop-file-utils pkgs.hyprland ];
