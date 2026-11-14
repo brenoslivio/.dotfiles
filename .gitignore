@@ -9,3 +9,5 @@ result-*
 vpn.ovpn
 __pycache__/
 manifest.json
+package-inventory.json
+package-report/

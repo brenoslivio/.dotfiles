@@ -26,6 +26,7 @@ if [[ $mode == full || $mode == ahimsa-vps ]]; then
   nix build "${flags[@]}" --no-link \
     "$flake#nixosConfigurations.ahimsa-vps.config.system.build.toplevel" \
     "$flake#checks.x86_64-linux.vps-config"
+  nix build "${flags[@]}" --no-link -L "$flake#checks.x86_64-linux.media-vpn-vm"
 fi
 if [[ $mode == vps-vm ]]; then
   nix build "${flags[@]}" --no-link -L "$flake#checks.x86_64-linux.vps-vm"

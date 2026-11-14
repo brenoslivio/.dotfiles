@@ -162,6 +162,7 @@ def seed(cfg, service):
             'BitTorrent': {'Session\\DefaultSavePath': cfg['root']+'/downloads',
                           'Session\\QueueingSystemEnabled': 'true', 'Session\\MaxActiveDownloads': '1',
                           'Session\\MaxActiveUploads': '1', 'Session\\MaxActiveTorrents': '2',
+                          'Session\\Interface': cfg.get('vpnInterface', ''),
                           'Session\\LSDEnabled': 'false', 'Session\\GlobalDLSpeedLimit': str(cfg['downloadKiB']),
                           'Session\\GlobalUPSpeedLimit': str(cfg['uploadKiB'])},
             'Network': {'PortForwardingEnabled': 'false'},
@@ -224,7 +225,7 @@ class API:
                 result = self.call(path, **kwargs)
                 if ready is None or ready(result):
                     return result
-            except (RuntimeError, urllib.error.URLError, TimeoutError):
+            except (RuntimeError, urllib.error.URLError, TimeoutError, ConnectionError):
                 pass
             time.sleep(2)
         raise RuntimeError(f'{self.base} did not become ready.')

@@ -37,6 +37,16 @@ jobs:
         env:
           DOTFILES_FLAKE: git+file://${{ github.workspace }}?rev=${{ github.sha }}
         run: /usr/bin/time -v bash scripts/check.sh ahimsa
+      - name: Record desktop package inventory
+        continue-on-error: true
+        run: python3 scripts/package_inventory.py ahimsa
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        continue-on-error: true
+        with:
+          name: packages-ahimsa-${{ github.run_attempt }}
+          path: package-inventory.json
+          if-no-files-found: warn
+          retention-days: 90
       - name: Record post-merge desktop evidence
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: python3 scripts/ci-manifest.py ahimsa
@@ -55,11 +65,22 @@ jobs:
         with: {fetch-depth: 0, persist-credentials: false}
       - uses: ./.github/actions/nix-setup
         with:
+          kvm: 'true'
           cache-token: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' && secrets.CACHIX_AUTH_TOKEN || '' }}
-      - name: Build server and validate proxy configuration
+      - name: Build server and validate proxy/VPN isolation
         env:
           DOTFILES_FLAKE: git+file://${{ github.workspace }}?rev=${{ github.sha }}
         run: /usr/bin/time -v bash scripts/check.sh ahimsa-vps
+      - name: Record VPS package inventory
+        continue-on-error: true
+        run: python3 scripts/package_inventory.py ahimsa-vps
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        continue-on-error: true
+        with:
+          name: packages-ahimsa-vps-${{ github.run_attempt }}
+          path: package-inventory.json
+          if-no-files-found: warn
+          retention-days: 90
       - name: Record post-merge VPS evidence
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: python3 scripts/ci-manifest.py ahimsa-vps

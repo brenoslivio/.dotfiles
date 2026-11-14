@@ -23,7 +23,9 @@ import json
 from pathlib import Path
 old = json.loads(Path('/tmp/previous-flake.lock').read_text())['nodes']
 new = json.loads(Path('flake.lock').read_text())['nodes']
-lines = ['Update pinned flake inputs. No system activation.', '', '| Input | Before | After |', '|---|---|---|']
+lines = ['Update pinned flake inputs. No system activation.', '',
+         '<!-- package-report:start -->', 'Package comparison pending CI.', '<!-- package-report:end -->', '',
+         '| Input | Before | After |', '|---|---|---|']
 for name in sorted(old.keys() | new.keys()):
     before = old.get(name, {}).get('locked', {})
     after = new.get(name, {}).get('locked', {})
