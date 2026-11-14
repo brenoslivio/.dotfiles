@@ -128,3 +128,10 @@ class ReportTests(unittest.TestCase):
             packages = inventory.closure_packages(['/run/current-system'])
         self.assertEqual(packages['jellyfin']['versions'], ['1.0', '1.0-source'])
         self.assertEqual(packages['jellyfin']['bytes'], 134)
+
+    def test_notes_ignore_thanks_and_read_scoped_changes(self):
+        self.assertIsNone(r.short_note('Additionally, thank you to everyone who donated!'))
+        self.assertEqual(r.short_note('* config/lua: fix expired window references by @author in https://example.invalid/123'),
+                         'config/lua: fix expired window references')
+        self.assertEqual(r.short_note('* [3f28a79](https://example.invalid/commit) Fixed: Wildcard IP addresses in Allowed Hosts'),
+                         'Fixed: Wildcard IP addresses in Allowed Hosts')

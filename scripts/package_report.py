@@ -98,10 +98,17 @@ def short_note(body):
     # A bounded upstream excerpt, not an invented/AI-generated release claim.
     for line in body.splitlines():
         line = re.sub(r'^\s*[-*+]\s*', '', line).strip()
-        if not re.match(r'(?i)(fix|add|improv|support|updat|secur|resolv|prevent|correct|chang|remov)', line):
-            continue
         line = re.sub(r'\[([^]]+)\]\([^)]*\)', r'\1', line)
         line = re.sub(r'<[^>]*>|https?://\S+', '', line)
+        line = line.replace('**', '').replace('`', '')
+        line = re.sub(r'^[0-9a-f]{7,40}\s+', '', line)
+        # Match change verbs, including scoped bullets, not words like "Additionally".
+        if not re.match(r'(?i)^(?:[\w./()-]+:\s*)?(?:fix(?:ed|es)?|add(?:ed|s)?|'
+                        r'improv(?:e|ed|es|ements?)|support(?:ed|s)?|updat(?:e|ed|es)|'
+                        r'security|resolv(?:e|ed|es)|prevent(?:ed|s)?|correct(?:ed|s)?|'
+                        r'chang(?:e|ed|es)|remov(?:e|ed|es|al))\b', line):
+            continue
+        line = re.sub(r'\s+by\s+@\S+.*$', '', line)
         line = re.sub(r'\s+', ' ', line).strip()
         return ' '.join(line.split()[:18])[:130]
     return None
