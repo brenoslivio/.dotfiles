@@ -212,3 +212,10 @@ class ReportTests(unittest.TestCase):
         row = {'package': 'example', 'kind': 'Version change', 'before': ['1.0'], 'after': ['1.0', '2.0'],
                'metadata': [{'version': version, 'changelog': [f'https://example.org/{version}']} for version in ['1.0', '2.0']]}
         self.assertEqual(r.ReleaseNotes({}).get(row)[1], 'https://example.org/2.0')
+
+    def test_known_releases_page_survives_ambiguous_versions(self):
+        row = {'package': 'example', 'kind': 'Added', 'before': [], 'after': ['1.0', '2.0']}
+        notes = r.ReleaseNotes({'example': {'repo': 'example/project', 'tags': ['v{version}']}})
+        with patch.object(r.urllib.request, 'urlopen') as fetch:
+            self.assertEqual(notes.get(row)[1], 'https://github.com/example/project/releases')
+            fetch.assert_not_called()

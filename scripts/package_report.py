@@ -138,6 +138,8 @@ class ReleaseNotes:
         generic = f"https://github.com/{source['repo']}/releases" if 'repo' in source else None
         if url and url != generic:
             return note, url
+        if not url and generic:
+            url = generic
         # Metadata is data from the PR build, not a source of network requests.
         versions = set(row['before'] if row['kind'] == 'Removed' else row.get('after', []))
         if row['kind'] == 'Version change' and (changed := versions - set(row['before'])):
