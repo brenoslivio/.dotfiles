@@ -52,11 +52,10 @@ Keep your original administrator SSH private key. Use `nix shell --inputs-from .
 then `age -d -i <private-key> -o backup.tar.gz <backup.tar.gz.age>`. Viewer logins are
 `breno` and `bianca`; existing passwords and watch history are preserved.
 
-The VPS Proton VPN is prepared but disabled. Export a **Finland P2P WireGuard**
-profile with NAT-PMP enabled from Proton (paid plan), install it root-only at
-`/var/lib/private/proton-vpn/finland.conf`, then enable `services.media-stack.vpn.enable`
-in the VPS host and deploy. Never commit the profile. Only qBittorrent uses the
-VPN; its private API stays on localhost. Tunnel failure blocks torrent traffic.
+The VPS uses Proton VPN for qBittorrent. **Before deployment**, install a root-only
+**Finland P2P WireGuard** profile with NAT-PMP enabled (paid Proton plan) at
+`/var/lib/private/proton-vpn/finland.conf`. Never commit the profile. qBittorrent's
+API stays on localhost; tunnel failure blocks torrent traffic.
 Check `systemctl status media-vpn` and `journalctl -u media-vpn-forward` on the VPS.
 
 Rootless Podman, including the `docker` compatibility command, defaults to
@@ -161,7 +160,7 @@ Normal edits follow the same path: branch, edit, commit, push a PR, then merge
 after CI. `dotfiles-check` runs the shared suite locally before pushing.
 
 Weekly PRs gain per-host package/version tables after CI, with linked upstream
-notes or an explicit fallback. Full comparisons are attached as artifacts;
+notes, Nixpkgs changelog/homepage links, or an explicit fallback. Full comparisons are attached as artifacts;
 the first successful main CI seeds the baseline.
 
 Weekly proposals run Friday at 15:23 UTC (12:23 São Paulo). Existing PRs and

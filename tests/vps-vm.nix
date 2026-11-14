@@ -19,6 +19,9 @@ vps.pkgs.testers.runNixOSTest {
     fileSystems = lib.mkForce {};
     virtualisation = { memorySize = 6144; cores = 2; diskSize = 4096; };
     services.media-stack.minFreeGiB = lib.mkForce 1;
+    # This offline recovery test has no Proton credentials; media-vpn-vm tests
+    # the enabled tunnel, DNS, forwarding and fail-closed behavior separately.
+    services.media-stack.vpn.enable = lib.mkForce false;
     nix.gc.automatic = lib.mkForce false;
     services.caddy.virtualHosts."media.breno.science".extraConfig = lib.mkBefore "tls internal";
     # Avoid external indexers/providers; exercise Jellyfin's real local API.

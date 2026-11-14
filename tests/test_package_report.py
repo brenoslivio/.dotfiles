@@ -128,3 +128,94 @@ class ReportTests(unittest.TestCase):
             packages = inventory.closure_packages(['/run/current-system'])
         self.assertEqual(packages['jellyfin']['versions'], ['1.0', '1.0-source'])
         self.assertEqual(packages['jellyfin']['bytes'], 134)
+
+    def test_notes_ignore_thanks_and_read_scoped_changes(self):
+        self.assertIsNone(r.short_note('Additionally, thank you to everyone who donated!'))
+        self.assertEqual(r.short_note('* config/lua: fix expired window references by @author in https://example.invalid/123'),
+                         'config/lua: fix expired window references')
+        self.assertEqual(r.short_note('* [3f28a79](https://example.invalid/commit) Fixed: Wildcard IP addresses in Allowed Hosts'),
+                         'Fixed: Wildcard IP addresses in Allowed Hosts')
+
+    def test_metadata_fallbacks_are_labeled_and_never_fetched(self):
+        row = {'package': 'example', 'kind': 'Added', 'before': [], 'after': ['1.0'],
+               'metadata': [{'version': '1.0', 'changelog': ['https://example.org/changes'],
+                             'homepage': ['https://example.org/']}]}
+        with patch.object(r.urllib.request, 'urlopen') as fetch:
+            note, url = r.ReleaseNotes({}).get(row)
+            self.assertEqual(url, 'https://example.org/changes')
+            self.assertEqual(row['link_label'], 'Changelog')
+            self.assertIn('Summary unavailable', note)
+            row['metadata'][0]['changelog'] = []
+            note, url = r.ReleaseNotes({}).get(row)
+            self.assertEqual(url, 'https://example.org/')
+            self.assertEqual(row['link_label'], 'Project homepage')
+            self.assertIn('[Project homepage]', r.table([{**row, 'hosts': ['ahimsa'], 'note': note, 'url': url}]))
+            fetch.assert_not_called()
+
+    def test_metadata_changelog_precedes_generic_releases(self):
+        row = {'package': 'example', 'kind': 'Added', 'before': [], 'after': ['1.0'],
+               'metadata': [{'version': '1.0', 'changelog': ['https://example.org/changes']}]}
+        notes = r.ReleaseNotes({'example': {'repo': 'example/project', 'tags': ['v{version}']}})
+        with patch.object(r.urllib.request, 'urlopen', side_effect=OSError('offline')):
+            self.assertEqual(notes.get(row)[1], 'https://example.org/changes')
+            row['metadata'][0] = {'version': '1.0', 'homepage': ['https://example.org/']}
+            self.assertEqual(notes.get(row)[1], 'https://github.com/example/project/releases')
+            self.assertEqual(row['link_label'], 'Upstream')
+
+    def test_exact_upstream_link_precedes_metadata(self):
+        row = {'package': 'example', 'kind': 'Added', 'before': [], 'after': ['1.0'],
+               'metadata': [{'version': '1.0', 'changelog': ['https://example.org/changes']}]}
+        notes = r.ReleaseNotes({'example': {'url': 'https://example.org/releases/{version}'}})
+        self.assertEqual(notes.get(row)[1], 'https://example.org/releases/1.0')
+        self.assertEqual(row['link_label'], 'Upstream')
+
+    def test_metadata_must_match_version_and_ambiguous_links_are_skipped(self):
+        row = {'package': 'example', 'kind': 'Added', 'before': [], 'after': ['1.0'],
+               'metadata': [{'version': '0.9', 'changelog': ['https://old.example.org/changes']}]}
+        self.assertIsNone(r.ReleaseNotes({}).get(row)[1])
+        row['metadata'] = [{'version': '1.0', 'changelog': ['https://a.example.org', 'https://b.example.org']}]
+        self.assertIsNone(r.ReleaseNotes({}).get(row)[1])
+
+    def test_metadata_is_bounded_and_old_artifacts_still_work(self):
+        r.validate_inventory(DATA, 'ahimsa-vps', RUN)
+        bad = copy.deepcopy(DATA)
+        bad['packages']['jellyfin']['metadata'] = [{'version': '1.0', 'homepage': 'not a list'}]
+        with self.assertRaises(ValueError):
+            r.validate_inventory(bad, 'ahimsa-vps', RUN)
+        bad['packages']['jellyfin']['metadata'] = [{'version': '1.0', 'homepage': ['javascript:alert(1)']}]
+        packages = r.validate_inventory(bad, 'ahimsa-vps', RUN)
+        row = r.differences({}, packages, 'ahimsa-vps')[0]
+        self.assertIsNone(r.ReleaseNotes({}).get(row)[1])
+
+    def test_metadata_url_safety(self):
+        from package_metadata import safe_url
+        for url in ['javascript:alert(1)', 'file:///etc/passwd', '//example.org', 'https://user:secret@example.org',
+                    'https://example.org/\nunsafe', 'https://example.org:bad/', 'https://example.org\\evil']:
+            self.assertIsNone(safe_url(url), url)
+        self.assertEqual(safe_url('https://example.org/log(v1)?a=1&b=2'), 'https://example.org/log%28v1%29?a=1&b=2')
+
+    def test_metadata_attaches_only_to_exact_closure_paths(self):
+        from package_metadata import attach
+        packages = copy.deepcopy(DATA['packages'])
+        records = [{'version': '2.0', 'paths': [STORE+'-different'], 'homepage': ['https://wrong.example.org']},
+                   {'version': '1.0', 'paths': [STORE], 'homepage': ['https://right.example.org'], 'changelog': []}]
+        attach(packages, records)
+        self.assertEqual(packages['jellyfin']['metadata'], [{'version': '1.0', 'homepage': ['https://right.example.org'], 'changelog': []}])
+
+    def test_metadata_failure_does_not_lose_inventory(self):
+        import package_inventory as inventory
+        import subprocess
+        with patch.object(inventory, 'command', return_value=STORE), patch.object(inventory, 'closure_packages', return_value=DATA['packages']), patch.object(inventory.package_metadata, 'collect', side_effect=subprocess.TimeoutExpired('nix', 60)):
+            self.assertEqual(inventory.collect('ahimsa-vps', 'flake'), DATA['packages'])
+
+    def test_metadata_uses_new_version_when_multiple_remain_installed(self):
+        row = {'package': 'example', 'kind': 'Version change', 'before': ['1.0'], 'after': ['1.0', '2.0'],
+               'metadata': [{'version': version, 'changelog': [f'https://example.org/{version}']} for version in ['1.0', '2.0']]}
+        self.assertEqual(r.ReleaseNotes({}).get(row)[1], 'https://example.org/2.0')
+
+    def test_known_releases_page_survives_ambiguous_versions(self):
+        row = {'package': 'example', 'kind': 'Added', 'before': [], 'after': ['1.0', '2.0']}
+        notes = r.ReleaseNotes({'example': {'repo': 'example/project', 'tags': ['v{version}']}})
+        with patch.object(r.urllib.request, 'urlopen') as fetch:
+            self.assertEqual(notes.get(row)[1], 'https://github.com/example/project/releases')
+            fetch.assert_not_called()

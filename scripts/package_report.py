@@ -14,6 +14,7 @@ import urllib.request
 import zipfile
 
 import update as u
+from package_metadata import safe_url
 
 START = '<!-- package-report:start -->'
 END = '<!-- package-report:end -->'
@@ -50,6 +51,16 @@ def validate_inventory(data, host, run, pr=None):
             raise ValueError('Invalid package path')
         if not isinstance(item.get('bytes'), int) or not 0 <= item['bytes'] <= 10**15:
             raise ValueError('Invalid package size')
+        metadata = item.get('metadata', [])
+        if not isinstance(metadata, list) or len(metadata) > 200:
+            raise ValueError('Invalid package metadata')
+        for entry in metadata:
+            if not isinstance(entry, dict) or not isinstance(entry.get('version'), str) or len(entry['version']) > 500:
+                raise ValueError('Invalid metadata version')
+            for field in ('changelog', 'homepage'):
+                links = entry.get(field, [])
+                if not isinstance(links, list) or len(links) > 10 or not all(isinstance(url, str) and len(url) <= 2048 for url in links):
+                    raise ValueError('Invalid metadata links')
     return packages
 
 
@@ -79,6 +90,7 @@ def differences(before, after, host):
             continue
         kind = 'Added' if not old else 'Removed' if not new else 'Rebuilt' if a == b else 'Version change'
         result.append({'package': name, 'hosts': [host], 'before': a, 'after': b, 'kind': kind,
+                       'metadata': (new if new else old).get('metadata', []),
                        'size_delta': new.get('bytes', 0) - old.get('bytes', 0)})
     return result
 
@@ -86,7 +98,7 @@ def differences(before, after, host):
 def combine(rows):
     result = {}
     for row in rows:
-        key = (row['package'], tuple(row['before']), tuple(row['after']), row['kind'], row['size_delta'])
+        key = (row['package'], tuple(row['before']), tuple(row['after']), row['kind'], row['size_delta'], json.dumps(row.get('metadata', []), sort_keys=True))
         if key in result:
             result[key]['hosts'].extend(row['hosts'])
         else:
@@ -98,10 +110,17 @@ def short_note(body):
     # A bounded upstream excerpt, not an invented/AI-generated release claim.
     for line in body.splitlines():
         line = re.sub(r'^\s*[-*+]\s*', '', line).strip()
-        if not re.match(r'(?i)(fix|add|improv|support|updat|secur|resolv|prevent|correct|chang|remov)', line):
-            continue
         line = re.sub(r'\[([^]]+)\]\([^)]*\)', r'\1', line)
         line = re.sub(r'<[^>]*>|https?://\S+', '', line)
+        line = line.replace('**', '').replace('`', '')
+        line = re.sub(r'^[0-9a-f]{7,40}\s+', '', line)
+        # Match change verbs, including scoped bullets, not words like "Additionally".
+        if not re.match(r'(?i)^(?:[\w./()-]+:\s*)?(?:fix(?:ed|es)?|add(?:ed|s)?|'
+                        r'improv(?:e|ed|es|ements?)|support(?:ed|s)?|updat(?:e|ed|es)|'
+                        r'security|resolv(?:e|ed|es)|prevent(?:ed|s)?|correct(?:ed|s)?|'
+                        r'chang(?:e|ed|es)|remov(?:e|ed|es|al))\b', line):
+            continue
+        line = re.sub(r'\s+by\s+@\S+.*$', '', line)
         line = re.sub(r'\s+', ' ', line).strip()
         return ' '.join(line.split()[:18])[:130]
     return None
@@ -113,6 +132,31 @@ class ReleaseNotes:
         self.deadline = time.monotonic() + 90
 
     def get(self, row):
+        note, url = self.upstream(row)
+        row['link_label'] = 'Upstream'
+        source = self.sources.get(row.get('package', ''), {})
+        generic = f"https://github.com/{source['repo']}/releases" if 'repo' in source else None
+        if url and url != generic:
+            return note, url
+        if not url and generic:
+            url = generic
+        # Metadata is data from the PR build, not a source of network requests.
+        versions = set(row['before'] if row['kind'] == 'Removed' else row.get('after', []))
+        if row['kind'] == 'Version change' and (changed := versions - set(row['before'])):
+            versions = changed
+        metadata = [item for item in row.get('metadata', []) if item['version'] in versions]
+        for field, label in [('changelog', 'Changelog'), ('homepage', 'Project homepage')]:
+            if field == 'homepage' and url:
+                return note, url  # A known releases page is preferable to a homepage.
+            links = {link for item in metadata for value in item.get(field, []) if (link := safe_url(value))}
+            if len(links) == 1:
+                row['link_label'] = label
+                if row['kind'] not in {'Removed', 'Rebuilt'}:
+                    note = 'Summary unavailable; link from Nixpkgs metadata.'
+                return note, links.pop()
+        return note, url
+
+    def upstream(self, row):
         if row['kind'] == 'Rebuilt':
             return 'Rebuilt; version unchanged. Packaging or dependency change.', None
         if row['kind'] == 'Removed':
@@ -163,7 +207,7 @@ def table(rows):
         hosts = 'Both' if set(row['hosts']) == set(HOSTS) else ', '.join(row['hosts'])
         note = cell(row['note'])
         if row.get('url'):
-            note += f" [Upstream]({row['url']})"
+            note += f" [{row.get('link_label', 'Upstream')}]({row['url']})"
         lines.append(f"| {cell(row['package'])} | {hosts} | {cell(old)} → {cell(new)} | {note} |")
     return '\n'.join(lines)
 
