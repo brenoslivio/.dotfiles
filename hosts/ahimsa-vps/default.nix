@@ -71,9 +71,9 @@ in {
   services.media-stack = {
     enable = true;
     components.lidarr = true;
-    # Enable after installing a private Finland P2P WireGuard profile here.
+    # Install the private Finland P2P WireGuard profile before deployment.
     vpn = {
-      enable = false;
+      enable = true;
       configFile = "/var/lib/private/proton-vpn/finland.conf";
       portForwarding = true;
     };
