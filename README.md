@@ -161,7 +161,7 @@ Normal edits follow the same path: branch, edit, commit, push a PR, then merge
 after CI. `dotfiles-check` runs the shared suite locally before pushing.
 
 Weekly PRs gain per-host package/version tables after CI, with linked upstream
-notes or an explicit fallback. Full comparisons are attached as artifacts;
+notes, Nixpkgs changelog/homepage links, or an explicit fallback. Full comparisons are attached as artifacts;
 the first successful main CI seeds the baseline.
 
 Weekly proposals run Friday at 15:23 UTC (12:23 São Paulo). Existing PRs and

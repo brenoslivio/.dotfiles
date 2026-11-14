@@ -7,6 +7,8 @@ import subprocess
 import sys
 import tempfile
 
+import package_metadata
+
 
 def command(*args):
     return subprocess.check_output(args, text=True).strip()
@@ -18,7 +20,12 @@ def collect(host, flake):
         attributes.append('homeConfigurations.brenoslivio.activationPackage')
     roots = [command('nix', 'eval', '--raw', '--no-update-lock-file', '--no-write-lock-file',
                      f'{flake}#{attribute}.outPath') for attribute in attributes]
-    return closure_packages(roots)
+    packages = closure_packages(roots)
+    try:
+        package_metadata.collect(packages, host, flake)
+    except (OSError, ValueError, subprocess.SubprocessError):
+        print('Optional Nixpkgs metadata unavailable; retaining the package/version inventory.', file=sys.stderr)
+    return packages
 
 
 def closure_packages(roots):
