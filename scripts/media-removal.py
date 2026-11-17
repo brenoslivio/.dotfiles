@@ -137,6 +137,26 @@ class Removal:
             raise self.Problem('Refusing removal of a shared download folder.')
         return str(value)
 
+    def download_removal_path(self, torrent, q):
+        if torrent.get('content_path'):
+            return self.safe_download_path(torrent['content_path'])
+        # Magnets waiting for metadata have no content path. Only remove their
+        # exact queue entry, never the shared save directory or guessed filenames.
+        root = Path(self.b.cfg['root'])/'downloads'
+        for value in (torrent.get('save_path'), torrent.get('download_path')):
+            if not value:
+                continue
+            path = Path(value)
+            if path != root:
+                self.safe_path(value, 'downloads')
+            if any(p.is_symlink() for p in (path, *path.parents)):
+                raise self.Problem('Refusing removal through a symbolic link.')
+        if (not torrent.get('save_path') or torrent.get('progress') != 0
+                or torrent.get('downloaded') != 0 or torrent.get('total_size', -1) > 0
+                or q.call('/torrents/files?'+urlencode({'hash':torrent['hash']}))):
+            raise self.Problem('Download files changed. Refresh Requests before removing it.')
+        return None
+
     def snapshot(self, kind, mid):
         detail = self.b.seerr().call(f'/{kind}/{mid}')
         field = 'tmdbId' if kind == 'movie' else 'tvdbId'
@@ -164,7 +184,8 @@ class Removal:
             if choice['context']['mediaType'] == kind and choice['context']['mediaId'] == mid:
                 hashes.add(str(choice['release'].get('infoHash', '')).lower())
                 hashes.add(str(choice.get('downloadId', '')).lower())
-        torrents = self.qbit().call('/torrents/info')
+        q = self.qbit()
+        torrents = q.call('/torrents/info')
         for torrent in torrents:
             hash_id = torrent['hash'].lower()
             if hash_id not in hashes or not re.fullmatch(r'[a-f0-9]{40}|[a-f0-9]{64}', hash_id):
@@ -178,7 +199,12 @@ class Removal:
                     raise self.Problem('A download is shared with another title. Remove it manually.')
             if torrent.get('category') != ('movies' if kind == 'movie' else 'tv'):
                 raise self.Problem('A linked torrent has an unexpected category. Check qBittorrent.')
-            path = Path(self.safe_download_path(torrent['content_path'])).resolve()
+            download_path = self.download_removal_path(torrent, q)
+            if download_path is None:
+                data.setdefault('pathlessHashes', []).append(hash_id)
+                data['hashes'].append(hash_id)
+                continue
+            path = Path(download_path).resolve()
             for other in torrents:
                 if other['hash'].lower() == hash_id or not other.get('content_path'):
                     continue
@@ -188,6 +214,8 @@ class Removal:
             data['paths'].append(str(torrent['content_path']))
             data['hashes'].append(hash_id)
         data['hashes'].sort(); data['paths'].sort()
+        if 'pathlessHashes' in data:
+            data['pathlessHashes'].sort()
         return data
 
     def preview(self, user, body):
@@ -231,14 +259,29 @@ class Removal:
         try:
             q = self.qbit()
             live = {t['hash'].lower(): t for t in q.call('/torrents/info')}
+            pathless = set(data.get('pathlessHashes', []))
             for hash_id in data['hashes']:
+                if hash_id in pathless:
+                    if hash_id in live and self.download_removal_path(live[hash_id], q) is not None:
+                        raise self.Problem('A magnet received files since confirmation. Close and preview removal again.')
+                    continue
                 if hash_id in live and live[hash_id]['content_path'] not in data['paths']:
                     raise self.Problem('A download moved since confirmation. Check qBittorrent before retrying.')
                 if hash_id in live:
                     self.safe_download_path(live[hash_id]['content_path'])
             if data['hashes']:
                 q.call('/torrents/stop', {'hashes': '|'.join(data['hashes'])}, form=True)
-                q.call('/torrents/delete', {'hashes': '|'.join(data['hashes']), 'deleteFiles': 'true'}, form=True)
+                # Recheck after stopping: metadata can arrive between preview and
+                # execution. A pathless entry must never authorize file deletion.
+                stopped = {t['hash'].lower(): t for t in q.call('/torrents/info')}
+                for hash_id in pathless:
+                    if hash_id in stopped and self.download_removal_path(stopped[hash_id], q) is not None:
+                        raise self.Problem('A magnet received files during removal. Review it in qBittorrent before retrying.')
+                files = [h for h in data['hashes'] if h not in pathless]
+                if files:
+                    q.call('/torrents/delete', {'hashes': '|'.join(files), 'deleteFiles': 'true'}, form=True)
+                if pathless:
+                    q.call('/torrents/delete', {'hashes': '|'.join(sorted(pathless)), 'deleteFiles': 'false'}, form=True)
                 for _ in range(20):
                     if not any(t['hash'].lower() in data['hashes'] for t in q.call('/torrents/info')) and not any(Path(p).exists() for p in data['paths']):
                         break

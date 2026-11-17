@@ -1,10 +1,6 @@
 name: Nix runner setup
-description: Prepare a hosted Nix runner and the optional signed binary cache
+description: Prepare a hosted Nix runner
 inputs:
-  cache-token:
-    description: Cachix write token, passed only for trusted main pushes
-    required: false
-    default: ''
   kvm:
     description: Require hardware virtualization for VM checks
     required: false
@@ -25,10 +21,6 @@ runs:
           test -c /dev/kvm
           sudo chmod a+rw /dev/kvm
         fi
-    - id: cache
-      name: Read public cache configuration
-      shell: bash
-      run: python3 scripts/cache-config.py
     - uses: cachix/install-nix-action@75c75c31ebece974e48ebc36b4ad125bd97bd97b # v31.11.3
       with:
         extra_nix_config: |
@@ -36,12 +28,3 @@ runs:
           max-jobs = 2
           cores = 2
           system-features = nixos-test benchmark big-parallel kvm
-          extra-substituters = ${{ steps.cache.outputs.url }}
-          extra-trusted-public-keys = ${{ steps.cache.outputs.key }}
-    - uses: cachix/cachix-action@38b082610b782e7e93e209c35fd730d399dee866 # v17
-      if: steps.cache.outputs.name != ''
-      with:
-        name: ${{ steps.cache.outputs.name }}
-        authToken: ${{ inputs.cache-token }}
-        skipPush: ${{ inputs.cache-token == '' }}
-        skipAddingSubstituter: true

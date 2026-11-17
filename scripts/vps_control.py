@@ -132,6 +132,14 @@ class Controller:
                         for source in [Path('/var/lib') / n for n in MEDIA_DIRS] + [Path('/etc/media-stack.json')]:
                             if source.exists():
                                 archive.add(source, arcname=str(source).lstrip('/'))
+                        config_path = Path('/etc/media-stack.json')
+                        if config_path.exists():
+                            music = Path(json.loads(config_path.read_text())['root']) / 'library/music'
+                            for source in music.rglob('*'):
+                                if source.is_symlink() or not source.is_file() or source.suffix.lower() not in ('.lrc', '.elrc', '.txt'):
+                                    continue
+                                if any(source.with_suffix(ext).is_file() for ext in ('.flac', '.mp3', '.m4a', '.ogg', '.opus', '.wav', '.aac')):
+                                    archive.add(source, arcname=str(source).lstrip('/'), recursive=False)
                 os.replace(partial, path)
             finally:
                 partial.unlink(missing_ok=True)

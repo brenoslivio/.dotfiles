@@ -5,6 +5,7 @@ import base64
 import configparser
 import hashlib
 import http.cookiejar
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -21,6 +22,36 @@ import urllib.request
 import xml.etree.ElementTree as ET
 
 GIB = 1024**3
+
+
+def release_description_url(release):
+    """Expose the indexer's public details page, never its authenticated download URL."""
+    for key in ('infoUrl', 'commentUrl'):
+        value = release.get(key)
+        if not isinstance(value, str) or not value or len(value) > 4096:
+            continue
+        if any(ord(c) < 32 or ord(c) == 127 for c in value) or '\\' in value:
+            continue
+        try:
+            url = urllib.parse.urlsplit(value)
+            host = (url.hostname or '').lower().rstrip('.')
+            if (url.scheme not in ('http', 'https') or not host or url.username is not None
+                    or url.password is not None or url.port not in (None, 80, 443)):
+                continue
+            try:
+                if not ipaddress.ip_address(host).is_global:
+                    continue
+            except ValueError:
+                if '.' not in host or host.endswith(('.localhost', '.local', '.internal')):
+                    continue
+            keys = {k.lower().replace('_', '').replace('-', '')
+                    for k, _ in urllib.parse.parse_qsl(url.query, keep_blank_values=True)}
+            if keys & {'apikey', 'key', 'token', 'accesstoken', 'auth', 'authorization', 'passkey', 'password', 'passwd', 'cookie'}:
+                continue
+        except ValueError:
+            continue
+        return value
+    return None
 
 
 class APIError(RuntimeError):
@@ -92,6 +123,8 @@ def prepare(cfg):
         if name == 'seerr':
             continue  # Seerr signs in with Jellyfin accounts, not a second password.
         initial = {'username': 'admin', 'password': secrets.token_urlsafe(24)}
+        if name == 'jellyfin':
+            initial['username'] = cfg.get('jellyfinAdmin', 'admin')
         if name in ('radarr', 'sonarr', 'prowlarr', 'bazarr', 'lidarr'):
             initial['apiKey'] = secrets.token_hex(16)
         credentials.setdefault(name, initial)
@@ -289,6 +322,35 @@ def indexers(api, selected, automatic_search=False):
             api.call(f'/indexer/{current["id"]}?forceSave=true', current, 'PUT')
 
 
+def indexer_proxy(cfg, api):
+    """Manage a tagged proxy without copying indexer credentials out of Prowlarr."""
+    settings = cfg.get('flaresolverr', {})
+    name, label = 'Media stack FlareSolverr', 'media-stack-flaresolverr'
+    existing = next((p for p in api.call('/indexerproxy') if p['name'] == name), None)
+    if not settings.get('enable'):
+        if existing:
+            api.call('/indexerproxy/'+str(existing['id']), method='DELETE')
+        return
+    tag = next((t for t in api.call('/tag') if t['label'] == label), None)
+    if tag is None:
+        tag = api.call('/tag', {'label': label})
+    schema = existing or next(p for p in api.call('/indexerproxy/schema') if p['implementation'] == 'FlareSolverr')
+    desired = fields(schema, {'host': f'http://127.0.0.1:{settings["port"]}/', 'requestTimeout': 120})
+    desired.update(name=name, tags=[tag['id']])
+    put_named(api, '/indexerproxy', desired)
+    for source in api.call('/indexer'):
+        definition = next((f.get('value') for f in source.get('fields', []) if f['name'] == 'definitionFile'), source['implementation'].lower())
+        tags = set(source.get('tags', []))
+        selected = definition in settings.get('indexers', ['rutracker'])
+        if (tag['id'] in tags) == selected:
+            continue
+        tags.discard(tag['id'])
+        if selected:
+            tags.add(tag['id'])
+        source['tags'] = sorted(tags)
+        api.call('/indexer/'+str(source['id'])+'?forceSave=true', source, 'PUT')
+
+
 def indexer_supports(source, target):
     category = {'radarr': 2000, 'sonarr': 5000, 'lidarr': 3000}[target]
     return any(category <= c['id'] < category+1000 for c in source['capabilities']['categories'])
@@ -363,6 +425,7 @@ def arrange(cfg, credentials, name):
             desired.update(name=f'Media stack {target}', syncLevel='fullSync')
             put_named(api, '/applications', desired)
         indexers(api, cfg.get('indexers', []), cfg.get('automaticSearch', False))
+        indexer_proxy(cfg, api)
         if cfg.get('manualReleaseSelection'):
             for profile in api.call('/appprofile'):
                 profile.update(enableRss=False, enableAutomaticSearch=False)
@@ -512,29 +575,52 @@ def rename_viewers(api, cfg, credentials):
     return users
 
 
+def jellyfin_admin_login(api, cfg, credentials):
+    creds = credentials['jellyfin']
+    desired = cfg.get('jellyfinAdmin', 'admin')
+    current = creds.get('username', 'admin')
+    try:
+        login = api.call('/Users/AuthenticateByName', {'Username': current, 'Pw': creds['password']})
+    except APIError as error:
+        if error.status != 401 or desired == current:
+            raise
+        # Recover if a previous rename succeeded before credentials were saved.
+        login = api.call('/Users/AuthenticateByName', {'Username': desired, 'Pw': creds['password']})
+    api.headers['Authorization'] = api.headers['Authorization'].split(', Token=')[0] + ', Token="' + login['AccessToken'] + '"'
+    user = api.call('/Users/Me')
+    if not user.get('Policy', {}).get('IsAdministrator'):
+        raise RuntimeError('Configured Jellyfin service login is not an administrator.')
+    if user['Name'] != desired:
+        if any(u['Name'].casefold() == desired.casefold() and u['Id'] != user['Id'] for u in api.call('/Users')):
+            raise RuntimeError('The desired administrator name belongs to another account; resolve it explicitly first.')
+        api.call('/Users/'+user['Id'], {**user, 'Name': desired}, 'POST')
+    creds['username'] = desired
+    write_json(Path(cfg['stateDir'])/'credentials.json', credentials)
+
+
 def jellyfin(cfg, credentials):
     remote_access = bool(cfg.get('jellyfinDomain'))
     api = API(cfg['ports']['jellyfin'], headers={'Authorization': 'MediaBrowser Client="Media stack", Device="localhost", DeviceId="media-stack", Version="1"'})
     # Jellyfin can return HTTP 200 with startup progress while migrations run.
     public = api.wait('/System/Info/Public', ready=lambda data: isinstance(data, dict) and 'StartupWizardCompleted' in data)
     creds = credentials['jellyfin']
+    admin_name = cfg.get('jellyfinAdmin', 'admin')
     if not public['StartupWizardCompleted']:
         first = api.call('/Startup/User')
-        if first.get('Name') not in (None, '', 'admin', 'jellyfin'):
+        if first.get('Name') not in (None, '', 'admin', 'jellyfin', admin_name):
             raise RuntimeError('An existing Jellyfin setup needs manual review; refusing to replace its administrator.')
         api.call('/Startup/Configuration', {'UICulture': 'en-US', 'MetadataCountryCode': 'US', 'PreferredMetadataLanguage': 'en'})
         try:
-            api.call('/Startup/User', {'Name': 'admin', 'Password': creds['password']})
+            api.call('/Startup/User', {'Name': admin_name, 'Password': creds['password']})
         except APIError as error:
             if error.status != 403:
                 raise
             # A previous attempt may have set the password before completing the wizard.
-            login = api.call('/Users/AuthenticateByName', {'Username': 'admin', 'Pw': creds['password']})
+            login = api.call('/Users/AuthenticateByName', {'Username': admin_name, 'Pw': creds['password']})
             api.headers['Authorization'] += ', Token="' + login['AccessToken'] + '"'
         api.call('/Startup/RemoteAccess', {'EnableRemoteAccess': remote_access, 'EnableAutomaticPortMapping': False})
         api.call('/Startup/Complete', {}, 'POST')
-    login = api.call('/Users/AuthenticateByName', {'Username': 'admin', 'Pw': creds['password']})
-    api.headers['Authorization'] = api.headers['Authorization'].split(', Token=')[0] + ', Token="' + login['AccessToken'] + '"'
+    jellyfin_admin_login(api, cfg, credentials)
     users = rename_viewers(api, cfg, credentials)
     for name in cfg['viewers']:
         if not any(x['Name'] == name for x in users):
@@ -544,7 +630,7 @@ def jellyfin(cfg, credentials):
             api.call('/Users/'+user['Id']+'/Policy', policy)
     # Reconcile migrated accounts too, preserving their other permissions.
     for user in users:
-        if user['Name'] in ['admin', *cfg['viewers']]:
+        if user['Name'] in [admin_name, *cfg['viewers']]:
             policy = dict(user['Policy'])
             if policy.get('EnableRemoteAccess') != remote_access:
                 policy['EnableRemoteAccess'] = remote_access
@@ -563,13 +649,38 @@ def jellyfin(cfg, credentials):
     triggers = [x for x in scan['Triggers'] if x['Type'] != 'IntervalTrigger']
     triggers.append({'Type': 'IntervalTrigger', 'IntervalTicks': cfg.get('libraryScanMinutes', 2)*60*10_000_000})
     api.call(f'/ScheduledTasks/{scan["Id"]}/Triggers', triggers, 'POST')
+    music_lyrics(cfg, api)
     return api
+
+
+def music_lyrics(cfg, api):
+    """Use Jellyfin's native downloader and UI; preserve existing lyric files."""
+    if 'lidarr' not in cfg['enabled'] or not cfg.get('musicLyrics', True):
+        return
+    endpoint = '/Plugins/d106ebe6-9ca8-4fbc-9cd1-a92a213da9f9/Configuration'
+    settings = api.call(endpoint)
+    settings.update(BaseUrl='https://lrclib.net', UseStrictSearch=True,
+                    ExcludeArtistName=False, ExcludeAlbumName=False,
+                    PreferSyncedLyrics=True, DisableRateLimit=False)
+    api.call(endpoint, settings, 'POST')
+    for library in api.call('/Library/VirtualFolders'):
+        if library.get('CollectionType') != 'music' or cfg['root']+'/library/music' not in library.get('Locations', []):
+            continue
+        options = library['LibraryOptions']
+        options['SaveLyricsWithMedia'] = True
+        options['DisabledLyricFetchers'] = [x for x in options.get('DisabledLyricFetchers', []) if x != 'LrcLib Lyrics']
+        options['LyricFetcherOrder'] = ['LrcLib Lyrics', *[x for x in options.get('LyricFetcherOrder', []) if x != 'LrcLib Lyrics']]
+        api.call('/Library/VirtualFolders/LibraryOptions', {'Id': library['ItemId'], 'LibraryOptions': options}, 'POST')
+    task = next(t for t in api.call('/ScheduledTasks') if t['Key'] == 'DownloadLyrics')
+    # A daily pass includes new imports without repeatedly retrying missing lyrics.
+    api.call(f'/ScheduledTasks/{task["Id"]}/Triggers',
+             [{'Type': 'DailyTrigger', 'TimeOfDayTicks': 5*3600*10_000_000}], 'POST')
 
 
 def seerr(cfg, credentials, profiles):
     api = API(cfg['ports']['seerr'], '/api/v1')
     public = api.wait('/settings/public')
-    body = {'username': 'admin', 'password': credentials['jellyfin']['password']}
+    body = {'username': credentials['jellyfin'].get('username', 'admin'), 'password': credentials['jellyfin']['password']}
     if not public['initialized']:
         # A retry may already have configured Jellyfin before initialization finished.
         path = Path('/var/lib/seerr/settings.json')
@@ -592,11 +703,11 @@ def seerr(cfg, credentials, profiles):
             'preventSearch': not cfg.get('automaticSearch', False)}
         put_named(api, endpoint, desired, include_id=False)
     api.call('/settings/initialize', {}, 'POST')
-    # Import viewers by signing in once; only the first test viewer gets auto-approval.
-    for index, name in enumerate(cfg['viewers']):
+    # Import viewers by signing in once; keep approval policy explicit when accounts change.
+    for name in cfg['viewers']:
         viewer = API(cfg['ports']['seerr'], '/api/v1')
         user = viewer.call('/auth/jellyfin', {'username': name, 'password': credentials['jellyfin']['viewers'][name], 'email': name+'@localhost.invalid'})
-        api.call(f'/user/{user["id"]}/settings/permissions', {'permissions': request_permissions | (128 if index == 0 else 0)}, 'POST')
+        api.call(f'/user/{user["id"]}/settings/permissions', {'permissions': request_permissions | (128 if name in cfg.get('autoApproveViewers', cfg['viewers'][:1]) else 0)}, 'POST')
     main['newPlexLogin'] = False
     api.call('/settings/main', main)
     if cfg.get('manualReleaseSelection'):
@@ -747,8 +858,17 @@ def setup(cfg):
     print('Media services connected. '+mode+' Completed downloads import automatically.')
 
 
+def lyric_files(root):
+    """Only lyric sidecars paired with music, excluding audio and unrelated text."""
+    for path in (Path(root)/'library/music').rglob('*'):
+        if path.is_symlink() or not path.is_file() or path.suffix.lower() not in ('.lrc', '.elrc', '.txt'):
+            continue
+        if any(path.with_suffix(ext).is_file() for ext in ('.flac', '.mp3', '.m4a', '.ogg', '.opus', '.wav', '.aac')):
+            yield path
+
+
 def backup(cfg):
-    """Quiesce databases; retain credentials and state, but never copy the media library."""
+    """Quiesce databases; retain state and lyrics, excluding audio/video files."""
     directory = Path('/var/backups/media-stack')
     directory.mkdir(mode=0o700, parents=True, exist_ok=True)
     destination = directory / (time.strftime('%Y%m%d-%H%M%S') + '-' + secrets.token_hex(3) + '.tar.gz')
@@ -771,6 +891,8 @@ def backup(cfg):
                 for path in [cfg['stateDir'], '/etc/media-stack.json', *[paths[n] for n in cfg['enabled']]]:
                     if Path(path).exists():
                         archive.add(path, arcname=path.lstrip('/'))
+                for path in lyric_files(cfg['root']):
+                    archive.add(path, arcname=str(path).lstrip('/'), recursive=False)
         os.replace(partial, destination)
         print(f'Private state backup: {destination} (media files excluded)')
     finally:

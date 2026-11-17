@@ -1,11 +1,6 @@
-{ config, inputs, lib, pkgs, primaryUser, primaryUserDescription, ... }:
+{ config, lib, pkgs, primaryUser, primaryUserDescription, ... }:
 
 let
-  # Temporary stable exception until Brave's restoration reaches unstable.
-  bravePackage = (import inputs.nixpkgs-stable {
-    system = pkgs.stdenv.hostPlatform.system;
-    config.allowUnfree = true;
-  }).brave;
   # Hollywood only plays a soundtrack. Its MPlayer's old DVD navigation
   # library conflicts with FFmpeg's newer one in this Nixpkgs revision.
   hollywoodPackage = pkgs.hollywood.override {
@@ -115,7 +110,7 @@ in
     file-roller
 
     # GUI software
-    bravePackage
+    brave
     qbittorrent
     firefox
     zoom-us
@@ -188,10 +183,10 @@ in
     source = pkgs.runCommand "brave-wayland.desktop" {
       nativeBuildInputs = [ pkgs.desktop-file-utils ];
     } ''
-      cp ${bravePackage}/share/applications/com.brave.Browser.desktop "$out"
+      cp ${pkgs.brave}/share/applications/com.brave.Browser.desktop "$out"
       chmod u+w "$out"
       substituteInPlace "$out" \
-        --replace-fail 'Exec=${bravePackage}/bin/brave' 'Exec=${bravePackage}/bin/brave --ozone-platform=wayland' \
+        --replace-fail 'Exec=${pkgs.brave}/bin/brave' 'Exec=${pkgs.brave}/bin/brave --ozone-platform=wayland' \
         --replace-fail 'NoDisplay=true' 'NoDisplay=false'
       desktop-file-validate "$out"
     '';

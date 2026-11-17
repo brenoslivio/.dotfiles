@@ -3,7 +3,7 @@
     'use strict';
     if (window.mediaMusicLoaded) return;
     window.mediaMusicLoaded = true;
-    const {api, element: el, dialog, playItem, every} = window.MediaPicker;
+    const {api, element: el, dialog, playItem, every, releaseDescription} = window.MediaPicker;
     const owner = () => window.ApiClient?.getCurrentUserId?.();
     const button = (label, action) => { const b = el('button', label); b.type = 'button'; b.onclick = action; return b; };
     const qualityNames = {'flac':'FLAC', 'mp3-320':'MP3 320 kbps', 'mp3-v0':'MP3 V0', 'any':'Any supported quality'};
@@ -73,13 +73,14 @@
                     for (const release of [...data.releases].sort((a,b)=>(b.seeders ?? -1)-(a.seeders ?? -1))) {
                         const row = el('div', undefined, 'mr-row'), info = el('div');
                         info.append(el('strong', release.title), el('div', `${release.quality} · ${(release.size/1024**2).toFixed(0)} MiB · ${release.seeders ?? '?'} seeders · ${release.indexer || 'Unknown indexer'}`));
+                        info.append(releaseDescription(release));
                         for (const warning of release.warnings || []) info.append(el('p',warning));
                         row.append(info);
                         if (release.rejections.length) { info.append(el('p', release.rejections.join(' '))); rejectedList.append(row); excluded++; }
-                        else { row.append(button('Download this release', () => { if (v.current()) confirmDownload(release, title); })); results.append(row); usable++; }
+                        else { row.append(button(release.warnings?.length ? 'Download despite warnings' : 'Download this release', () => { if (v.current()) confirmDownload(release, title); })); results.append(row); usable++; }
                     }
                     if (excluded) { rejected.append(el('summary', `Show ${excluded} rejected releases`), rejectedList); results.append(rejected); }
-                    v.status.textContent = usable ? 'Choose a release. Music downloads shows detected audio details after import.' : excluded ? 'Downloads were found, but none match this quality or pass the import checks. Try another quality or open the rejected releases below.' : 'This album is in the catalogue, but the music indexers returned no downloads. Try another album or check indexer availability in Lidarr.';
+                    v.status.textContent = usable ? 'Choose a release. You can confirm matching or quality warnings; your selected album guides import.' : excluded ? 'Downloads were found, but their torrent information is unsupported or incomplete.' : 'This album is in the catalogue, but the music indexers returned no downloads. Try another album or check indexer availability in Lidarr.';
                 } catch (error) { v.fail(error); } finally { search.disabled = false; quality.disabled = false; }
             });
             form.append(quality, search); v.panel.append(form, results);
@@ -93,7 +94,7 @@
         for (const warning of release.warnings || []) v.panel.append(el('p',warning));
         const confirm = button('Confirm download', async () => {
             confirm.disabled = true; v.status.textContent = 'Verifying and submitting your chosen release…';
-            try { const result = await v.call('music-select', {id:release.id}); v.status.textContent = result.message; document.dispatchEvent(new Event('media:music-changed')); }
+            try { const result = await v.call('music-select', {id:release.id, confirmWarnings: true}); v.status.textContent = result.message; document.dispatchEvent(new Event('media:music-changed')); }
             catch (error) { v.fail(error); } // An uncertain POST must never be retried automatically.
         }); v.actions.append(confirm);
     }
@@ -120,9 +121,15 @@
         const card = el('div', undefined, 'mr-row'), info = el('div'), actions = el('div');
         const current = () => owner() === user && card.isConnected;
         info.append(el('strong', `${row.artist} — ${row.title}`), el('p', `${row.quality} · ${row.message}`));
-        if (row.percent != null && row.percent < 100 && !row.itemId) {
+        if (row.percent != null && row.percent < 100 && !row.itemId && !row.downloadComplete) {
             const progress = el('progress'); progress.max = 100; progress.value = row.percent;
             progress.setAttribute('aria-label', 'Music download progress'); info.append(progress);
+            const speed = Number.isFinite(row.speed) && row.speed >= 0
+                ? row.speed >= 1024**2 ? `${(row.speed/1024**2).toFixed(1)} MiB/s` : `${Math.round(row.speed/1024)} KiB/s`
+                : 'Speed unavailable';
+            const details = `${Number(row.percent).toFixed(1)}% · ${speed}`;
+            progress.setAttribute('aria-valuetext', details);
+            info.append(el('div', details, 'mr-details'));
         }
         if (row.importedTracks) info.append(el('p', `${row.importedTracks} tracks imported`));
         if (showAudio && row.audio?.length) info.append(el('p', 'Imported audio: '+row.audio.join('; ')));
