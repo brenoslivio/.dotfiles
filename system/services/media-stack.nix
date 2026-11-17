@@ -369,9 +369,10 @@ in {
           '' else ''
             rm -f /var/lib/jellyfin/plugins/IntroSkipper/IntroSkipper.dll
           '') + (if lyricsEnabled then ''
-            install -Dm644 -o jellyfin -g jellyfin ${lyricsPlugin}/Jellyfin.Plugin.LrcLib.dll /var/lib/jellyfin/plugins/LrcLib/Jellyfin.Plugin.LrcLib.dll
+            # preStart already runs as jellyfin; chown is blocked by its sandbox.
+            install -Dm644 ${lyricsPlugin}/Jellyfin.Plugin.LrcLib.dll /var/lib/jellyfin/plugins/LrcLib/Jellyfin.Plugin.LrcLib.dll
             # Jellyfin updates plugin status in this file while loading it.
-            install -Dm644 -o jellyfin -g jellyfin ${lyricsPlugin}/meta.json /var/lib/jellyfin/plugins/LrcLib/meta.json
+            install -Dm644 ${lyricsPlugin}/meta.json /var/lib/jellyfin/plugins/LrcLib/meta.json
           '' else ''
             rm -f /var/lib/jellyfin/plugins/LrcLib/Jellyfin.Plugin.LrcLib.dll /var/lib/jellyfin/plugins/LrcLib/meta.json
           '') + (if cfg.manualReleaseSelection then ''
