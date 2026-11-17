@@ -367,7 +367,7 @@ class Personal:
         api = self.media.API(self.cfg['ports']['jellyfin'], headers={
             'Authorization': 'MediaBrowser Client="Personal discovery", Device="Server", DeviceId="personal-discovery", Version="1"'})
         creds = self.broker.creds()['jellyfin']
-        login = api.call('/Users/AuthenticateByName', {'Username': 'admin', 'Pw': creds['password']})
+        login = api.call('/Users/AuthenticateByName', {'Username': creds.get('username', 'admin'), 'Pw': creds['password']})
         api.headers['Authorization'] += ', Token="'+login['AccessToken']+'"'
         users = {uuid.UUID(u['Id']).hex: u for u in api.call('/Users') if not u.get('Policy', {}).get('IsDisabled')}
         offset = 0

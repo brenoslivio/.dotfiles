@@ -57,12 +57,19 @@ def fingerprint(row):
     return [row.get('guid'), row.get('indexerId'), row.get('title'), row.get('size'), row.get('infoHash')]
 
 
-def rejection(row, context):
-    reasons = list(row.get('rejections') or [])
-    if str(row.get('protocol')).lower() not in ('torrent', '2'):
+def release_blockers(row):
+    reasons = []
+    if str(row.get('protocol')).lower() not in ('torrent', 'torrentdownloadprotocol', '2'):
         reasons.append('Only torrents are supported.')
-    if not row.get('guid') or not row.get('indexerId') or not row.get('size'):
+    if (not row.get('guid') or not row.get('indexerId')
+            or not isinstance(row.get('size'), (int, float)) or row['size'] <= 0):
         reasons.append('Incomplete release information.')
+    return reasons
+
+
+def rejection(row, context):
+    """Matching/profile warnings may be explicitly overridden; transport checks may not."""
+    reasons = list(row.get('rejections') or [])
     if context['mediaType'] == 'tv':
         if row.get('seasonNumber') != context['season']:
             reasons.append('Wrong season.')
@@ -249,10 +256,11 @@ class Broker:
         api = self.media_jellyfin_admin()
         api.call('/Items/'+item_id+'/Refresh?Recursive=false&MetadataRefreshMode=Default&ImageRefreshMode=None&ReplaceAllMetadata=false&ReplaceAllImages=false', method='POST')
 
-    def media_jellyfin_admin(self):
+    def media_jellyfin_admin(self, device_id='subtitle-refresh'):
         api = media.API(self.cfg['ports']['jellyfin'], headers={
-            'Authorization': 'MediaBrowser Client="Subtitle refresh", Device="Server", DeviceId="subtitle-refresh", Version="1"'})
-        login = api.call('/Users/AuthenticateByName', {'Username': 'admin', 'Pw': self.creds()['jellyfin']['password']})
+            'Authorization': f'MediaBrowser Client="Media stack", Device="Server", DeviceId="{device_id}", Version="1"'})
+        creds = self.creds()['jellyfin']
+        login = api.call('/Users/AuthenticateByName', {'Username': creds.get('username', 'admin'), 'Pw': creds['password']})
         api.headers['Authorization'] += ', Token="'+login['AccessToken']+'"'
         return api
 
@@ -458,11 +466,12 @@ class Broker:
             self.save(token, user['id'], 'preview', data)
             result.append({'id': token, 'title': row.get('title'), 'size': row.get('size'),
                            'seeders': row.get('seeders'), 'indexer': row.get('indexer'),
+                           'descriptionUrl': media.release_description_url(row),
                            'quality': row.get('quality', {}).get('quality', {}).get('name'),
-                           'rejections': rejection(row, ctx)})
+                           'rejections': release_blockers(row), 'warnings': rejection(row, ctx)})
         return {'title': ctx['title'], 'profileId': ctx['profileId'], 'episodes': ctx.get('episodes', []), 'releases': result}
 
-    def select(self, user, token):
+    def select(self, user, token, confirm_warnings=False):
         created, state, data = self.get(token, user)
         if state != 'preview':
             return {'state': state, 'message': data.get('message', '')}
@@ -472,8 +481,11 @@ class Broker:
         if self.removal.blocked(ctx['mediaType'], ctx['mediaId']):
             raise Problem('An administrator is removing this title.')
         self.permitted(user, ctx['mediaType'])
-        if rejection(release, ctx):
-            raise Problem('This release does not meet the library rules.')
+        if release_blockers(release):
+            raise Problem(' '.join(release_blockers(release)))
+        if rejection(release, ctx) and confirm_warnings is not True:
+            raise Problem('Confirm the release warnings before downloading.')
+        data['confirmedWarnings'] = rejection(release, ctx)
         self.guard()
         if data.get('replaces'):
             data['replaceHash'] = self.activity.replacement(user, data['replaces'], data)
@@ -537,8 +549,10 @@ class Broker:
                 self.permitted(user, data['context']['mediaType'])
                 # Re-search only to verify the selected release, never to choose a replacement.
                 exact = next((r for r in self.releases(data['context']) if fingerprint(r) == fingerprint(data['release'])), None)
-                if not exact or rejection(exact, data['context']):
+                if (not exact or release_blockers(exact)
+                        or set(rejection(exact, data['context'])) - set(data.get('confirmedWarnings', []))):
                     raise Problem('The selected release disappeared or no longer meets the rules. Choose again.')
+                payload = self.grab_payload(exact, data['context'], bool(data.get('confirmedWarnings')))
                 if not media.space_ok(self.cfg):
                     raise Problem('Download budget or free-space reserve reached.')
                 # Durable at-most-once fence BEFORE the external side effect.
@@ -546,7 +560,7 @@ class Broker:
                 try:
                     if data.get('replaces'):
                         self.activity.stop_replaced(user, data)
-                    receipt = self.arr(data['context']['mediaType']).call('/release', {'guid': exact['guid'], 'indexerId': exact['indexerId']})
+                    receipt = self.arr(data['context']['mediaType']).call('/release', payload)
                     if isinstance(receipt, dict) and activity_module.torrent_hash(receipt.get('downloadId')):
                         data['downloadId'] = activity_module.torrent_hash(receipt['downloadId'])
                 except Exception:
@@ -570,6 +584,27 @@ class Broker:
                 # Read failures are safe to retry; no download submission has happened.
             except (OSError, RuntimeError, ValueError, KeyError, TypeError):
                 pass
+
+    def grab_payload(self, release, context, override):
+        payload = {'guid': release['guid'], 'indexerId': release['indexerId']}
+        if context['mediaType'] == 'movie':
+            payload['movieId'] = context['arrId']
+        else:
+            payload['seriesId'] = context['arrId']
+            if context.get('episodeId'):
+                payload['episodeId'] = context['episodeId']
+            if override:
+                episodes = self.arr('tv').call('/episode?'+urlencode({'seriesId': context['arrId']}))
+                ids = [e['id'] for e in episodes if e['seriesId'] == context['arrId']
+                       and e['seasonNumber'] == context['season']
+                       and (context.get('episode') is None or e['episodeNumber'] == context['episode'])]
+                if not ids:
+                    raise Problem('Episode metadata changed. Search again.')
+                payload['episodeIds'] = ids
+        if override:
+            payload.update(shouldOverride=True, quality=release.get('quality') or {'quality': {'id': 0}},
+                           languages=release.get('languages') or [])
+        return payload
 
     def cancel(self, user, token):
         # Cancelling local intent never removes somebody else's request or queued download.
@@ -707,7 +742,7 @@ def serve(cfg):
                         elif self.path == '/subtitle-status':
                             result = broker.subtitle_status(user, self.headers, token)
                         else:
-                            result = broker.select(user, token) if self.path == '/select' else broker.cancel(user, token)
+                            result = broker.select(user, token, body.get('confirmWarnings') is True) if self.path == '/select' else broker.cancel(user, token)
                 else:
                     raise Problem('Not found.', 404)
                 return result
@@ -725,6 +760,10 @@ def serve(cfg):
                 except Exception:
                     # A temporary music service outage must not stop the worker.
                     print('Music import check unavailable; retrying on the next pass.', flush=True)
+                try:
+                    broker.music.sync_original_dates()
+                except Exception:
+                    print('Music date sync unavailable; retrying on the next scheduled pass.', flush=True)
     threading.Thread(target=pending, daemon=True).start()
     ThreadingHTTPServer(('127.0.0.1', cfg['releasePort']), Handler).serve_forever()
 

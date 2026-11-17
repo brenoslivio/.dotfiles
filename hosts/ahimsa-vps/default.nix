@@ -86,9 +86,12 @@ in {
     cpuQuota = "180%";
     maxSizeMBPerMinute = null;
     allowAllQualities = true;
-    viewers = [ "breno" "bianca" ];
-    viewerRenames = { brenoslivio = "breno"; partner = "bianca"; };
-    indexers = [ "yts" "knaben" "torrentdownloads" "torrentdownload" ];
+    jellyfinAdmin = "breno";
+    viewers = [ "bianca" ];
+    autoApproveViewers = [];
+    viewerRenames = { partner = "bianca"; };
+    indexers = [ "yts" "knaben" "torrentdownload" ];
+    flaresolverr.enable = true;
     automaticSearch = false;
     manualReleaseSelection = true;
     jellyfinEnhanced = true;

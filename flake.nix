@@ -3,9 +3,6 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    # Temporary Brave exception: its restoration is on release-26.05 but
-    # has not reached the nixos-unstable channel yet (NixOS/nixpkgs#584534).
-    nixpkgs-stable.url = "github:nixos/nixpkgs/release-26.05";
     
     home-manager = {
       url = "github:nix-community/home-manager/master";
@@ -47,7 +44,7 @@
       # Production and VM tests share these modules; only hardware differs.
       sharedModules = hostName:
         let metadata = hostMetadata hostName;
-        in [ ./system/common.nix ./system/cache.nix ] ++ (if isServer hostName then [
+        in [ ./system/common.nix ] ++ (if isServer hostName then [
           ./system/server.nix
           { system.configurationRevision = self.rev or null; }
         ] else [

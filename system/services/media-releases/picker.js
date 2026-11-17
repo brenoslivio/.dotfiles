@@ -31,6 +31,7 @@
       .mr-dialog button:disabled{opacity:.45;cursor:default}.mr-dialog button:focus-visible,.mr-dialog select:focus-visible{outline:3px solid #82cfff}
       .mr-row{border-top:1px solid #414957;padding:14px 0;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
       .mr-title{overflow-wrap:anywhere;font-weight:600}.mr-details{margin:6px 0;color:#aebcd2;font-size:14px}.mr-rejected{color:#ffc0a7;font-size:14px}
+      .mr-description{display:inline-flex;align-items:center;min-height:44px;font-size:14px;color:#aebcd2}a.mr-description{color:#82cfff;text-decoration:underline}a.mr-description:focus-visible{outline:2px solid #82cfff;outline-offset:3px}
       .mr-status{white-space:pre-wrap}.mr-launcher{position:fixed;bottom:18px;right:18px;z-index:10010;border:1px solid #62718a;border-radius:20px;background:#202c40;color:white;padding:10px 16px;cursor:pointer}
       .mr-launcher[hidden]{display:none}
       #randomItemButtonContainer,#randomItemButton{display:none!important}
@@ -55,6 +56,19 @@
         if (text !== undefined) node.textContent = text;
         if (className) node.className = className;
         return node;
+    }
+    function releaseDescription(release) {
+        try {
+            const url = new URL(release.descriptionUrl);
+            if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) throw new Error('Invalid page');
+            const link = element('a', 'View description ↗', 'mr-description');
+            link.href = url.href; link.target = '_blank'; link.rel = 'noopener noreferrer'; link.referrerPolicy = 'no-referrer';
+            link.setAttribute('aria-label', `View description for ${release.title || 'this release'} (opens a new tab)`);
+            link.addEventListener('click', event => event.stopPropagation());
+            return link;
+        } catch {
+            return element('span', 'Description unavailable', 'mr-description');
+        }
     }
     const controlsMenu = element('div', undefined, 'mr-menu'); controlsMenu.hidden = true;
     controlsMenu.id = 'media-controls-menu'; controlsMenu.setAttribute('aria-label', 'Media controls');
@@ -375,8 +389,11 @@
                         const info = element('div');
                         info.append(element('div', release.title, 'mr-title'));
                         info.append(element('div', `${release.quality || 'Unknown quality'} · ${(release.size/1024**3).toFixed(2)} GiB · ${release.seeders ?? '?'} seeders · ${release.indexer || 'Unknown indexer'}`, 'mr-details'));
+                        info.append(releaseDescription(release));
                         if (release.rejections.length) info.append(element('div', release.rejections.join(' · '), 'mr-rejected'));
-                        const select = element('button', 'Select this release'); select.disabled = !!release.rejections.length;
+                        const warnings = release.warnings || [];
+                        if (warnings.length) info.append(element('div', warnings.join(' · '), 'mr-rejected'));
+                        const select = element('button', warnings.length ? 'Download despite warnings' : 'Select this release'); select.disabled = !!release.rejections.length;
                         select.onclick = async () => {
                             if (submitting || version !== generation || !current()) return;
                             submitting = true;
@@ -384,16 +401,21 @@
                             view.actions.firstChild.disabled = false; // Keep Close available.
                             status.textContent = `${label} ${body.replacementOf ? 'Confirm the replacement to continue.' : 'Saving your selection… Existing downloads will not be cancelled.'}`;
                             try {
+                                if (warnings.length && !await confirmWarnings(release, `${response.title} ${label}`)) {
+                                    submitting = false;
+                                    for (const control of view.panel.querySelectorAll('button,select')) control.disabled = false;
+                                    renderReleases(); return;
+                                }
                                 if (body.replacementOf && !await confirmReplacement(release.title)) {
                                     submitting = false;
                                     for (const control of view.panel.querySelectorAll('button,select')) control.disabled = false;
                                     renderReleases(); return;
                                 }
                                 if (!current()) throw new Error('Account changed. Reopen release selection.');
-                                const response = await api('select', { id: release.id });
-                                settled = true; status.textContent = `${label} ${response.message || response.state}`;
+                                const selected = await api('select', { id: release.id, confirmWarnings: warnings.length > 0 });
+                                settled = true; status.textContent = `${label} ${selected.message || selected.state}`;
                                 window.JellyfinEnhanced?.toast(status.textContent, 5000);
-                                resolve(response);
+                                resolve(selected);
                             } catch (error) { status.textContent = error.message+' Open Download status to check its status.'; }
                         };
                         row.append(info, select); results.append(row);
@@ -407,6 +429,18 @@
                 fullSeason.hidden = true; backToEpisodes.hidden = true;
                 search.hidden = false; search.click();
             } else if (tv) loadEpisodes(); else search.click();
+        });
+    }
+
+    function confirmWarnings(release, title) {
+        return new Promise(resolve => {
+            let accepted = false;
+            const view = dialog('Download despite warnings?', () => resolve(accepted));
+            view.panel.append(element('p', `Selected: ${title}`), element('p', release.title));
+            for (const warning of release.warnings || []) view.panel.append(element('p', warning, 'mr-rejected'));
+            view.panel.append(element('p', 'Confirm this release is the title and edition you want. Incorrectly labelled files may need manual import.'));
+            const confirm = element('button', 'Confirm download'); view.actions.append(confirm);
+            confirm.onclick = () => { accepted = true; view.finish(); };
         });
     }
 
@@ -833,7 +867,7 @@
 
     // Intercept the API module's assignment synchronously: search components capture
     // requestMedia when they initialize, so polling after initialization is too late.
-    window.MediaPicker = { api, element, dialog, choose, history, playItem, every };
+    window.MediaPicker = { api, element, dialog, choose, history, playItem, every, releaseDescription };
     const je = window.JellyfinEnhanced;
     const removeRandomButton = () => document.querySelectorAll('#randomItemButtonContainer,#randomItemButton').forEach(node => node.remove());
     Object.defineProperty(je, 'addRandomButton', {configurable: true,

@@ -1,5 +1,6 @@
 """Album discovery and explicit, user-bound Lidarr release selection."""
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 import secrets
@@ -14,6 +15,7 @@ class Music:
         self.b, self.media, self.Problem, self.restricted = broker, media, problem, restricted
         self.torrent_hash = torrent_hash
         self.db = broker.db
+        self.next_date_sync = 0
         for table in ('music_choices', 'music_removals'):
             self.db.execute(f'CREATE TABLE IF NOT EXISTS {table} (id TEXT PRIMARY KEY, owner INTEGER, created REAL, state TEXT, data TEXT)')
         self.db.execute("UPDATE music_choices SET state='uncertain' WHERE state='submitting'")
@@ -172,16 +174,59 @@ class Music:
         return ((row.get('quality') or {}).get('quality') or {}).get('name', 'Unknown')
 
     @staticmethod
+    def title_contains(title, phrase):
+        def words(value):
+            return ' '.join(re.findall(r'[^\W_]+', (value or '').casefold()))
+        needle = words(phrase)
+        return bool(needle) and f' {needle} ' in f' {words(title)} '
+
+    def release_rows(self, api, album):
+        rows = api.call('/release?'+urlencode({'albumId':album['id']}))
+        if rows:
+            return rows
+        year = (album.get('releaseDate') or '')[:4]
+        if not re.fullmatch(r'[12][0-9]{3}', year):
+            return []  # Do not broaden an undated album into unrelated editions.
+        # Lidarr appends MusicBrainz disambiguation (e.g. "1976 concept cast")
+        # to album queries. Artist searches keep Lidarr's release cache and grab
+        # handling while avoiding those overly restrictive extra search terms.
+        rows = api.call('/release?'+urlencode({'artistId':album['artistId']}))
+        artist = album.get('artist') or api.call('/artist/'+str(album['artistId']))
+        matches = []
+        for row in rows:
+            if (not self.title_contains(row.get('title'), album['title'])
+                    or not self.title_contains(row.get('title'), year)):
+                continue
+            row = dict(row, _artistSearchFallback=True)
+            row['_manualAlbumMatch'] = (
+                self.title_contains(row.get('title'), artist['artistName'])
+                and row.get('albumId') in (None, album['id'])
+                and row.get('artistId') in (None, album['artistId']))
+            matches.append(row)
+        return matches
+
+    @staticmethod
+    def manual_album_rejections(row):
+        if row.get('_artistSearchFallback') and not row.get('_manualAlbumMatch'):
+            return set()
+        allowed = {'Unable to parse albums from release name'}
+        if row.get('_artistSearchFallback') and row.get('_manualAlbumMatch'):
+            allowed.update({'Unknown Artist', "Album wasn't requested"})
+        return allowed.intersection(row.get('rejections') or [])
+
+    @staticmethod
     def manual_album_warning(row):
-        if 'Unable to parse albums from release name' not in (row.get('rejections') or []):
+        if not Music.manual_album_rejections(row):
             return None
+        if row.get('_artistSearchFallback'):
+            return 'Lidarr could not match this release to the selected album. Confirm the artist and edition; your selection will be used for automatic import.'
         return 'Lidarr could not parse the release name. Confirm this is the selected album; your selection will be used for automatic import.'
 
-    def reasons(self, row, album, quality):
+    def warnings(self, row, album, quality):
         reasons = list(row.get('rejections') or [])
         warning = self.manual_album_warning(row)
         if warning:
-            reasons = [r for r in reasons if r != 'Unable to parse albums from release name']
+            reasons = [r for r in reasons if r not in self.manual_album_rejections(row)]
         name = self.quality(row).lower()
         if quality == 'flac' and not name.startswith('flac'):
             reasons.append('Choose a FLAC release.')
@@ -191,14 +236,19 @@ class Music:
             reasons.append('Choose MP3 V0.')
         if row.get('discography'):
             reasons.append('Choose a single album, not a discography.')
-        if str(row.get('protocol')).lower() not in ('torrent', 'torrentdownloadprotocol', '2'):
-            reasons.append('Only torrents are supported.')
         if row.get('albumId') not in (None, album['id']) or row.get('artistId') not in (None, album['artistId']):
             reasons.append('This release belongs to another album or artist.')
-        if not row.get('guid') or not row.get('indexerId') or not row.get('size'):
-            reasons.append('Incomplete release information.')
         if row.get('rejected') and not reasons and not warning:
             reasons.append('Lidarr rejected this release.')
+        return reasons
+
+    def reasons(self, row, album, quality):
+        reasons = []
+        if str(row.get('protocol')).lower() not in ('torrent', 'torrentdownloadprotocol', '2'):
+            reasons.append('Only torrents are supported.')
+        if (not row.get('guid') or not row.get('indexerId')
+                or not isinstance(row.get('size'), (int, float)) or row['size'] <= 0):
+            reasons.append('Incomplete release information.')
         return reasons
 
     def save(self, table, token, owner, state, data, created=None):
@@ -213,16 +263,22 @@ class Music:
         api = self.api(); sources = [i for i in api.call('/indexer') if i.get('enableInteractiveSearch')]
         if not sources:
             raise self.Problem('No music indexers are available. Enable a music-capable source in Prowlarr.')
-        rows = api.call('/release?'+urlencode({'albumId':album['id']})); result = []
+        rows = self.release_rows(api, album); result = []
         self.db.execute("DELETE FROM music_choices WHERE state='preview' AND created < ?", (time.time()-900,))
         for row in rows[:100]:
             token = secrets.token_urlsafe(24); reasons = self.reasons(row, album, quality)
             if not reasons:
                 self.save('music_choices', token, user['id'], 'preview', {'albumId':album['id'], 'mbid':album['foreignAlbumId'],
                     'title':album['title'], 'artist':album['artist']['artistName'], 'quality':quality, 'release':row})
+            warnings = self.warnings(row, album, quality)
+            if warning := self.manual_album_warning(row):
+                warnings.append(warning)
+            if row.get('_artistSearchFallback'):
+                warnings.append('Broader artist search, filtered by album title and year. Check the edition before selecting.')
             result.append({'id':token, 'title':row['title'], 'quality':self.quality(row), 'size':row['size'],
                            'seeders':row.get('seeders'), 'indexer':row.get('indexer'), 'rejections':reasons,
-                           'warnings':[warning] if (warning := self.manual_album_warning(row)) else []})
+                           'descriptionUrl':self.media.release_description_url(row),
+                           'warnings':warnings})
         self.db.commit()
         return {'title':album['title'], 'releases':result}
 
@@ -248,12 +304,15 @@ class Music:
         for other, raw in self.db.execute("SELECT id,data FROM music_choices WHERE state IN ('submitted','submitting','uncertain')"):
             if other != token and json.loads(raw)['albumId'] == album['id']:
                 raise self.Problem('This album already has a selection. Check its download or ask an administrator to remove it first.')
-        rows = api.call('/release?'+urlencode({'albumId':album['id']}))
+        rows = self.release_rows(api, album)
         fields = ('guid', 'indexerId', 'title', 'size', 'infoHash', 'quality')
         release = next((r for r in rows if all(r.get(k) == data['release'].get(k) for k in fields)), None)
         if (not release or self.reasons(release, album, data['quality'])
+                or set(self.warnings(release, album, data['quality'])) - set(self.warnings(data['release'], album, data['quality']))
                 or self.manual_album_warning(release) != self.manual_album_warning(data['release'])):
             raise self.Problem('Release availability or quality changed. Search again.')
+        if (self.warnings(release, album, data['quality']) or self.manual_album_warning(release)) and body.get('confirmWarnings') is not True:
+            raise self.Problem('Confirm the release warnings before downloading.')
         if not self.media.space_ok(self.b.cfg):
             raise self.Problem('The media disk budget or free-space reserve is exhausted.')
         required = 2 * release['size']  # Download plus a separately tagged library copy.
@@ -300,6 +359,72 @@ class Music:
             if len(matches) == 1:
                 data['downloadId'] = matches.pop()
                 self.save('music_choices', token, owner, 'submitted', data, created)
+
+    def sync_original_dates(self):
+        """Use the release group's date in Jellyfin, preserving edition/file tags."""
+        if 'lidarr' not in self.b.cfg['enabled'] or time.monotonic() < self.next_date_sync:
+            return 0
+        # Independent of download state: also repair older imports and rescans.
+        self.next_date_sync = time.monotonic()+300
+        api = self.api(); api.timeout = 15
+        dates = {}
+        for album in api.call('/album'):
+            try:
+                mid = self.identifier(album.get('foreignAlbumId'))
+                value = (album.get('releaseDate') or '')[:10]
+                if not re.fullmatch(r'[12][0-9]{3}-[0-9]{2}-[0-9]{2}', value):
+                    continue
+                datetime.strptime(value, '%Y-%m-%d')
+            except (ValueError, TypeError, self.Problem):
+                continue
+            # Never choose arbitrarily between conflicting catalogue entries.
+            dates[mid] = value if mid not in dates or dates[mid] == value else None
+        if not dates:
+            return 0
+
+        def original(item):
+            if item.get('Type') not in ('Audio', 'MusicAlbum'):
+                return None
+            try:
+                self.safe_path(item.get('Path'))
+                mid = self.identifier((item.get('ProviderIds') or {}).get('MusicBrainzReleaseGroup'))
+            except self.Problem:
+                return None
+            return dates.get(mid)
+
+        def differs(item, value):
+            return value and (item.get('ProductionYear') != int(value[:4])
+                              or (item.get('PremiereDate') or '')[:10] != value)
+
+        jelly = self.b.media_jellyfin_admin(device_id='music-original-dates')
+        changed = start = 0
+        try:
+            user_id = jelly.call('/Users/Me')['Id']
+            while True:
+                page = jelly.call('/Items?'+urlencode({'Recursive':'true', 'IncludeItemTypes':'MusicAlbum,Audio',
+                    'Fields':'Path,ProviderIds', 'SortBy':'SortName', 'SortOrder':'Ascending',
+                    'StartIndex':start, 'Limit':200}))
+                items = page['Items']
+                for item in items:
+                    if not differs(item, original(item)):
+                        continue
+                    # The update endpoint replaces metadata. Fetch the complete
+                    # DTO first, and revalidate identity before changing two fields.
+                    full = jelly.call('/Users/'+user_id+'/Items/'+item['Id'])
+                    value = original(full)
+                    if (not differs(full, value) or full.get('LockData')
+                            or {'PremiereDate', 'ProductionYear'} & set(full.get('LockedFields') or [])):
+                        continue
+                    full.update(PremiereDate=value+'T00:00:00Z', ProductionYear=int(value[:4]))
+                    jelly.call('/Items/'+item['Id'], full, 'POST')
+                    changed += 1
+                    if changed >= 100:
+                        return changed  # Bound work while holding the broker lock.
+                start += len(items)
+                if not items or start >= page['TotalRecordCount']:
+                    return changed
+        finally:
+            jelly.call('/Sessions/Logout', method='POST')
 
     def process(self):
         """Finish confirmed music downloads without depending on release-name parsing."""
@@ -514,6 +639,7 @@ class Music:
                 message = 'Ready to listen.'
             rows.append({'id':token, 'albumId':data['mbid'], 'title':data['title'], 'artist':data['artist'], 'state':state,
                          'message':message, 'percent':percent, 'importedTracks':count, 'itemId':item,
+                         'speed':transfer.get('dlspeed') if transfer and percent is not None else None,
                          'downloadComplete':bool(item or data.get('import', {}).get('phase') == 'done'
                                                  or (transfer and transfer.get('progress', 0) >= 1)),
                          'canChooseAlternative':bool(admin and state == 'submitted' and not count and transfer

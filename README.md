@@ -5,9 +5,8 @@ reinstalls and fresh devices using their own detected hardware.
 
 Both hosts share the pinned `nixos-unstable` input; only the desktop uses Home
 Manager `master`. All inputs are pinned in `flake.lock`.
-Desktop state versions remain `24.11`; the VPS retains `26.05`. Brave temporarily uses `release-26.05` and
-its dependencies; remove that extra input once Brave is available in the locked
-unstable revision.
+Desktop state versions remain `24.11`; the VPS retains `26.05`.
+Both hosts use `pkgs.linuxPackages_latest`; kernel updates require a reboot.
 
 ## Hosts
 
@@ -42,21 +41,29 @@ agent is removed when the command exits.
 
 After main CI passes, GitHub automatically deploys the exact tested VPS revision
 over SSH, checks services and HTTPS, and confirms it without rebooting. Builds
-run in parallel and share the optional cache in `config/cache.json`.
+run in parallel.
 Failures retain recovery backups; software rollback does not restore databases.
 `VPS_SSH_KEY` is the dedicated Actions secret; server identity is pinned in
 `config/vps-known-hosts`. Never reuse that key for backup decryption.
 
-Deployment artifacts retain encrypted state backups for 30 days (media excluded).
+Deployment artifacts retain encrypted state/lyrics backups for 30 days (audio/video excluded).
 Keep your original administrator SSH private key. Use `nix shell --inputs-from . nixpkgs#age`,
-then `age -d -i <private-key> -o backup.tar.gz <backup.tar.gz.age>`. Viewer logins are
-`breno` and `bianca`; existing passwords and watch history are preserved.
+then `age -d -i <private-key> -o backup.tar.gz <backup.tar.gz.age>`.
+Jellyfin logins: `breno` (administrator, previous admin password) and `bianca` (viewer).
 
 The VPS uses Proton VPN for qBittorrent. **Before deployment**, install a root-only
 **Finland P2P WireGuard** profile with NAT-PMP enabled (paid Proton plan) at
 `/var/lib/private/proton-vpn/finland.conf`. Never commit the profile. qBittorrent's
 API stays on localhost; tunnel failure blocks torrent traffic.
 Check `systemctl status media-vpn` and `journalctl -u media-vpn-forward` on the VPS.
+
+RuTracker uses local FlareSolverr. Add its credentials in Prowlarr, select
+the `media-stack-flaresolverr` tag and `Media stack requests` sync profile, then Test/Save.
+
+Jellyfin/Finamp use original album dates; imported music dates reconcile every five minutes.
+LRCLIB fetches missing lyrics daily at 05:00 server time, preferring synced lyrics.
+Admins can search/upload replacements through Jellyfin's lyrics controls.
+Release matching/quality warnings can be overridden with an explicit download confirmation.
 
 Rootless Podman, including the `docker` compatibility command, defaults to
 `userns = "keep-id"` in `~/.config/containers/containers.conf`. This preserves

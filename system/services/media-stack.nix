@@ -4,11 +4,16 @@ let
   cfg = config.services.media-stack;
   names = [ "jellyfin" "seerr" "radarr" "sonarr" "prowlarr" "qbittorrent" "bazarr" "lidarr" ];
   enabled = builtins.filter (name: cfg.components.${name}) names;
+  lyricsEnabled = cfg.components.lidarr && cfg.musicLyrics;
   settings = pkgs.writeText "media-stack.json" (builtins.toJSON {
     inherit (cfg) root ports budgetGiB minFreeGiB downloadKiB uploadKiB viewers indexers automaticSearch libraryScanMinutes jellyfinEnhanced subtitleLanguages manualReleaseSelection releasePort jellyfinLanInterfaces jellyfinDomain personalHome recommendationCount recommendationSeedLimit recommendationRefreshHours;
     inherit enabled;
     inherit (cfg) viewerRenames;
+    inherit (cfg) jellyfinAdmin;
+    inherit (cfg) autoApproveViewers;
     inherit (cfg) maxSizeMBPerMinute allowAllQualities playbackPolish;
+    inherit (cfg) flaresolverr;
+    inherit (cfg) musicLyrics;
     vpnInterface = if cfg.vpn.enable then "proton0" else "";
     stateDir = "/var/lib/media-stack";
   });
@@ -66,6 +71,7 @@ let
     mkdir -p "$out"
     unzip "$src" -d "$out"
   '';
+  lyricsPlugin = import ./lyrics-package.nix { inherit pkgs; };
   # Seed definitions so initial setup also works without Prowlarr's definition server.
   definitions = lib.mapAttrs (name: hash: pkgs.fetchurl {
     url = "https://raw.githubusercontent.com/Prowlarr/Indexers/d45f173d8b91c7965b70447c2eb5812483dfd730/definitions/v11/${name}.yml";
@@ -107,6 +113,13 @@ in {
       jellyfin = 8096; seerr = 5055; radarr = 7878; sonarr = 8989; prowlarr = 9696; qbittorrent = 8080; bazarr = 6767; lidarr = 8686;
     };
     viewers = mkOption { type = types.listOf types.str; default = [ "viewer" "partner" ]; };
+    jellyfinAdmin = mkOption { type = types.str; default = "admin"; description = "Jellyfin administrator login name."; };
+    autoApproveViewers = mkOption { type = types.listOf types.str; default = lib.take 1 cfg.viewers; description = "Viewers whose requests are automatically approved."; };
+    musicLyrics = mkOption {
+      type = types.bool;
+      default = true;
+      description = "Fetch missing music lyrics daily with LRCLIB and save them beside library tracks.";
+    };
     viewerRenames = mkOption {
       type = types.attrsOf types.str;
       default = {};
@@ -116,6 +129,15 @@ in {
       type = types.listOf (types.enum [ "internetarchive" "1337x" "nyaasi" "yts" "knaben" "torrentdownloads" "torrentdownload" ]);
       default = [];
       description = "Managed Prowlarr sources. Removed sources are disabled; other sources are untouched.";
+    };
+    flaresolverr = {
+      enable = mkEnableOption "local browser challenges for selected Prowlarr indexers";
+      port = mkOption { type = types.port; default = 8191; };
+      indexers = mkOption {
+        type = types.listOf types.str;
+        default = [ "rutracker" ];
+        description = "Prowlarr implementation or definition IDs to tag for FlareSolverr; credentials stay in Prowlarr.";
+      };
     };
     automaticSearch = mkEnableOption "automatic searches and RSS monitoring for requested/monitored media";
     manualReleaseSelection = mkEnableOption "explicit release selection and approval before every download";
@@ -179,15 +201,21 @@ in {
         message = "media-stack.root must be a simple absolute path beneath /srv."; }
       { assertion = builtins.length (lib.unique (map (n: cfg.ports.${n}) enabled)) == builtins.length enabled;
         message = "Media stack web ports must be distinct."; }
-      { assertion = builtins.all (n: builtins.match "[a-z][a-z0-9_-]*" n != null && n != "admin") cfg.viewers && builtins.length (lib.unique cfg.viewers) == builtins.length cfg.viewers;
+      { assertion = builtins.match "[a-z][a-z0-9_-]*" cfg.jellyfinAdmin != null
+          && builtins.all (n: builtins.match "[a-z][a-z0-9_-]*" n != null && n != cfg.jellyfinAdmin && n != "admin") cfg.viewers && builtins.length (lib.unique cfg.viewers) == builtins.length cfg.viewers;
         message = "Media viewer names must be unique lowercase names, excluding admin."; }
-      { assertion = lib.all (old: old != "admin" && !(builtins.elem old cfg.viewers)) (builtins.attrNames cfg.viewerRenames)
+      { assertion = builtins.all (n: builtins.elem n cfg.viewers) cfg.autoApproveViewers;
+        message = "Auto-approved viewers must be configured viewers."; }
+      { assertion = lib.all (old: old != "admin" && old != cfg.jellyfinAdmin && !(builtins.elem old cfg.viewers)) (builtins.attrNames cfg.viewerRenames)
           && lib.all (new: builtins.elem new cfg.viewers) (builtins.attrValues cfg.viewerRenames)
           && lib.unique (builtins.attrValues cfg.viewerRenames) == builtins.attrValues cfg.viewerRenames;
         message = "Viewer renames must map old non-admin names to distinct configured viewers."; }
       { assertion = cfg.cacheMiB >= 3072; message = "Jellyfin needs more than 2 GiB available in its cache at startup."; }
       { assertion = builtins.length (lib.unique cfg.indexers) == builtins.length cfg.indexers;
         message = "Media stack indexers must be unique."; }
+      { assertion = !cfg.flaresolverr.enable || (cfg.components.prowlarr
+          && !(builtins.elem cfg.flaresolverr.port ((map (n: cfg.ports.${n}) enabled) ++ [ cfg.releasePort ])));
+        message = "FlareSolverr requires Prowlarr and a distinct local port."; }
       { assertion = !cfg.jellyfinEnhanced || (cfg.components.jellyfin && cfg.components.seerr);
         message = "Jellyfin Enhanced requires Jellyfin and Seerr."; }
       { assertion = !cfg.manualReleaseSelection || (cfg.jellyfinEnhanced && !cfg.automaticSearch && cfg.components.radarr && cfg.components.sonarr && cfg.components.qbittorrent && !(builtins.elem cfg.releasePort (map (n: cfg.ports.${n}) enabled)));
@@ -230,6 +258,11 @@ in {
     services.sonarr = mkIf cfg.components.sonarr ((arrange "sonarr") // { group = "media"; });
     services.lidarr = mkIf cfg.components.lidarr ((arrange "lidarr") // { group = "media"; });
     services.prowlarr = mkIf cfg.components.prowlarr (arrange "prowlarr");
+    services.flaresolverr = mkIf cfg.flaresolverr.enable {
+      enable = true;
+      port = cfg.flaresolverr.port;
+      openFirewall = false;
+    };
     services.bazarr = mkIf cfg.components.bazarr {
       enable = true;
       group = "media";
@@ -335,6 +368,12 @@ in {
             install -Dm644 ${introSkipper}/IntroSkipper.dll /var/lib/jellyfin/plugins/IntroSkipper/IntroSkipper.dll
           '' else ''
             rm -f /var/lib/jellyfin/plugins/IntroSkipper/IntroSkipper.dll
+          '') + (if lyricsEnabled then ''
+            install -Dm644 -o jellyfin -g jellyfin ${lyricsPlugin}/Jellyfin.Plugin.LrcLib.dll /var/lib/jellyfin/plugins/LrcLib/Jellyfin.Plugin.LrcLib.dll
+            # Jellyfin updates plugin status in this file while loading it.
+            install -Dm644 -o jellyfin -g jellyfin ${lyricsPlugin}/meta.json /var/lib/jellyfin/plugins/LrcLib/meta.json
+          '' else ''
+            rm -f /var/lib/jellyfin/plugins/LrcLib/Jellyfin.Plugin.LrcLib.dll /var/lib/jellyfin/plugins/LrcLib/meta.json
           '') + (if cfg.manualReleaseSelection then ''
             install -Dm644 ${releasePlugin}/MediaReleases.dll /var/lib/jellyfin/plugins/MediaReleases/MediaReleases.dll
           '' else ''
@@ -342,6 +381,7 @@ in {
           ''));
           serviceConfig = {
             ReadOnlyPaths = [ "${cfg.root}/library" ];
+            ReadWritePaths = lib.optional lyricsEnabled "${cfg.root}/library/music";
             InaccessiblePaths = [ "${cfg.root}/downloads" ];
             # Only visible in this service's mount namespace. Cache loss is harmless.
             TemporaryFileSystem = [ "/var/cache/jellyfin:rw,size=${toString cfg.cacheMiB}M,mode=1777" ];
@@ -360,6 +400,17 @@ in {
         prowlarr = mkIf cfg.components.prowlarr {
           preStart = lib.concatStringsSep "\n" (lib.mapAttrsToList (name: file:
             "install -Dm644 ${file} /var/lib/prowlarr/Definitions/${name}.yml") definitions);
+        };
+        flaresolverr = mkIf cfg.flaresolverr.enable {
+          environment = { HOST = "127.0.0.1"; LOG_LEVEL = "warning"; LOG_HTML = "false"; };
+          serviceConfig = {
+            PrivateTmp = true;
+            MemoryMax = "1G";
+            CPUQuota = "100%";
+            # Xvfb drops credentials when launching xkbcomp; blocking this kills
+            # its display. Chromium also needs timer calls to solve challenges.
+            SystemCallFilter = lib.mkAfter [ "@setuid" "@timer" ];
+          };
         };
         qbittorrent = mkIf cfg.components.qbittorrent {
           preStart = ''
@@ -384,8 +435,8 @@ in {
         media-stack-setup = {
           description = "Connect local media services and create viewing accounts";
           wantedBy = [ "multi-user.target" ];
-          requires = map (n: "${n}.service") enabled;
-          after = map (n: "${n}.service") enabled;
+          requires = (map (n: "${n}.service") enabled) ++ lib.optional cfg.flaresolverr.enable "flaresolverr.service";
+          after = (map (n: "${n}.service") enabled) ++ lib.optional cfg.flaresolverr.enable "flaresolverr.service";
           serviceConfig = {
             Type = "oneshot";
             RemainAfterExit = true;
