@@ -37,7 +37,7 @@ display_time() {
     IFS='|' read -r day time calendar < <(
         TZDIR=/etc/zoneinfo TZ="$current_tz" LC_TIME=de_DE.UTF-8 date '+%a, %d. %b|%H:%M:%S|%A, %d.%m.%Y'
     )
-    printf "{\"text\":\"%s   <span foreground='#f6edf8' weight='semibold' size='large' font_features='tnum'>%s</span>\",\"tooltip\":\"%s (%s)\"}\n" \
+    printf "{\"text\":\"%s   <span foreground='#f6edf8' weight='semibold' font_features='tnum'>%s</span>\",\"tooltip\":\"%s (%s)\"}\n" \
         "$day" "$time" "$calendar" "$current_tz"
 }
 
