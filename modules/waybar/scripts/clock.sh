@@ -33,12 +33,12 @@ display_time() {
     # Set the timezone for this command only
     # NixOS stores timezone data in /etc/zoneinfo rather than
     # /usr/share/zoneinfo, which glibc otherwise searches by default.
-    time=$(TZDIR=/etc/zoneinfo TZ="$current_tz" LC_TIME=de_DE.UTF-8 date +"%A, %d. %B  %H:%M:%S")
-    calendar=$(TZDIR=/etc/zoneinfo TZ="$current_tz" LC_TIME=de_DE.UTF-8 date +"%d.%m.%Y")
-    
-    calendar="$calendar ($current_tz)"
-    
-    echo "{\"text\":\"$time\", \"tooltip\":\"$calendar\"}"
+    local day time calendar
+    IFS='|' read -r day time calendar < <(
+        TZDIR=/etc/zoneinfo TZ="$current_tz" LC_TIME=de_DE.UTF-8 date '+%a, %d. %b|%H:%M:%S|%A, %d.%m.%Y'
+    )
+    printf "{\"text\":\"%s   <span foreground='#f6edf8' weight='semibold' font_features='tnum'>%s</span>\",\"tooltip\":\"%s (%s)\"}\n" \
+        "$day" "$time" "$calendar" "$current_tz"
 }
 
 # Handle different commands

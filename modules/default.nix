@@ -41,7 +41,6 @@ in
     ./nemo/nemo.nix
     ./rofi/rofi.nix
     ./shell/shell.nix
-    ./spicetify/spicetify.nix
     ./waybar/waybar.nix
     ./wayland_flags/wayland_flags.nix
     ./wlogout/wlogout.nix
@@ -85,7 +84,6 @@ in
     hyprlock
     hyprpicker
     hyprcursor
-    hyprsunset
     socat
 
     # Terminal apps
@@ -125,6 +123,7 @@ in
     popsicle
     vscode
     vlc
+    jellyfin-desktop
     galaxy-buds-client
     libreoffice-qt-stable
     hunspell
@@ -287,24 +286,6 @@ in
     };
     Install = {
       WantedBy = [ "timers.target" ];
-    };
-  };
-
-  systemd.user.services.hyprsunset = {
-    Install = {
-      WantedBy = [ "wayland-session@hyprland.desktop.target" ];
-    };
-    Service = {
-      ExecStart = "${pkgs.bash}/bin/bash ${./hypr/hyprsunset.sh}";
-      Restart = "always";
-      RestartSec = 5;
-      RuntimeMaxSec = 3600;
-      Type = "simple";
-    };
-    Unit = {
-      Description = "Run hyprsunset script 1h";
-      After = [ "wayland-session-waitenv.service" ];
-      PartOf = [ "wayland-session@hyprland.desktop.target" ];
     };
   };
 

@@ -1,6 +1,9 @@
 configuration {
     show-icons: true;
-    display-drun: "apps";
+    icon-theme: "Papirus-Dark";
+    drun-display-format: "{name}";
+    display-drun: "Search apps";
+    display-calc: "Calculate";
     disable-history: false;
     terminal: "kitty";
     show-match: false;
@@ -8,172 +11,109 @@ configuration {
 
 * {
     font: "Inter 12";
-    foreground: #eeeeee;
-    background-color: rgba(0, 0, 0, 0.5);
-    active-background: rgba(255, 255, 255, 0.1);
-    urgent-background: #de0be6;
-    urgent-foreground: rgba(0, 0, 0, 0.1);
-    selected-background: rgba(255, 255, 255, 0.1);
-    selected-urgent-background: #de0be6;
-    selected-active-background: rgba(255, 255, 255, 0.1);
-    separatorcolor: #d891ed;
-    bordercolor: #d891ed;
+    foreground: #f6edf8;
+    muted: #cdb6d1;
+    panel: #201424f2;
+    field: #342037;
+    selection: #592852;
+    lavender: #d891ed;
+    magenta: #de0be6;
+
+    background-color: transparent;
+    text-color: @foreground;
 }
 
-#window {
-    background-color: @background-color;
+window {
+    width: 540px;
+    padding: 12px;
     border: 1px;
-    border-radius: 10px;
-    border-color: @bordercolor;
-    padding: 20px;
-    width: 25%;
+    border-color: @lavender;
+    border-radius: 14px;
+    background-color: @panel;
 }
 
-#overlay {
-    border-radius: 10px;
-}
-
-#mainbox {
-    padding: 20px 40px;
-    border-radius: 10px;
-    background-color: rgba(0, 0, 0, 0.3);
-}
-
-#message {
-    border: 0px;
-    border-color: @separatorcolor;
-}
-
-#textbox {
-    text-color: @foreground;
-}
-
-#listview {
-    fixed-height: 0;
-    border: 0px;
-    border-color: @bordercolor;
-    spacing: 5px;
-    scrollbar: false;
-    border-radius: 10px;
-    padding: 5px 0px;
-    lines: 5;
-}
-
-#element {
-    border: 0;
-    padding: 1px 4px;
-    border-radius: 10px;
-    font: "Inter 12";
-}
-
-#element.normal.normal {
-    background-color: transparent;
-    text-color: @foreground;
-}
-
-#element.normal.urgent {
-    background-color: @urgent-background;
-    text-color: @urgent-foreground;
-}
-
-#element.normal.active {
-    background-color: @active-background;
-    text-color: @foreground;
-}
-
-#element.selected.normal {
-    background-color: @selected-background;
-    text-color: @foreground;
-}
-
-#element.selected.urgent {
-    background-color: @selected-urgent-background;
-    text-color: @foreground;
-}
-
-#element.selected.active {
-    background-color: @selected-active-background;
-    text-color: @foreground;
-}
-
-#element.alternate.normal {
-    background-color: transparent;
-    text-color: @foreground;
-}
-
-#element.alternate.urgent {
-    background-color: @urgent-background;
-    text-color: @urgent-foreground;
-}
-
-#element.alternate.active {
-    background-color: @active-background;
-    text-color: @foreground;
-}
-
-#scrollbar {
-    width: 4px;
-    border: 0;
-    handle-width: 8px;
+mainbox {
+    children: [ inputbar, message, listview ];
+    spacing: 10px;
     padding: 0;
-    background-color: transparent;
 }
 
-#sidebar {
-    border: 0;
+inputbar {
+    children: [ textbox-search, prompt, entry ];
+    spacing: 10px;
+    padding: 12px 14px;
+    background-color: @field;
+    border-radius: 8px;
 }
 
-#button.selected {
-    background-color: @selected-background;
-    text-color: @foreground;
-}
-
-#inputbar {
-    background-color: rgba(255, 255, 255, 0.05);
-    border: 1px;
-    border-radius: 20px;
-    border-color: rgba(255, 255, 255, 0.1);
-    padding: 6px 0px;
-    spacing: 0;
-    margin: 10px 0;
-    width: 60%;
-    children: [ textbox-prompt-colon, prompt, entry ];
-}
-
-#case-indicator {
-    spacing: 0;
-    text-color: @foreground;
-    background-color: transparent;
-}
-
-#prompt {
-    text-color: @foreground;
-    font: "Inter 16";
-    padding: 5px 0px 0 5px;
-    background-color: transparent;    
-}
-
-#entry {
-    text-color: @foreground;
-    background-color: transparent;
-    font: "Inter 12";
-    placeholder: "Search...";
-    padding: 8px 0px 0px 20px;
-    margin: 0;
-    expand: true;
-}
-
-#textbox-prompt-colon {
-    expand: false;
+textbox-search {
     str: "";
-    padding: 0px 0px 0px 20px;
-    text-color: @foreground;
-    background-color: transparent;
-    font: "FiraCode Nerd Font Mono 22";
+    font: "FiraCode Nerd Font Mono 15";
+    text-color: @lavender;
+    expand: false;
+    vertical-align: 0.5;
 }
 
-element-text, element-icon {
+prompt {
+    text-color: @muted;
+    vertical-align: 0.5;
+}
+
+entry {
+    expand: true;
+    vertical-align: 0.5;
+    placeholder: "";
+}
+
+message {
+    border: 0;
+    padding: 3px 12px;
+}
+
+textbox {
+    text-color: @muted;
+}
+
+listview {
+    lines: 7;
+    fixed-height: false;
+    scrollbar: false;
+    border: 0;
+    padding: 0;
+    spacing: 3px;
+}
+
+element {
+    spacing: 12px;
+    padding: 8px 12px;
+    border: 0 0 0 3px;
+    border-color: transparent;
+    border-radius: 7px;
+}
+
+element normal.normal, element alternate.normal,
+element normal.active, element alternate.active,
+element normal.urgent, element alternate.urgent {
     background-color: transparent;
+    text-color: @foreground;
+}
+
+element normal.urgent, element alternate.urgent {
+    text-color: @lavender;
+}
+
+element selected.normal, element selected.active, element selected.urgent {
+    background-color: @selection;
+    text-color: @foreground;
+    border-color: @magenta;
+}
+
+element-icon {
+    size: 24px;
+}
+
+element-text {
+    vertical-align: 0.5;
     text-color: inherit;
-    font: "Inter 12";
+    highlight: bold #f3b3ff;
 }

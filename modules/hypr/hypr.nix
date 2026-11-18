@@ -1,5 +1,10 @@
 { lib, pkgs, ... }:
-
+let
+  displayMode = pkgs.writeShellScript "display-mode" ''
+    export PATH="${lib.makeBinPath [ pkgs.hyprland pkgs.rofi ]}:$PATH"
+    exec ${pkgs.python3}/bin/python3 ${./display_mode.py} "$@"
+  '';
+in
 {
   home.file = {
     # The watchdog's safe-mode restart bypasses hyprland.lua, so this must
@@ -12,7 +17,7 @@
     ".config/hypr/hyprlock.conf".source = ./hyprlock.conf;
     ".config/hypr/hyprpaper.conf".source = ./hyprpaper.conf;
     ".config/hypr/hyprdocked.sh" = {
-      source = ./hyprdocked.sh;
+      source = displayMode;
       executable = true;
     };
   };
@@ -28,6 +33,24 @@
     Service.Environment = "PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.procps pkgs.hyprlock pkgs.systemd pkgs.hyprland ]}";
   };
 
+  services.hyprsunset = {
+    enable = true;
+    systemdTarget = "wayland-session@hyprland.desktop.target";
+    settings.profile = [
+      { time = "06:00"; temperature = 6500; }
+      { time = "18:00"; temperature = 5625; }
+      { time = "19:00"; temperature = 4750; }
+      { time = "20:00"; temperature = 3875; }
+      { time = "21:00"; temperature = 3000; }
+    ];
+  };
+
+  systemd.user.services.hyprsunset.Unit = {
+    # UWSM starts the compositor-specific target before graphical-session.target.
+    After = lib.mkForce [ "wayland-session-waitenv.service" ];
+    PartOf = lib.mkForce [ "wayland-session@hyprland.desktop.target" ];
+  };
+
   # Keep dock handling alive and reconcile DRM connector changes.
   systemd.user.services.hyprdocked = {
     Install.WantedBy = [ "wayland-session@hyprland.desktop.target" ];
@@ -37,8 +60,7 @@
       PartOf = [ "wayland-session@hyprland.desktop.target" ];
     };
     Service = {
-      ExecStart = "${pkgs.bash}/bin/bash ${./hyprdocked.sh}";
-      Environment = "PATH=${lib.makeBinPath [ pkgs.coreutils pkgs.gnugrep pkgs.hyprland pkgs.jq ]}";
+      ExecStart = "${displayMode}";
       Restart = "on-failure";
       RestartSec = 2;
     };

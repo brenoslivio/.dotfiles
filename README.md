@@ -10,12 +10,31 @@ Both hosts use `pkgs.linuxPackages_latest`; kernel updates require a reboot.
 
 ## Hosts
 
-- `ahimsa`: primary AMD machine.
+- [`ahimsa`](#ahimsa-desktop) is the primary AMD laptop and runs Hyprland.
 - `ahimsa-vps`: headless media server; root SSH login with your existing key.
 
 Each host lives under `hosts/<hostname>` with `default.nix`, `hardware.nix`, and
 non-secret user metadata in `metadata.nix`. Desktop hosts include Home Manager,
 also exposed separately for user-only changes; servers use a minimal profile.
+
+### Ahimsa desktop
+
+Waybar shows workspaces on the left, the date and time in the center, and
+system controls on the right. The magenta underline marks the active workspace.
+
+![Waybar with workspace 4 active and the display button immediately left of power](assets/previews/waybar.png)
+
+Click the NixOS logo at the far left of Waybar to open Rofi and search for an app.
+
+![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)
+
+When an HDMI display is connected, click the monitor icon beside the power
+button to choose a layout. **Mirror** shows the same desktop on both screens.
+**Docked** uses the external screen alone. In either **Extend** mode, numbered
+workspaces stay on the selected main screen and the other screen gets its own
+workspace. The checkmark shows the current layout.
+
+![Display picker with Extend · External main checked and Extend · Laptop main highlighted](assets/previews/rofi-display-picker.png)
 
 ## Daily commands
 
