@@ -105,7 +105,8 @@ def picker(action):
          "-selected-row", str(MODES.index(current) if current in MODES else 0),
          "-theme-str", "window { location: northeast; anchor: northeast; x-offset: 14px; "
                        "y-offset: 6px; width: 260px; padding: 6px; } "
-                       "mainbox { children: [listview]; padding: 4px; } listview { lines: 4; }"],
+                       "mainbox { children: [listview]; } listview { lines: 4; } "
+                       "element { children: [element-text]; }"],
         input="\n".join(rows), text=True, stdout=subprocess.PIPE,
     )
     if result.returncode == 0 and connected():
