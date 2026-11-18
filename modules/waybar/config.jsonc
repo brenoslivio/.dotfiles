@@ -64,8 +64,6 @@
         "title-len": 30,
         "format-paused": "{status_icon} <i>{title}</i>",
         "player-icons": {
-            "spotify": "",
-            "ncspot": "",
             "default": "▶",
             "mpv": "🎵"
         },

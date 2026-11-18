@@ -41,7 +41,6 @@ in
     ./nemo/nemo.nix
     ./rofi/rofi.nix
     ./shell/shell.nix
-    ./spicetify/spicetify.nix
     ./waybar/waybar.nix
     ./wayland_flags/wayland_flags.nix
     ./wlogout/wlogout.nix
