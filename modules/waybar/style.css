@@ -1,155 +1,160 @@
-@define-color foreground #eeeeee;
-@define-color foreground-inactive #aaaaaa;
-@define-color background rgba(0, 0, 0, 0.1);
-@define-color active #de0be6;
-@define-color button #dba0d9;
-@define-color waybar-border #d891ed;
-@define-color workspace-background rgba(255, 255, 255, 0.1); 
+@define-color panel rgba(32, 20, 36, 0.93);
+@define-color field #342037;
+@define-color selection #592852;
+@define-color foreground #f6edf8;
+@define-color muted #cdb6d1;
+@define-color inactive #ab8eaf;
+@define-color lavender #d891ed;
+@define-color magenta #de0be6;
+@define-color divider rgba(216, 145, 237, 0.22);
 
-* {
-    font-family: Inter;
-    font-size: 12px;
-    padding: 0;
-    margin: 0;
+window#waybar {
+    background: @panel;
+    color: @foreground;
+    border: 1px solid alpha(@lavender, 0.68);
+    border-radius: 12px;
+    font-family: Inter, "FiraCode Nerd Font Mono";
+    font-size: 13px;
+    font-feature-settings: "tnum";
 }
 
-#waybar {
-    color: @foreground;
-    background-color: @background;
-    border-radius: 10px;
-    border: 1px solid @waybar-border;
+.modules-left {
+    margin-left: 6px;
+}
+
+.modules-right {
+    margin-left: 8px;
+    margin-right: 5px;
 }
 
 #image.menu {
-    min-width: 36px;
-    min-height: 36px;
-    border-radius: 10px;
-    margin-left: 15px;
-}
-
-#image.menu:hover {
-    background-color: @workspace-background;
+    margin: 3px 3px 3px 0;
+    padding: 0 6px;
+    border-radius: 7px;
 }
 
 #workspaces {
-    background: @workspace-background;
-    border-radius: 10px;
-    padding: 0 2px;
-    margin: 7px 10px;
-    border: 1px solid @foreground-inactive;
-}
-
-#workspaces * {
-    font-family: "FiraCode Nerd Font Mono";
-    font-size: 20px;
+    margin: 3px 5px 3px 0;
 }
 
 #workspaces button {
-    color: @button;
-    padding: 2px 10px;
+    min-width: 32px;
+    min-height: 0;
+    margin: 0 1px;
+    padding: 0;
+    border: 0;
+    border-radius: 7px;
+    background: transparent;
+    box-shadow: none;
+    text-shadow: none;
+    color: @lavender;
+    font-family: "FiraCode Nerd Font Mono";
+    font-size: 23px;
 }
 
 #workspaces button.empty {
-    color: @foreground-inactive;
+    color: @inactive;
+}
+
+#workspaces button:hover,
+#image.menu:hover,
+#custom-displays:hover,
+#custom-power:hover {
+    background-color: @selection;
+    color: @foreground;
 }
 
 #workspaces button.active {
-    background: @workspace-background;
-    color: @active;
-    padding-right: 22px;
-    padding-left: 22px;
-    border-radius: 10px;
+    background-color: @selection;
+    background-image: linear-gradient(@magenta, @magenta);
+    background-size: 16px 2px;
+    background-position: center bottom;
+    background-repeat: no-repeat;
+    color: @foreground;
 }
 
-#workspaces button:not(.active):hover {
-    background: @workspace-background;
-    padding-right: 10px;
+#window {
+    margin: 8px 0;
     padding-left: 10px;
-    border-radius: 20px;
-    border: none;
+    border-left: 1px solid @divider;
+    color: @muted;
+}
+
+window#waybar.empty #window {
+    border-color: transparent;
 }
 
 .modules-center {
-    background: @workspace-background;
-    border-radius: 20px;
-    padding: 0 10px;
-    margin: 7px 10px;
-    border: 1px solid @foreground-inactive;
+    margin: 4px 0;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: @field;
 }
 
 #custom-clock {
-    font-family: "FiraCode Nerd Font Mono";
-    font-size: 12px;
-    padding: 0 2px 0 0;
+    padding: 0 8px;
+    color: @muted;
 }
 
+#custom-notification,
 #custom-tasks {
-    font-family: "FiraCode Nerd Font Mono";
-    font-size: 12px;
-    padding: 0 2px 0 0;
+    padding: 0 5px;
+    color: @lavender;
 }
-
 
 #custom-notification {
     font-family: "FiraCode Nerd Font Mono";
-    font-size: 24px;
-    padding: 0 2px 0 0;
-}
-
-#mpris {
-    margin: 7px 12px 7px 10px;
+    font-size: 17px;
 }
 
 #custom-cava {
-    margin: 0 10px;
+    margin-right: 4px;
+    color: @inactive;
     font-family: "FiraCode Nerd Font Mono";
-    font-size: 14px;
+    font-size: 11px;
 }
 
-#wireplumber {
-    margin: 7px 2px 7px 0;
+#mpris {
+    margin-right: 8px;
+    color: @muted;
 }
 
-#custom-displays {
-    font-family: "FiraCode Nerd Font Mono";
-    font-size: 20px;
+#wireplumber,
+#memory,
+#cpu,
+#backlight,
+#battery {
     padding: 0 6px;
 }
 
-#custom-displays:hover {
-    color: @button;
+#memory, #cpu {
+    min-width: 46px;
+    color: @muted;
 }
-
-#memory,
-#battery,
-#cpu
-#backlight {
-    padding: 10px;
-}
-
-/* #wireplumber,
-#battery,
-#backlight,
-#language, */
 
 #tray {
-    background: @workspace-background;
-    border-radius: 10px;
-    padding: 0 10px;
-    margin: 7px 10px;
-    border: 1px solid @foreground-inactive;
+    margin: 8px 4px;
+    padding: 0 9px;
+    border-left: 1px solid @divider;
+    border-right: 1px solid @divider;
 }
 
+#custom-displays,
 #custom-power {
-    padding: 0px 15px;
-    margin-right: 10px;
-    font-size: 20px;
+    min-width: 28px;
+    margin: 3px 0;
+    border-radius: 7px;
+    color: @lavender;
+    font-family: "FiraCode Nerd Font Mono";
+    font-size: 19px;
 }
 
-#custom-power:hover {
-    padding: 0px 15px;
-    margin-right: 10px;
-    font-size: 20px;
-    background: @workspace-background;
-    border-radius: 10px;
+tooltip {
+    border: 1px solid @lavender;
+    border-radius: 8px;
+    background: @panel;
+}
+
+tooltip label {
+    color: @foreground;
 }

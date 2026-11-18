@@ -4,16 +4,16 @@
     "margin-top": 10,
     "margin-left": 14,
     "margin-right": 14,
-    "height": 24,
+    "height": 38,
     "spacing": 2,
 
     "modules-left": ["image#menu", "ext/workspaces", "hyprland/window"],
-    "modules-center": ["custom/notification", "custom/clock", "custom/research", "custom/tasks"],
+    "modules-center": ["custom/notification", "custom/clock", "custom/tasks"],
     "modules-right": ["custom/cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
 
     "image#menu": {
         "path": "@nixosIcon@",
-        "size": 36,
+        "size": 26,
         // Re-render after transient image or output/scale changes.
         "interval": 30,
         "on-click": "~/.config/rofi/launch.sh",
@@ -23,7 +23,7 @@
     // Use the Wayland workspace protocol: Waybar 0.15's Hyprland click
     // handler sends legacy dispatch commands that Hyprland's Lua API rejects.
     "ext/workspaces": {
-        "format": "<span size='large'>{icon}</span>",
+        "format": "{icon}",
         "on-click": "activate",
         "format-icons": {
             "1": "󰖟",
@@ -45,11 +45,9 @@
 
     "hyprland/window": {
         "format": "{}",
-        "rewrite": {
-            "^(.{60}).+": "$1...",
-            "^(.{1,60})$": "$1"
-        },
+        "max-length": 76,
         "icon": true,
+        "icon-size": 16,
         "separate-outputs": true
     },
 
@@ -61,7 +59,8 @@
 
     "mpris": {
         "format": "{player_icon}   {title}",
-        "title-len": 30,
+        "title-len": 52,
+        "max-length": 54,
         "format-paused": "{status_icon} <i>{title}</i>",
         "player-icons": {
             "default": "▶",
@@ -87,7 +86,7 @@
         "exec": "~/.config/waybar/scripts/tasks.sh",
         "interval": 1,
         "return-type": "json",
-        "format": " <span size='large'></span> {}",
+        "format": "  {}",
         "tooltip": true,
         "on-click": "obsidian"
     },
@@ -103,7 +102,7 @@
     },
 
     "wireplumber": {
-        "format": "\udb81\udd7e  {volume}%",
+        "format": "<span size='large'>\udb81\udd7e</span>  {volume}%",
         "max-volume": 100,
         "scroll-step": 5,
         "on-click": "pavucontrol -t 3"
@@ -112,7 +111,7 @@
     "battery": {
         "bat": "BAT0",
         "interval": 60,
-        "format": "{icon}   {capacity}%",
+        "format": "<span size='large'>{icon}</span>  {capacity}%",
         "format-icons": ["\uf244", "\uf243", "\uf242", "\uf241", "\uf240"],
     },
 
@@ -125,37 +124,36 @@
     },
 
     "backlight": {
-        "format": "\udb80\udcdf  {percent}%",
+        "format": "<span size='large'>\udb80\udcdf</span>  {percent}%",
         "scroll-step": 5,
     },
 
     "memory": {
         "interval": 1,
-        "format": "   {percentage}%"
+        "format": "<span size='large'></span>  {percentage}%"
     },
 
     "cpu": {
         "interval": 1,
-        "format": "   {usage}%",
-        "max-length": 10
+        "format": "<span size='large'></span>  {usage}%"
     },
 
     "tray": {
         "icon-size": 16,
-        "spacing": 16
+        "spacing": 9
     },
 
     "custom/notification": {
         "tooltip": false,
         "format": "{icon}",
         "format-icons": {
-          "notification": "<span foreground='red'><sup></sup></span>",
+          "notification": "<span foreground='#de0be6'><sup></sup></span>",
           "none": "",
-          "dnd-notification": "<span foreground='red'><sup></sup></span>",
+          "dnd-notification": "<span foreground='#de0be6'><sup></sup></span>",
           "dnd-none": "",
-          "inhibited-notification": "<span foreground='red'><sup></sup></span>",
+          "inhibited-notification": "<span foreground='#de0be6'><sup></sup></span>",
           "inhibited-none": "",
-          "dnd-inhibited-notification": "<span foreground='red'><sup></sup></span>",
+          "dnd-inhibited-notification": "<span foreground='#de0be6'><sup></sup></span>",
           "dnd-inhibited-none": ""
         },
         "return-type": "json",
