@@ -9,7 +9,7 @@
 
     "modules-left": ["image#menu", "ext/workspaces", "hyprland/window"],
     "modules-center": ["custom/notification", "custom/clock", "custom/research", "custom/tasks"],
-    "modules-right": ["custom/cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/power"],
+    "modules-right": ["custom/cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
 
     "image#menu": {
         "path": "@nixosIcon@",
@@ -27,11 +27,13 @@
         "on-click": "activate",
         "format-icons": {
             "1": "󰖟",
-            "2": "✎",
+            "2": "󰏫",
             "3": "",
             "4": "",
             "5": "",
             "6": "",
+            "external": "󰍺",
+            "laptop": "󰍺",
             // "active": "\uf444",
             "default": "\uf4c3"
         },
@@ -114,6 +116,14 @@
         "interval": 60,
         "format": "{icon}   {capacity}%",
         "format-icons": ["\uf244", "\uf243", "\uf242", "\uf241", "\uf240"],
+    },
+
+    "custom/displays": {
+        "exec": "~/.config/hypr/hyprdocked.sh status",
+        "return-type": "json",
+        "interval": 2,
+        "hide-empty-text": true,
+        "on-click": "~/.config/hypr/hyprdocked.sh menu"
     },
 
     "backlight": {

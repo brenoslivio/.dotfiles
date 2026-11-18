@@ -85,7 +85,6 @@ in
     hyprlock
     hyprpicker
     hyprcursor
-    hyprsunset
     socat
 
     # Terminal apps
@@ -287,24 +286,6 @@ in
     };
     Install = {
       WantedBy = [ "timers.target" ];
-    };
-  };
-
-  systemd.user.services.hyprsunset = {
-    Install = {
-      WantedBy = [ "wayland-session@hyprland.desktop.target" ];
-    };
-    Service = {
-      ExecStart = "${pkgs.bash}/bin/bash ${./hypr/hyprsunset.sh}";
-      Restart = "always";
-      RestartSec = 5;
-      RuntimeMaxSec = 3600;
-      Type = "simple";
-    };
-    Unit = {
-      Description = "Run hyprsunset script 1h";
-      After = [ "wayland-session-waitenv.service" ];
-      PartOf = [ "wayland-session@hyprland.desktop.target" ];
     };
   };
 
