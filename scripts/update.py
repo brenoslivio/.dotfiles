@@ -250,25 +250,24 @@ def update(repo, directory, home=False):
     print("Activation completed." if choice == "switch" else "Scheduled for next boot; no reboot requested.")
 
 
-def notify(directory, host=HOST):
+def notify(directory):
     sha = api_json("git/ref/heads/main")["object"]["sha"]
-    manifest = evidence(sha) if host == HOST else evidence(sha, host)
-    status = system_status() if host == HOST else {}
+    manifest = evidence(sha)
+    status = system_status()
     state = read_state(directory)
     path = manifest["system_path"]
-    command = "up" if host == HOST else "up-vps"
     if status.get("active") == path:
         label = "active"
     elif status.get("boot_default") == path:
         label = "scheduled for next boot"
     elif state.get("pending_system", {}).get("path") == path:
-        label = f"prepared; run {command} to review"
+        label = "prepared; run up to review"
     else:
-        label = f"available; run {command} to review"
+        label = "available; run up to review"
     key = f"{sha}:{label}"
     if state.get("notified") != key:
         if label != "active":
-            run("notify-send", f"Tested NixOS update: {host}", f"{sha[:12]}: {label}", capture=False)
+            run("notify-send", f"Tested NixOS update: {HOST}", f"{sha[:12]}: {label}", capture=False)
         state["notified"] = key
         atomic_json(directory / "state.json", state)
 
@@ -301,14 +300,7 @@ def main():
         elif args.command == "mark-good":
             preserve_good()
         elif args.command == "notify":
-            errors = []
-            for host, target in [(HOST, directory), ("ahimsa-vps", directory / "ahimsa-vps")]:
-                try:
-                    notify(target, host)
-                except (UpdateError, subprocess.CalledProcessError, OSError, ValueError, KeyError) as exc:
-                    errors.append(f"{host}: {exc}")
-            if errors:
-                raise UpdateError("; ".join(errors))
+            notify(directory)
         elif args.command == "rollback":
             run("sudo", "nixos-rebuild", "switch", "--rollback", capture=False)
         elif args.command == "rollback-good":

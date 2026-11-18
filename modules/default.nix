@@ -124,6 +124,7 @@ in
     popsicle
     vscode
     vlc
+    jellyfin-desktop
     galaxy-buds-client
     libreoffice-qt-stable
     hunspell
