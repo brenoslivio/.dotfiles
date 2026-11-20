@@ -12,6 +12,7 @@ import socket
 import subprocess
 import sys
 import tempfile
+import time
 import zipfile
 
 REPOSITORY = "brenoslivio/.dotfiles"
@@ -250,12 +251,8 @@ def update(repo, directory, home=False):
     print("Activation completed." if choice == "switch" else "Scheduled for next boot; no reboot requested.")
 
 
-def notify(directory):
-    sha = api_json("git/ref/heads/main")["object"]["sha"]
-    manifest = evidence(sha)
+def system_label(path, state):
     status = system_status()
-    state = read_state(directory)
-    path = manifest["system_path"]
     if status.get("active") == path:
         label = "active"
     elif status.get("boot_default") == path:
@@ -264,17 +261,25 @@ def notify(directory):
         label = "prepared; run up to review"
     else:
         label = "available; run up to review"
+    return label
+
+
+def notify(directory):
+    sha = api_json("git/ref/heads/main")["object"]["sha"]
+    state = read_state(directory)
+    label = system_label(evidence(sha)["system_path"], state)
     key = f"{sha}:{label}"
     if state.get("notified") != key:
         if label != "active":
             run("notify-send", f"Tested NixOS update: {HOST}", f"{sha[:12]}: {label}", capture=False)
+            state["daily_notice"] = {"key": key, "at": time.time()}
         state["notified"] = key
         atomic_json(directory / "state.json", state)
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["up", "home", "up-vps", "status-vps", "confirm-vps", "rollback-vps", "notify", "status", "mark-good", "rollback", "rollback-good"], nargs="?", default="up")
+    parser.add_argument("command", choices=["up", "home", "up-vps", "status-vps", "confirm-vps", "rollback-vps", "notify", "weekly-notify", "status", "mark-good", "rollback", "rollback-good"], nargs="?", default="up")
     args = parser.parse_args()
     if socket.gethostname() != HOST:
         raise UpdateError(f"This updater supports {HOST} only.")
@@ -299,6 +304,10 @@ def main():
             print(json.dumps({**read_state(directory), **system_status()}, indent=2))
         elif args.command == "mark-good":
             preserve_good()
+        elif args.command == "weekly-notify":
+            sys.modules["update"] = sys.modules[__name__]
+            import weekly_update
+            weekly_update.monitor(directory)
         elif args.command == "notify":
             notify(directory)
         elif args.command == "rollback":

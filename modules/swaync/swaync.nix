@@ -29,8 +29,12 @@ in
     Install.WantedBy = [ "graphical-session.target" ];
   };
 
-  xdg.configFile."swaync/style.css".source = ./style.css;
-  xdg.configFile."swaync/config.json".text = builtins.toJSON {
+  services.swaync.enable = true;
+  services.swaync.package = pkgs.swaynotificationcenter.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./weekly-report-timeout.patch ];
+  });
+  services.swaync.style = ./style.css;
+  services.swaync.settings = {
     positionX = "right";
     positionY = "top";
     control-center-exclusive-zone = true;

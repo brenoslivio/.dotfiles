@@ -24,9 +24,10 @@ let
     "text/x-csrc" = [ "org.kde.kate.desktop" ];
     "text/plain" = [ "org.kde.kate.desktop" ];
   };
+  updater = import ../scripts/updater-package.nix { inherit pkgs; };
   flakeUpdateCheck = pkgs.writeShellApplication {
     name = "flake-update-check";
-    runtimeInputs = [ (import ../scripts/updater-package.nix { inherit pkgs; }) ];
+    runtimeInputs = [ updater ];
     text = builtins.readFile ../notify-flake-updates.sh;
   };
 in
@@ -147,7 +148,6 @@ in
 
     # Desktop aux
     waybar
-    swaynotificationcenter
     libnotify
     clipse
     wl-clipboard
@@ -282,13 +282,45 @@ in
       Description = "Notify about CI-tested NixOS updates";
     };
     Timer = {
-      OnCalendar = [ "*-*-* 09:15:00 America/Sao_Paulo" "Fri 21:00:00 America/Sao_Paulo" ];
+      OnCalendar = "*-*-* 09:15:00 America/Sao_Paulo";
       RandomizedDelaySec = "10m";
       Persistent = true;
     };
     Install = {
       WantedBy = [ "timers.target" ];
     };
+  };
+
+  systemd.user.services.weeklyUpdate = {
+    Unit = {
+      Description = "Check the Friday flake proposal and tested desktop update";
+      PartOf = [ "graphical-session.target" ];
+    };
+    Service = {
+      Type = "oneshot";
+      ExecStart = "${updater}/bin/dotfiles-update weekly-notify";
+      TimeoutStartSec = "4min";
+      Restart = "on-failure";
+      RestartSec = "5min";
+    };
+  };
+
+  systemd.user.timers.weeklyUpdate = {
+    Unit = {
+      Description = "Follow the Friday update through Sunday evening";
+      PartOf = [ "graphical-session.target" ];
+    };
+    Timer = {
+      OnCalendar = [
+        "Fri *-*-* 21..23:00/5:00 America/Sao_Paulo"
+        "Sat *-*-* *:00/5:00 America/Sao_Paulo"
+        "Sun *-*-* 00..20:00/5:00 America/Sao_Paulo"
+        "Sun *-*-* 21:00:00 America/Sao_Paulo"
+      ];
+      AccuracySec = "1s";
+      Persistent = true;
+    };
+    Install.WantedBy = [ "graphical-session.target" ];
   };
 
   # systemd.user.services.rclone = {
