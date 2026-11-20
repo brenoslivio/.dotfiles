@@ -203,7 +203,7 @@ class NextUp:
                 return row  # An unexplained numbering gap is never skipped.
             air = episode.get('airDate') or ''
             aired = bool(air and air[:10] <= datetime.now(timezone.utc).date().isoformat())
-            return {**row, 'state': 'missing' if aired else 'upcoming', 'canChoose': aired,
+            return {**row, 'state': 'missing' if aired else 'upcoming', 'canChoose': True,
                     'episodeTitle': episode.get('name', ''), 'airDate': air[:10]}
         seasons = self.season_options(snapshot, mid)
         return {**row, 'state': 'complete', 'nextSeason': next((s for s in seasons if s > season), None)}
