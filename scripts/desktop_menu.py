@@ -1,26 +1,47 @@
-"""Small Rofi dialogs for the Waybar controls."""
+"""Native GTK menu descriptions for Waybar and short desktop dialogs."""
 import html
+import json
 import subprocess
+import xml.etree.ElementTree as ET
 
 
-def dialog(prompt, rows=None, *, message="", initial="", selected=0, markup=False):
-    args = ["rofi", "-dmenu", "-i", "-p", prompt, "-theme-str",
-            "inputbar { children: [prompt, entry]; } element { children: [element-text]; }"]
-    if message:
-        args += ["-mesg", html.escape(message)]
-    if markup:
-        args.append("-markup-rows")
-    if rows is None:
-        args += ["-filter", initial, "-theme-str", "mainbox { children: [inputbar, message]; }"]
+def menu():
+    root = ET.Element("interface")
+    return root, ET.SubElement(root, "menu", id="choices")
+
+
+def group(parent, label, tag="submenu"):
+    node = ET.SubElement(parent, tag)
+    ET.SubElement(node, "attribute", name="label").text = label.replace("_", "__")
+    return node
+
+
+def item(parent, label, action=None):
+    node = group(parent, label, "item")
+    ET.SubElement(node, "attribute", name="action").text = "picker.choose" if action else "picker.disabled"
+    if action:
+        ET.SubElement(node, "attribute", name="target").text = json.dumps(action)
+    return node
+
+
+def show_menu(root):
+    print(ET.tostring(root, encoding="unicode"))
+
+
+def dialog(title, choices=None, *, message="", initial=""):
+    args = ["zenity", "--title", title, "--text", message, "--width", "380"]
+    if choices is None:
+        args += ["--entry", "--entry-text", initial, "--ok-label", "Save"]
     else:
-        args += ["-no-custom", "-format", "i", "-selected-row", str(selected),
-                 "-me-select-entry", "", "-me-accept-entry", "MousePrimary"]
-    result = subprocess.run(args, input="\n".join(rows or []), text=True, stdout=subprocess.PIPE)
-    if result.returncode == 1:  # Escape or focus loss
+        args += ["--list", "--column", "ID", "--column", "Task", "--hide-column", "1", "--print-column", "1"]
+        for i, choice in enumerate(choices):
+            args.extend([str(i), choice])
+    result = subprocess.run(args, text=True, stdout=subprocess.PIPE)
+    if result.returncode == 1:
         return None
     result.check_returncode()
-    answer = result.stdout.rstrip("\n")
-    return int(answer) if rows is not None else answer
+    value = result.stdout.rstrip("\n")
+    return value if choices is None else int(value)
 
 
 def notify(title, detail=""):

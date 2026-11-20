@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import subprocess
 import sys
 import tempfile
@@ -73,6 +74,43 @@ class TaskTests(unittest.TestCase):
         self.assertEqual(self.note.read_bytes(), self.original.encode())
         self.assertFalse(list(self.state.glob("*.json")))
 
+    def test_edit_preserves_nested_children_spacing_and_other_edits(self):
+        target = tasks.edit_choices(tasks.read_lines(self.note), "Work")[0][1]
+        self.note.write_bytes(self.note.read_bytes().replace(b"- Parent", b"-   Parent  ").replace(b"Intro", b"Else"))
+        before = self.note.read_bytes()
+        tasks.save_task(self.note, "Work", "Revised", target)
+        self.assertEqual(self.note.read_bytes(), before.replace(b"Parent", b"Revised"))
+        self.assertEqual(tasks.status(self.note)["text"], "2")
+
+    def test_duplicate_siblings_and_parent_context(self):
+        self.note.write_text("## Tasks\n- Work\n  - A\n    - Duplicate\n  - B\n    - Duplicate\n    - Duplicate\n")
+        picks = tasks.edit_choices(tasks.read_lines(self.note), "Work")
+        self.assertIn("A › Duplicate", picks[1][0])
+        self.assertIn("line 7", picks[-1][0])
+        target = picks[-1][1]
+        self.note.write_text(self.note.read_text().replace("  - A", "  - Renamed"))
+        with self.assertRaises(ValueError):
+            tasks.save_task(self.note, "Work", "Unsafe", target)
+        target = tasks.edit_choices(tasks.read_lines(self.note), "Work")[-1][1]
+        tasks.save_task(self.note, "Work", "Last sibling", target)
+        self.assertTrue(self.note.read_text().endswith("    - Duplicate\n    - Last sibling\n"))
+
+    def test_conflict_retains_edit_draft_and_recovers_explicitly(self):
+        target = tasks.edit_choices(tasks.read_lines(self.note), "Work")[0][1]
+        def rename(*args, **kwargs):
+            self.note.write_bytes(self.note.read_bytes().replace(b"Parent", b"Updated elsewhere"))
+            self.assertEqual(kwargs["initial"], "Parent")
+            return "My revision"
+        with patch.object(tasks, "notify"), patch.object(tasks, "dialog", side_effect=rename):
+            tasks.capture(self.note, self.state, {"action": "edit", "target": target})
+        draft, = self.state.glob("*.edit-*.json")
+        self.assertIn(b"Updated elsewhere", self.note.read_bytes())
+        with patch.object(tasks, "notify"), patch.object(tasks, "dialog", side_effect=[0, "My revision"]):
+            tasks.capture(self.note, self.state, {"action": "resume", "draft": draft.name})
+        self.assertIn(b"My revision", self.note.read_bytes())
+        self.assertFalse(draft.exists())
+        self.assertEqual(tasks.status(self.note)["text"], "2")
+
 
 class AudioTests(unittest.TestCase):
     def test_hardware_ports_and_monitor_filter(self):
@@ -83,19 +121,56 @@ class AudioTests(unittest.TestCase):
         results = audio.routes("source", [device, {**device, "name": "sink.monitor"}, buds], "analog")
         self.assertEqual([(r.device, r.current) for r in results], [("analog", True), ("bluetooth", False)])
 
-    def test_select_by_stable_name_and_handle_disconnect(self):
-        route = audio.Route("sink", "stable-output", "speaker", "Speakers", False)
-        for connected in (True, False):
-            with patch.object(audio, "available", side_effect=[[route], [], [route] if connected else []]), \
-                    patch.object(audio, "dialog", return_value=1), patch.object(audio, "notify") as notify, \
-                    patch.object(audio, "pactl") as pactl:
-                audio.picker()
-                if connected:
-                    self.assertEqual([call.args for call in pactl.call_args_list],
-                                     [("set-sink-port", "stable-output", "speaker"), ("set-default-sink", "stable-output")])
+    def test_select_by_stable_name_and_confirm_actual_port(self):
+        old = audio.Route("source", "input", "mic", "Microphone", False)
+        new = audio.Route("source", "input", "mic", "Microphone", True)
+        with patch.object(audio, "available", side_effect=[[old], [old], [new]]), \
+                patch.object(audio, "pactl") as pactl:
+            audio.select_route("source", "input", "mic")
+            self.assertEqual([c.args for c in pactl.call_args_list],
+                             [("set-source-port", "input", "mic"), ("set-default-source", "input")])
+        with patch.object(audio, "available", return_value=[]), patch.object(audio, "pactl") as pactl:
+            with self.assertRaises(ValueError):
+                audio.select_route("source", "input", "mic")
+            pactl.assert_not_called()
+
+    def test_bluetooth_profile_requires_capture_and_confirmation(self):
+        card = {"name": "bluez_card.AB", "active_profile": "a2dp",
+                "profiles": {"a2dp": {"sources": 0}, "voice": {"sources": 1, "available": True},
+                             "unavailable": {"sources": 1, "available": False, "priority": 99}}}
+        self.assertEqual(list(audio.headset_profiles([card])), [(card, "voice")])
+        with patch.object(audio, "pactl", return_value=json.dumps([card])) as pactl, \
+                patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 1)):
+            audio.switch_headset({"card": card["name"], "profile": "voice"})
+            pactl.assert_called_once_with("-f", "json", "list", "cards")
+
+    def test_headset_waits_for_its_own_microphone_and_restores_on_failure(self):
+        for expose_mic in (True, False):
+            card = {"name": "bluez_card.test", "index": 51, "active_profile": "music",
+                    "profiles": {"music": {"sources": 0}, "voice": {"sources": 1}}}
+            def server(*args):
+                if args[-1] == "cards":
+                    return json.dumps([card])
+                if args[-1] == "sources":
+                    sources = [{"name": "built-in", "properties": {"device.id": "99"}}]
+                    if expose_mic:
+                        sources.append({"name": "headset", "properties": {"device.id": "51"}})
+                    return json.dumps(sources)
+                self.assertEqual(args[:2], ("set-card-profile", card["name"]))
+                card["active_profile"] = args[-1]
+                return ""
+            with patch.object(audio, "pactl", side_effect=server), patch.object(audio, "select_route") as select, \
+                    patch.object(subprocess, "run", return_value=subprocess.CompletedProcess([], 0)), \
+                    patch.object(audio.time, "sleep"):
+                action = {"card": card["name"], "profile": "voice"}
+                if expose_mic:
+                    audio.switch_headset(action)
+                    select.assert_called_once_with("source", "headset", "")
                 else:
-                    pactl.assert_not_called()
-                    notify.assert_called_once()
+                    with self.assertRaises(ValueError):
+                        audio.switch_headset(action)
+                    self.assertEqual(card["active_profile"], "music")
+                    select.assert_not_called()
 
     def test_mic_feedback_reports_result(self):
         for state, label in [("yes", "Microphone muted"), ("no", "Microphone on")]:

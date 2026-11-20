@@ -32,18 +32,21 @@ The notification center, power controls, and GTK menus share the Rofi palette.
 
 [Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png)
 
-Right-click the volume indicator to choose an output or microphone in Rofi.
-A checkmark marks the current device in each group. Left-click opens the mixer,
-and scrolling adjusts volume. The microphone mute key shows its resulting state.
+Right-click the volume indicator to open its GTK menu. Choose an output or
+microphone by name. The checkmarks reflect the audio server's current defaults
+and ports. A Bluetooth headset that needs call-quality playback to enable its
+microphone offers an explicit profile switch. Left-click opens the mixer,
+scrolling adjusts volume, and the microphone mute key shows its resulting state.
 
-Right-click the task count beside the clock, choose a project from the
-`Tasks` section of the Ikiru note, type a task, and press Enter. Left-click
-opens Obsidian. The picker reads the latest note before saving and uses the
-project's indentation. If the note or project is unavailable, the next capture
-offers the saved draft. `TASKS_FILE` overrides the default note for both the
-counter and capture.
+Right-click the task count beside the clock and choose **Add task…** or **Edit
+task…**, then a project in Ikiru. Editing opens the selected task's full text.
+Enter saves and Escape cancels. Nested tasks keep their indentation and children.
+Left-click opens Obsidian. If the note is unavailable, a submitted addition is
+kept for the next capture. If another editor changes the selected task, choose
+**Resume edit** from the menu to recover the draft and choose its destination.
+`TASKS_FILE` overrides the note for both the counter and the menus.
 
-[Audio picker](assets/previews/waybar-audio-picker.png) · [Task capture](assets/previews/waybar-task-capture.png)
+[Audio picker](assets/previews/waybar-audio-picker.png) · [Task menu](assets/previews/waybar-task-capture.png) · [Task editor](assets/previews/waybar-task-editor.png)
 
 Click the NixOS logo at the far left of Waybar to open Rofi and search for an app.
 

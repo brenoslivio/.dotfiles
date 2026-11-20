@@ -147,7 +147,6 @@ in
     brightnessctl
 
     # Desktop aux
-    waybar
     libnotify
     clipse
     wl-clipboard

@@ -89,7 +89,7 @@
         "format": "  {}",
         "tooltip": true,
         "on-click": "obsidian",
-        "on-click-right": "@taskControl@ capture"
+        "context-menu-command": "@taskControl@"
     },
 
     "custom/clock": {
@@ -107,7 +107,7 @@
         "max-volume": 100,
         "scroll-step": 5,
         "on-click": "pavucontrol -t 3",
-        "on-click-right": "@audioControl@",
+        "context-menu-command": "@audioControl@",
         "tooltip-format": "{node_name}\nRight-click to choose output or microphone"
     },
 

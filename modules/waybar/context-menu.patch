@@ -1,0 +1,72 @@
+--- a/src/AModule.cpp
++++ b/src/AModule.cpp
+@@ -204,0 +205,64 @@
++// Keep the real input event and Wayland parent in Waybar. The helper returns a
++// GtkBuilder GMenuModel and receives the chosen string as a single argv element.
++static void launchMenuAction(GSimpleAction*, GVariant* target, gpointer command) {
++  const gchar* argv[] = {static_cast<const gchar*>(command), "apply",
++                         g_variant_get_string(target, nullptr), nullptr};
++  g_autoptr(GError) error = nullptr;
++  g_autoptr(GSubprocess) child = g_subprocess_newv(argv, G_SUBPROCESS_FLAGS_NONE, &error);
++  if (!child) spdlog::warn("Context menu action: {}", error->message);
++}
++
++static void loadMenuModel(GObject* helper, GAsyncResult* result, gpointer data) {
++  g_autoptr(GtkWidget) anchor = GTK_WIDGET(data);
++  if (!gtk_widget_get_mapped(anchor) || g_object_get_data(G_OBJECT(anchor), "menu-request") != helper)
++    return;
++  g_object_set_data(G_OBJECT(anchor), "menu-request", nullptr);
++  g_autofree gchar* xml = nullptr;
++  g_autoptr(GError) error = nullptr;
++  g_autoptr(GtkBuilder) builder = gtk_builder_new();
++  if (!g_subprocess_communicate_utf8_finish(G_SUBPROCESS(helper), result, &xml, nullptr, &error) ||
++      !g_subprocess_get_successful(G_SUBPROCESS(helper)) ||
++      !gtk_builder_add_from_string(builder, xml, -1, &error)) {
++    spdlog::warn("Context menu: {}", error ? error->message : "Helper failed");
++    return;
++  }
++  GObject* model = gtk_builder_get_object(builder, "choices");
++  if (!G_IS_MENU_MODEL(model)) return;
++  GtkWidget* menu = gtk_menu_new();
++  gtk_menu_attach_to_widget(GTK_MENU(menu), anchor, nullptr);
++  g_signal_connect_swapped(menu, "selection-done", G_CALLBACK(gtk_widget_destroy), menu);
++  g_autoptr(GSimpleActionGroup) group = g_simple_action_group_new();
++  g_autoptr(GSimpleAction) choose = g_simple_action_new("choose", G_VARIANT_TYPE_STRING);
++  g_object_set_data_full(G_OBJECT(choose), "command",
++                         g_strdup(static_cast<const gchar*>(g_object_get_data(helper, "command"))),
++                         g_free);
++  g_signal_connect(choose, "activate", G_CALLBACK(launchMenuAction),
++                   g_object_get_data(G_OBJECT(choose), "command"));
++  g_action_map_add_action(G_ACTION_MAP(group), G_ACTION(choose));
++  gtk_widget_insert_action_group(menu, "picker", G_ACTION_GROUP(group));
++  gtk_menu_shell_bind_model(GTK_MENU_SHELL(menu), G_MENU_MODEL(model), nullptr, false);
++  gtk_widget_show_all(menu);
++  GtkWidget* bar = gtk_widget_get_toplevel(anchor);
++  GdkRectangle edge{0, 0, gtk_widget_get_allocated_width(anchor), 1};
++  gtk_widget_translate_coordinates(anchor, bar, 0, gtk_widget_get_allocated_height(anchor),
++                                   &edge.x, &edge.y);
++  gtk_menu_popup_at_rect(GTK_MENU(menu), gtk_widget_get_window(bar), &edge, GDK_GRAVITY_NORTH_WEST,
++                         GDK_GRAVITY_NORTH_WEST,
++                         static_cast<GdkEvent*>(g_object_get_data(helper, "event")));
++}
++
++static void popupCommandMenu(GtkWidget* anchor, GdkEventButton* event, const std::string& command) {
++  g_autoptr(GError) error = nullptr;
++  g_autoptr(GSubprocess) child = g_subprocess_new(G_SUBPROCESS_FLAGS_STDOUT_PIPE, &error,
++                                                  command.c_str(), "menu", nullptr);
++  if (!child) {
++    spdlog::warn("Context menu: {}", error->message);
++    return;
++  }
++  g_object_set_data(G_OBJECT(anchor), "menu-request", child);
++  g_object_set_data_full(G_OBJECT(child), "command", g_strdup(command.c_str()), g_free);
++  g_object_set_data_full(G_OBJECT(child), "event", gdk_event_copy(reinterpret_cast<GdkEvent*>(event)),
++                         reinterpret_cast<GDestroyNotify>(gdk_event_free));
++  g_subprocess_communicate_utf8_async(child, nullptr, nullptr, loadMenuModel, g_object_ref(anchor));
++}
++
+@@ -229,0 +294,4 @@
++  if (rec->second == "on-click-right" && config_["context-menu-command"].isString()) {
++    popupCommandMenu(GTK_WIDGET(event_box_.gobj()), e, config_["context-menu-command"].asString());
++    return true;
++  }

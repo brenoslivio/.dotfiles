@@ -1,6 +1,9 @@
 { pkgs, ... }:
 
 let
+  waybar = pkgs.waybar.overrideAttrs (old: {
+    patches = (old.patches or [ ]) ++ [ ./context-menu.patch ];
+  });
   sources = pkgs.lib.fileset.toSource {
     root = ../../scripts;
     fileset = pkgs.lib.fileset.unions [
@@ -9,14 +12,14 @@ let
   };
   control = name: script: inputs: pkgs.writeShellApplication {
     inherit name;
-    runtimeInputs = [ pkgs.python3 pkgs.rofi pkgs.libnotify ] ++ inputs;
+    runtimeInputs = [ pkgs.python3 pkgs.zenity pkgs.libnotify ] ++ inputs;
     text = "exec python3 ${sources}/${script} \"$@\"";
   };
   audio = control "dotfiles-audio" "waybar_audio.py" [ pkgs.pulseaudio pkgs.pavucontrol ];
   tasks = control "dotfiles-tasks" "waybar_tasks.py" [ ];
 in
 {
-  home.packages = [ audio ];
+  home.packages = [ audio waybar ];
   home.file = {
     ".config/waybar/config.jsonc".source = pkgs.replaceVars ./config.jsonc {
       # Keep the image available independently of home-file activation order.
@@ -58,7 +61,7 @@ in
       Requisite = [ "graphical-session.target" ];
     };
     Service = {
-      ExecStart = "${pkgs.waybar}/bin/waybar";
+      ExecStart = "${waybar}/bin/waybar";
       ExecReload = "${pkgs.coreutils}/bin/kill -SIGUSR2 $MAINPID";
       Restart = "always";
       RestartSec = 1;
