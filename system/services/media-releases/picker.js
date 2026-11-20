@@ -339,8 +339,8 @@
                         const info = element('div');
                         info.append(element('div', `${episodeLabel(data.season, episode.number)} — ${episode.title}`, 'mr-title'));
                         info.append(element('div', `${episode.airDate || 'Air date unknown'} · ${episode.available ? 'In library' : 'Not in library'}`, 'mr-details'));
-                        const select = element('button', episode.aired ? 'Choose release' : 'Not aired / date unknown');
-                        select.disabled = !episode.aired;
+                        if (!episode.aired) info.append(element('div', 'Air date is unconfirmed or in the future. Check the episode number before downloading.', 'mr-rejected'));
+                        const select = element('button', 'Choose release');
                         select.onclick = () => { scope = episode.number; search.hidden = false; search.onclick(); };
                         row.append(info, select); episodeRows.append(row);
                     }

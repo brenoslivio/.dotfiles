@@ -204,7 +204,8 @@
         const owner = state.owner, node = el('article', undefined, 'mp-card'); node.dataset.mpNext = row.mediaId;
         node.append(el('h3', row.title), el('p', episodeLabel(row)+(row.episodeTitle ? ' — '+row.episodeTitle : '')));
         const messages = {ready: 'Ready to watch', resume: 'Resume your unfinished episode in Continue Watching.',
-            missing: 'This episode is not downloaded.', upcoming: 'Not aired yet'+(row.airDate ? ' · '+row.airDate : ''),
+            missing: 'This episode is not downloaded.',
+            upcoming: (row.airDate ? 'Listed air date: '+row.airDate : 'Air date unknown')+'. Check the episode number before downloading.',
             complete: 'Season complete', stopped: 'Following stopped', unavailable: 'Episode information is temporarily unavailable.'};
         node.append(el('p', messages[row.state] || '', 'mp-status'));
         if (row.state === 'ready' && row.itemId) node.append(button('Play episode', async () => {
@@ -212,7 +213,7 @@
                 await playItem(row.itemId, owner);
             } catch (error) { notify(error.message); }
         }));
-        if (row.state === 'missing' && row.canChoose) node.append(button('Choose release', async () => {
+        if (row.canChoose) node.append(button('Choose release', async () => {
             try {
                 guardOwner(owner);
                 await window.MediaPicker.choose({mediaType:'tv', mediaId:row.mediaId, season:row.season, episode:row.episode}, [row.season]);
