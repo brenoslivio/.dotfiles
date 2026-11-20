@@ -113,6 +113,21 @@ class TaskTests(unittest.TestCase):
 
 
 class AudioTests(unittest.TestCase):
+    def test_plugged_headphones_leave_laptop_speakers_selectable(self):
+        speaker, phones = "analog-output-speaker", "analog-output-headphones"
+        device = {"name": "analog", "description": "Laptop", "active_port": phones,
+                  "ports": [{"name": speaker, "description": "Speakers", "availability": "not available"},
+                            {"name": phones, "description": "Headphones", "availability": "available"},
+                            {"name": "hdmi-output-0", "description": "HDMI", "availability": "not available"}]}
+        for selected in (phones, speaker):
+            device["active_port"] = selected
+            routes = audio.routes("sink", [device], "analog")
+            self.assertEqual([r.port for r in routes], [speaker, phones])
+            self.assertEqual([r.port for r in routes if r.current], [selected])
+        device["ports"][0]["availability"] = "availability unknown"
+        device["ports"][1]["availability"] = "not available"
+        self.assertEqual([r.port for r in audio.routes("sink", [device], "analog")], [speaker])
+
     def test_hardware_ports_and_monitor_filter(self):
         device = {"name": "analog", "description": "Laptop", "active_port": "mic",
                   "ports": [{"name": "mic", "description": "Internal mic", "availability": "availability unknown"},

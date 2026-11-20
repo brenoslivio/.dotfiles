@@ -34,8 +34,9 @@ The notification center, power controls, and GTK menus share the Rofi palette.
 
 Right-click the volume indicator to open its GTK menu. Choose an output or
 microphone by name. The checkmarks reflect the audio server's current defaults
-and ports. A Bluetooth headset that needs call-quality playback to enable its
-microphone offers an explicit profile switch. Left-click opens the mixer,
+and ports. On the laptop, choose **Speakers** or **Headphones** with the wired
+headphones still plugged in. If a Bluetooth microphone requires call-quality
+playback, the menu asks before switching profiles. Left-click opens the mixer,
 scrolling adjusts volume, and the microphone mute key shows its resulting state.
 
 Right-click the task count beside the clock and choose **Add task…** or **Edit

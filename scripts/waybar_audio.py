@@ -31,10 +31,17 @@ def routes(kind, devices, default):
             continue
         description = device["description"].replace("\n", " ")
         ports = device.get("ports") or []
+        # ACP marks the built-in speakers unavailable when a wired jack is in
+        # use, even on codecs that can still switch the two outputs separately.
+        headphones_connected = kind == "sink" and any(
+            p["name"] == "analog-output-headphones" and p["availability"] == "available"
+            for p in ports
+        )
         if not ports:
             result.append(Route(kind, name, "", description, name == default))
         for port in ports:
-            if port["availability"] == "not available":
+            speaker_override = headphones_connected and port["name"] == "analog-output-speaker"
+            if port["availability"] == "not available" and not speaker_override:
                 continue
             label = port["description"].replace("\n", " ")
             if name.startswith("bluez_") and description != label:
