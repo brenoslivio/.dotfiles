@@ -56,7 +56,7 @@ window#waybar {
 
 #workspaces button:hover,
 #image.menu:hover,
-#mpris:hover, #wireplumber:hover, #backlight:hover,
+#mpris:hover, #wireplumber:hover,
 /* Waybar 0.16 applies hover to the box around a custom module's label. */
 box:hover > #custom-clock, box:hover > #custom-notification, box:hover > #custom-tasks,
 box:hover > #custom-displays, box:hover > #custom-power,
