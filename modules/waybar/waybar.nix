@@ -1,9 +1,27 @@
 { pkgs, ... }:
 
+let
+  sources = pkgs.lib.fileset.toSource {
+    root = ../../scripts;
+    fileset = pkgs.lib.fileset.unions [
+      ../../scripts/desktop_menu.py ../../scripts/waybar_audio.py ../../scripts/waybar_tasks.py
+    ];
+  };
+  control = name: script: inputs: pkgs.writeShellApplication {
+    inherit name;
+    runtimeInputs = [ pkgs.python3 pkgs.rofi pkgs.libnotify ] ++ inputs;
+    text = "exec python3 ${sources}/${script} \"$@\"";
+  };
+  audio = control "dotfiles-audio" "waybar_audio.py" [ pkgs.pulseaudio pkgs.pavucontrol ];
+  tasks = control "dotfiles-tasks" "waybar_tasks.py" [ ];
+in
 {
+  home.packages = [ audio ];
   home.file = {
     ".config/waybar/config.jsonc".source = pkgs.replaceVars ./config.jsonc {
       # Keep the image available independently of home-file activation order.
+      audioControl = pkgs.lib.getExe audio;
+      taskControl = pkgs.lib.getExe tasks;
       nixosIcon = "${../../assets/icons/nixos.svg}";
     };
     ".config/waybar/style.css".source = ./style.css;
@@ -25,7 +43,7 @@
       executable = true;
     };
     ".config/waybar/scripts/tasks.sh" = {
-      source = ./scripts/tasks.sh;
+      source = pkgs.writeShellScript "tasks.sh" ''exec ${pkgs.lib.getExe tasks} "$@"'';
       executable = true;
     };
   };

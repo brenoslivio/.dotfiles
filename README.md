@@ -32,6 +32,19 @@ The notification center, power controls, and GTK menus share the Rofi palette.
 
 [Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png)
 
+Right-click the volume indicator to choose an output or microphone in Rofi.
+A checkmark marks the current device in each group. Left-click opens the mixer,
+and scrolling adjusts volume. The microphone mute key shows its resulting state.
+
+Right-click the task count beside the clock, choose a project from the
+`Tasks` section of the Ikiru note, type a task, and press Enter. Left-click
+opens Obsidian. The picker reads the latest note before saving and uses the
+project's indentation. If the note or project is unavailable, the next capture
+offers the saved draft. `TASKS_FILE` overrides the default note for both the
+counter and capture.
+
+[Audio picker](assets/previews/waybar-audio-picker.png) · [Task capture](assets/previews/waybar-task-capture.png)
+
 Click the NixOS logo at the far left of Waybar to open Rofi and search for an app.
 
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)

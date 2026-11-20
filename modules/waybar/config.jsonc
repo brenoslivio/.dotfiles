@@ -83,12 +83,13 @@
     // },
 
     "custom/tasks": {
-        "exec": "~/.config/waybar/scripts/tasks.sh",
+        "exec": "@taskControl@",
         "interval": 1,
         "return-type": "json",
         "format": "  {}",
         "tooltip": true,
-        "on-click": "obsidian"
+        "on-click": "obsidian",
+        "on-click-right": "@taskControl@ capture"
     },
 
     "custom/clock": {
@@ -105,7 +106,9 @@
         "format": "<span size='large'>\udb81\udd7e</span>  {volume}%",
         "max-volume": 100,
         "scroll-step": 5,
-        "on-click": "pavucontrol -t 3"
+        "on-click": "pavucontrol -t 3",
+        "on-click-right": "@audioControl@",
+        "tooltip-format": "{node_name}\nRight-click to choose output or microphone"
     },
 
     "battery": {

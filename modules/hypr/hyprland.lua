@@ -131,12 +131,12 @@ for key, command in pairs({
     XF86AudioRaiseVolume = [[wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}' | xargs -I[] notify-send -e -u low -h string:x-canonical-private-synchronous:volume_notif -h int:value:[] "🔊 Volume : []%"]],
     XF86AudioLowerVolume = [[wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}' | xargs -I[] notify-send -e -u low -h string:x-canonical-private-synchronous:volume_notif -h int:value:[] "🔊 Volume : []%"]],
     XF86AudioMute = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-    XF86AudioMicMute = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
     XF86MonBrightnessUp = "brightnessctl s 10%+",
     XF86MonBrightnessDown = "brightnessctl s 10%-",
 }) do
     hl.bind(key, hl.dsp.exec_cmd(command), { locked = true, repeating = true })
 end
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("dotfiles-audio mic-mute"), { locked = true })
 for key, command in pairs({
     XF86AudioNext = "playerctl next", XF86AudioPause = "playerctl play-pause",
     XF86AudioPlay = "playerctl play-pause", XF86AudioPrev = "playerctl previous",
