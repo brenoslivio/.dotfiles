@@ -24,6 +24,12 @@ system controls on the right. The magenta underline marks the active workspace.
 
 ![Waybar with workspace 4 active and the display button immediately left of power](assets/previews/waybar.png)
 
+Click the bell to open notifications, or right-click it to toggle Do Not Disturb.
+Hover over the power button to see its label, then click to open the power menu.
+The notification center, power controls, and GTK menus share the Rofi palette.
+
+[Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png)
+
 Click the NixOS logo at the far left of Waybar to open Rofi and search for an app.
 
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)

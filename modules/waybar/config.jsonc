@@ -144,7 +144,7 @@
     },
 
     "custom/notification": {
-        "tooltip": false,
+        "tooltip-format": "Click to open notifications\nRight-click for Do Not Disturb",
         "format": "{icon}",
         "format-icons": {
           "notification": "<span foreground='#de0be6'><sup></sup></span>",
@@ -166,7 +166,7 @@
 
     "custom/power": {
         "format": "⏻",
-        "tooltip": false,
+        "tooltip-format": "Power menu",
         "on-click": "wlogout"
     }
 }

@@ -34,6 +34,7 @@ in
   imports = [
     ./assets/assets.nix
     ./cava/cava.nix
+    ./desktop-theme/desktop-theme.nix
     ./fastfetch/fastfetch.nix
     ./git/git.nix
     ./hypr/hypr.nix
@@ -41,6 +42,7 @@ in
     ./nemo/nemo.nix
     ./rofi/rofi.nix
     ./shell/shell.nix
+    ./swaync/swaync.nix
     ./waybar/waybar.nix
     ./wayland_flags/wayland_flags.nix
     ./wlogout/wlogout.nix
