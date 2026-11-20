@@ -24,6 +24,14 @@ system controls on the right. The magenta underline marks the active workspace.
 
 ![Waybar with workspace 4 active and the display button immediately left of power](assets/previews/waybar.png)
 
+Click the bell to open notifications, or right-click it to toggle Do Not Disturb.
+While the laptop is discharging, it shows a low-battery popup at 20% and a
+critical alert at 10% that stays until dismissed. Plugging in re-arms both alerts.
+Hover over the power button to see its label, then click to open the power menu.
+The notification center, power controls, and GTK menus share the Rofi palette.
+
+[Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png)
+
 Click the NixOS logo at the far left of Waybar to open Rofi and search for an app.
 
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)
@@ -232,9 +240,24 @@ Inspect standalone home generations with `home-manager generations`.
 
 Pending candidates have garbage-collection roots in `~/.local/state/dotfiles`;
 the protected system lives at `/nix/var/nix/profiles/dotfiles-known-good`.
-Notifications check tested updates daily and Friday evening without changing
-dependencies. Duplicate notices are suppressed; inspect failures with
-`journalctl --user -u flakeUpdate`.
+The laptop checks for CI-tested updates daily at 09:15 São Paulo time.
+The Friday monitor starts at 21:00 and checks GitHub every five minutes through
+Sunday at 21:00. A missed timer tick runs on wake. Polling GitHub stops once
+the weekly outcome is resolved.
+
+SwayNC keeps the weekly report visible until dismissed and respects Do Not
+Disturb. **Open pull request** opens the proposal in Brave when its checks pass,
+fail, or need approval. A failed proposal workflow links to its Actions run.
+After merge, **NixOS update ready** appears once the current `main` revision
+passes the desktop updater's verification. Use `up` to review installation.
+The monitor also reports a quiet week, an already-active system, or an update
+scheduled for next boot. It remembers delivered statuses across restarts and
+shares tested-update notices with the daily check.
+
+![Example Friday pull request and tested update popups](assets/previews/friday-update.png)
+
+Inspect the weekly monitor with `systemctl --user list-timers weeklyUpdate.timer`
+and `journalctl --user -u weeklyUpdate`. Daily checks use `flakeUpdate.service`.
 
 ### GitHub setup and bootstrap
 
@@ -244,7 +267,7 @@ It enables automated PRs and merged-branch deletion, and protects `main` with
 PRs, up-to-date branches, and both host ready checks, including admins.
 Force pushes and deletion are disabled; zero required reviewers allows solo
 maintenance. Proposal automation uses `GITHUB_TOKEN`; CI starts from the PR event.
-The local updater only needs repository and Actions read access.
+The local updater reads repository contents, pull requests, check suites, and Actions runs and artifacts.
 
 If the installed system predates the guarded updater, start from a clean checkout
 after the final `main` push CI passes. Run these commands in Bash:

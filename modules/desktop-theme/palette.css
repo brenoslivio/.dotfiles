@@ -1,0 +1,10 @@
+/* Shared GTK colors from the Rofi palette. */
+@define-color desktop_panel #201424;
+@define-color desktop_field #342037;
+@define-color desktop_selection #592852;
+@define-color desktop_text #f6edf8;
+@define-color desktop_muted #cdb6d1;
+@define-color desktop_inactive #ab8eaf;
+@define-color desktop_lavender #d891ed;
+@define-color desktop_magenta #de0be6;
+@define-color desktop_edge alpha(@desktop_lavender, 0.60);

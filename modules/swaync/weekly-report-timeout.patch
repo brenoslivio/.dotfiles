@@ -1,0 +1,11 @@
+--- a/src/notification/notification.vala
++++ b/src/notification/notification.vala
+@@ -786,3 +786,8 @@
++            // Keep weekly reports visible at normal urgency so DND still applies.
++            if (param.category == "x-dotfiles.weekly-update" && param.expire_timeout == 0) {
++                return;
++            }
++
+             uint timeout;
+             switch (param.urgency) {
+                 case UrgencyLevels.LOW :

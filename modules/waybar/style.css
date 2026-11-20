@@ -1,17 +1,9 @@
-@define-color panel rgba(32, 20, 36, 0.93);
-@define-color field #342037;
-@define-color selection #592852;
-@define-color foreground #f6edf8;
-@define-color muted #cdb6d1;
-@define-color inactive #ab8eaf;
-@define-color lavender #d891ed;
-@define-color magenta #de0be6;
-@define-color divider rgba(216, 145, 237, 0.22);
+@import url("../desktop-theme/palette.css");
 
 window#waybar {
-    background: @panel;
-    color: @foreground;
-    border: 1px solid alpha(@lavender, 0.68);
+    background: alpha(@desktop_panel, 0.93);
+    color: @desktop_text;
+    border: 1px solid alpha(@desktop_lavender, 0.68);
     border-radius: 12px;
     font-family: Inter, "FiraCode Nerd Font Mono";
     font-size: 13px;
@@ -47,37 +39,48 @@ window#waybar {
     background: transparent;
     box-shadow: none;
     text-shadow: none;
-    color: @lavender;
+    color: @desktop_lavender;
     font-family: "FiraCode Nerd Font Mono";
     font-size: 23px;
 }
 
 #workspaces button.empty {
-    color: @inactive;
+    color: @desktop_inactive;
+}
+
+#image.menu, #custom-clock, #custom-notification, #custom-tasks,
+#mpris, #wireplumber, #backlight, #custom-displays, #custom-power {
+    border-radius: 7px;
+    transition: background-color 120ms ease-out, color 120ms ease-out, box-shadow 120ms ease-out;
 }
 
 #workspaces button:hover,
 #image.menu:hover,
+#mpris:hover, #wireplumber:hover, #backlight:hover,
+/* Waybar 0.16 applies hover to the box around a custom module's label. */
+box:hover > #custom-clock, box:hover > #custom-notification, box:hover > #custom-tasks,
+box:hover > #custom-displays, box:hover > #custom-power,
+#custom-clock:hover, #custom-notification:hover, #custom-tasks:hover,
 #custom-displays:hover,
 #custom-power:hover {
-    background-color: @selection;
-    color: @foreground;
+    background-color: @desktop_selection;
+    color: @desktop_text;
 }
 
 #workspaces button.active {
-    background-color: @selection;
-    background-image: linear-gradient(@magenta, @magenta);
+    background-color: @desktop_selection;
+    background-image: linear-gradient(@desktop_magenta, @desktop_magenta);
     background-size: 16px 2px;
     background-position: center bottom;
     background-repeat: no-repeat;
-    color: @foreground;
+    color: @desktop_text;
 }
 
 #window {
     margin: 8px 0;
     padding-left: 10px;
-    border-left: 1px solid @divider;
-    color: @muted;
+    border-left: 1px solid alpha(@desktop_lavender, 0.22);
+    color: @desktop_muted;
 }
 
 window#waybar.empty #window {
@@ -88,18 +91,18 @@ window#waybar.empty #window {
     margin: 4px 0;
     padding: 0 6px;
     border-radius: 8px;
-    background: @field;
+    background: @desktop_field;
 }
 
 #custom-clock {
     padding: 0 8px;
-    color: @muted;
+    color: @desktop_muted;
 }
 
 #custom-notification,
 #custom-tasks {
     padding: 0 5px;
-    color: @lavender;
+    color: @desktop_lavender;
 }
 
 #custom-notification {
@@ -109,14 +112,14 @@ window#waybar.empty #window {
 
 #custom-cava {
     margin-right: 4px;
-    color: @inactive;
+    color: @desktop_inactive;
     font-family: "FiraCode Nerd Font Mono";
     font-size: 11px;
 }
 
 #mpris {
     margin-right: 8px;
-    color: @muted;
+    color: @desktop_muted;
 }
 
 #wireplumber,
@@ -129,32 +132,36 @@ window#waybar.empty #window {
 
 #memory, #cpu {
     min-width: 46px;
-    color: @muted;
+    color: @desktop_muted;
 }
 
 #tray {
     margin: 8px 4px;
     padding: 0 9px;
-    border-left: 1px solid @divider;
-    border-right: 1px solid @divider;
+    border-left: 1px solid alpha(@desktop_lavender, 0.22);
+    border-right: 1px solid alpha(@desktop_lavender, 0.22);
 }
 
 #custom-displays,
 #custom-power {
-    min-width: 28px;
+    min-width: 36px;
     margin: 3px 0;
     border-radius: 7px;
-    color: @lavender;
+    color: @desktop_lavender;
     font-family: "FiraCode Nerd Font Mono";
     font-size: 19px;
 }
 
+box:hover > #custom-power, #custom-power:hover {
+    box-shadow: inset 0 0 0 1px @desktop_edge;
+}
+
 tooltip {
-    border: 1px solid @lavender;
+    border: 1px solid @desktop_lavender;
     border-radius: 8px;
-    background: @panel;
+    background: alpha(@desktop_panel, 0.93);
 }
 
 tooltip label {
-    color: @foreground;
+    color: @desktop_text;
 }

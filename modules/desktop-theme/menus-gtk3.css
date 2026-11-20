@@ -1,0 +1,30 @@
+@import url("../desktop-theme/palette.css");
+
+menu, .context-menu {
+    background: @desktop_panel;
+    color: @desktop_text;
+    border: 1px solid @desktop_edge;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+menu menuitem {
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: @desktop_text;
+}
+
+menu menuitem:hover, menu menuitem:focus {
+    background: @desktop_selection;
+    color: @desktop_text;
+}
+
+menu menuitem:disabled, menu menuitem:disabled label {
+    color: @desktop_inactive;
+}
+
+menu separator {
+    background: alpha(@desktop_lavender, 0.22);
+    min-height: 1px;
+    margin: 4px 8px;
+}

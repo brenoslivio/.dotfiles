@@ -1,0 +1,90 @@
+@import url("../desktop-theme/palette.css");
+
+/* SwayNC loads its packaged widget stylesheet before the user stylesheet. */
+:root {
+    --cc-bg: @desktop_panel;
+    --noti-border-color: alpha(@desktop_lavender, 0.28);
+    --noti-bg: 52, 32, 55;
+    --noti-bg-alpha: 1;
+    --noti-bg-hover: @desktop_selection;
+    --noti-bg-focus: alpha(@desktop_lavender, 0.18);
+    --noti-close-bg: @desktop_selection;
+    --noti-close-bg-hover: #76426e;
+    --text-color: @desktop_text;
+    --text-color-disabled: @desktop_inactive;
+    --bg-selected: @desktop_selection;
+    --notification-shadow: none;
+    --border-radius: 9px;
+    --notification-icon-size: 40px;
+    --font-size-summary: 15px;
+    --font-size-body: 14px;
+    font-family: Inter, sans-serif;
+}
+
+.control-center {
+    border: 1px solid @desktop_edge;
+    border-radius: 14px;
+    padding: 4px;
+}
+
+.widget-title > label {
+    font-size: 20px;
+    font-weight: 600;
+}
+
+.widget-title > button {
+    background: @desktop_field;
+    color: @desktop_text;
+    border: 1px solid alpha(@desktop_lavender, 0.30);
+    border-radius: 7px;
+    padding: 4px 10px;
+}
+
+.widget-title > button:hover, .widget-title > button:focus-visible {
+    background: @desktop_selection;
+    border-color: @desktop_lavender;
+}
+
+.widget-dnd {
+    background: @desktop_field;
+    margin: 0 12px 6px;
+    padding: 8px 10px;
+}
+
+.widget-dnd switch:checked {
+    background: @desktop_lavender;
+    color: @desktop_panel;
+}
+
+.widget-dnd switch:checked slider {
+    background: @desktop_panel;
+}
+
+.notification-row .notification-background .notification.critical {
+    border-color: @desktop_lavender;
+    border-left: 3px solid @desktop_magenta;
+}
+
+.notification-row .notification-background .notification .notification-default-action {
+    padding: 8px;
+}
+
+.notification-row .notification-background .notification .notification-default-action .notification-content .text-box .body {
+    color: @desktop_muted;
+}
+
+.notification-row .notification-background .notification .notification-default-action .notification-content .text-box .time {
+    color: @desktop_muted;
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.notification-row:focus, .notification-group:focus {
+    background: transparent;
+}
+
+.notification-row:focus-visible, .notification-group:focus-visible {
+    outline: 1px solid @desktop_lavender;
+    outline-offset: -2px;
+    border-radius: 9px;
+}

@@ -1,0 +1,35 @@
+@import url("../desktop-theme/palette.css");
+
+popover.menu > arrow {
+    background-color: @desktop_panel;
+    border-color: @desktop_edge;
+}
+
+popover.menu > contents {
+    background: @desktop_panel;
+    color: @desktop_text;
+    border: 1px solid @desktop_edge;
+    border-radius: 10px;
+    padding: 5px;
+}
+
+popover.menu modelbutton {
+    border-radius: 6px;
+    padding: 5px 10px;
+    color: @desktop_text;
+}
+
+popover.menu modelbutton:hover, popover.menu modelbutton:focus {
+    background: @desktop_selection;
+    color: @desktop_text;
+}
+
+popover.menu modelbutton:disabled {
+    color: @desktop_inactive;
+}
+
+popover.menu separator {
+    background: alpha(@desktop_lavender, 0.22);
+    min-height: 1px;
+    margin: 4px 8px;
+}
