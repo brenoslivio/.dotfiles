@@ -25,6 +25,8 @@ system controls on the right. The magenta underline marks the active workspace.
 ![Waybar with workspace 4 active and the display button immediately left of power](assets/previews/waybar.png)
 
 Click the bell to open notifications, or right-click it to toggle Do Not Disturb.
+While the laptop is discharging, it shows a low-battery popup at 20% and a
+critical alert at 10% that stays until dismissed. Plugging in re-arms both alerts.
 Hover over the power button to see its label, then click to open the power menu.
 The notification center, power controls, and GTK menus share the Rofi palette.
 
