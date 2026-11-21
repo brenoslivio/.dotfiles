@@ -39,13 +39,13 @@ headphones still plugged in. If a Bluetooth microphone requires call-quality
 playback, the menu asks before switching profiles. Left-click opens the mixer,
 scrolling adjusts volume, and the microphone mute key shows its resulting state.
 
-Right-click the task count beside the clock to open the notepad on the Markdown
+Left-click the task count beside the clock to open the notepad on the Markdown
 body of Ikiru’s `## Tasks` section. Enter continues a bullet, and Tab or Shift+Tab
 indents or outdents the current line or selection. Ctrl+S saves to the note.
 Escape or × closes the window and keeps unfinished edits and the cursor as a local
 draft. If another editor changed the section, **Review changes** shows the current
 note above your editable draft. **Older drafts…** opens recovery for earlier
-task captures when available. Left-click opens Obsidian. `TASKS_FILE` overrides
+task captures when available. Right-click opens Obsidian. `TASKS_FILE` overrides
 the note for both the notepad and the counter.
 
 Click the NixOS logo at the far left of the panel to open Rofi and search for an app.

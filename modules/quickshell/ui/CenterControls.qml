@@ -88,7 +88,7 @@ Rectangle {
             richHint: true
             buttons: Qt.LeftButton | Qt.RightButton
             onTriggered: button => {
-                if (button === Qt.RightButton) center.state.taskNotepad.openAt(tasks)
+                if (button === Qt.LeftButton) center.state.taskNotepad.openAt(tasks)
                 else Quickshell.execDetached(Config.commands.obsidian)
             }
         }

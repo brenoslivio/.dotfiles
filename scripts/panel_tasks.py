@@ -40,10 +40,10 @@ def status(path):
     try:
         items = list(entries(read_lines(path)))
     except (OSError, UnicodeError):
-        return {"text": "0", "tooltip": f"Task file unavailable: {html.escape(str(path))}\nRight-click to keep a draft"}
+        return {"text": "0", "tooltip": f"Task file unavailable: {html.escape(str(path))}\nLeft-click to keep a draft"}
     tooltip = [("  ✓ " if indent else "• ") + html.escape(text) for _, indent, text in items]
     return {"text": str(sum(bool(indent) for _, indent, _ in items)),
-            "tooltip": "\n".join([*tooltip, "Right-click to open the task notepad"])}
+            "tooltip": "\n".join([*tooltip, "Left-click to open the task notepad · Right-click to open Obsidian"])}
 
 
 def insert_task(lines, project, text):
