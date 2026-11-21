@@ -27,6 +27,7 @@ in
       # Keep the image available independently of home-file activation order.
       updateControl = pkgs.lib.getExe updates;
       updateIcon = "${../../assets/icons/flake-update.svg}";
+      bellIcon = "${../../assets/icons/notification-bell.svg}";
       audioControl = pkgs.lib.getExe audio;
       taskControl = pkgs.lib.getExe tasks;
       nixosIcon = "${../../assets/icons/nixos.svg}";

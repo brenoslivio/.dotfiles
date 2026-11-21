@@ -45,7 +45,7 @@
 
     "hyprland/window": {
         "format": "{}",
-        "max-length": 66,
+        "max-length": 60,
         "icon": true,
         "icon-size": 16,
         "separate-outputs": true
@@ -161,17 +161,10 @@
 
     "custom/notification": {
         "tooltip-format": "Click to open notifications\nRight-click for Do Not Disturb",
-        "format": "{icon}",
-        "format-icons": {
-          "notification": "<span foreground='#de0be6'><sup></sup></span>",
-          "none": "",
-          "dnd-notification": "<span foreground='#de0be6'><sup></sup></span>",
-          "dnd-none": "",
-          "inhibited-notification": "<span foreground='#de0be6'><sup></sup></span>",
-          "inhibited-none": "",
-          "dnd-inhibited-notification": "<span foreground='#de0be6'><sup></sup></span>",
-          "dnd-inhibited-none": ""
-        },
+        "format": "●",
+        "image-path": "@bellIcon@",
+        "icon-size": 18,
+        "icon-spacing": 0,
         "return-type": "json",
         "exec-if": "which swaync-client",
         "exec": "swaync-client -swb",

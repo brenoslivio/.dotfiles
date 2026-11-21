@@ -99,15 +99,9 @@ window#waybar.empty #window {
     color: @desktop_muted;
 }
 
-#custom-notification,
 #custom-tasks {
     padding: 0 5px;
     color: @desktop_lavender;
-}
-
-#custom-notification {
-    font-family: "FiraCode Nerd Font Mono";
-    font-size: 22px;
 }
 
 #custom-cava {
@@ -166,17 +160,26 @@ tooltip label {
     color: @desktop_text;
 }
 
-#custom-updates {
+#custom-updates, #custom-notification {
     padding: 0 3px;
     color: @desktop_lavender;
 }
-#custom-updates label {
+#custom-updates label, #custom-notification label {
     color: transparent;
     font-size: 8px;
     padding-bottom: 12px;
 }
-#custom-updates.attention label {
+#custom-updates.attention label,
+#custom-notification.notification label, #custom-notification.inhibited-notification label,
+#custom-notification.dnd-notification label, #custom-notification.dnd-inhibited-notification label {
     color: #ff6675;
+}
+#custom-notification.dnd-none image, #custom-notification.dnd-notification image,
+#custom-notification.dnd-inhibited-none image, #custom-notification.dnd-inhibited-notification image {
+    background-image: linear-gradient(45deg, transparent 44%, @desktop_lavender 47%, @desktop_lavender 53%, transparent 56%);
+    background-size: 14px 14px;
+    background-position: center;
+    background-repeat: no-repeat;
 }
 @keyframes update-spin {
     from { -gtk-icon-transform: rotate(0turn); }
