@@ -35,6 +35,7 @@ in
       bellIcon = "${../../assets/icons/notification-bell.svg}";
       taskIcon = "${../../assets/icons/tasks.svg}";
       audioControl = pkgs.lib.getExe audio;
+      captureMonitor = "${pkgs.pipewire}/bin/pw-dump -mN | ${pkgs.python3}/bin/python3 ${./capture.py}";
       taskControl = pkgs.lib.getExe tasks;
       resourceMonitor = "${pkgs.python3}/bin/python3 ${../../scripts/waybar_resources.py}";
       nixosIcon = "${../../assets/icons/nixos.svg}";

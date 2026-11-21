@@ -10,7 +10,7 @@
 
     "modules-left": ["image#menu", "hyprland/workspaces", "hyprland/window"],
     "modules-center": ["custom/notification", "custom/updates", "custom/clock", "custom/tasks"],
-    "modules-right": ["mpris", "wireplumber", "custom/memory", "custom/cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
+    "modules-right": ["mpris", "custom/capture", "wireplumber", "custom/memory", "custom/cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
 
     "image#menu": {
         "path": "@nixosIcon@",
@@ -95,6 +95,13 @@
         "signal": 1
     },
 
+    "custom/capture": {
+        "exec": "@captureMonitor@",
+        "return-type": "json",
+        "restart-interval": 2,
+        "hide-empty-text": true
+    },
+
     "wireplumber": {
         "format": "<span size='large'>\udb81\udd7e</span>  {volume}%",
         "max-volume": 100,
@@ -106,9 +113,16 @@
 
     "battery": {
         "bat": "BAT0",
-        "interval": 60,
+        "adapter": "ADP0",
+        "interval": 30,
+        "smooth-power": true,
         "format": "<span size='large'>{icon}</span>  {capacity}%",
         "format-icons": ["\uf244", "\uf243", "\uf242", "\uf241", "\uf240"],
+        "tooltip-format": "{timeTo}\nBattery health · {health}% of design capacity",
+        "tooltip-format-discharging": "{power:.1f} W draw · {timeTo}",
+        "tooltip-format-charging": "Charging · {power:.1f} W\n{timeTo}\nBattery health · {health}% of design capacity",
+        "tooltip-format-plugged": "Plugged in · Charging paused\nBattery health · {health}% of design capacity",
+        "tooltip-format-full": "Fully charged\nBattery health · {health}% of design capacity"
     },
 
     "custom/displays": {

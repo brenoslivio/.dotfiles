@@ -134,6 +134,16 @@ window#waybar.empty #window {
     margin: 5px 0;
 }
 
+#custom-capture {
+    margin: 7px 0;
+    padding: 0 6px;
+    border-radius: 7px;
+    background: @desktop_selection;
+    color: @desktop_lavender;
+    font-family: "FiraCode Nerd Font Mono";
+    font-size: 15px;
+}
+
 #custom-memory, #custom-cpu {
     min-width: 46px;
     color: @desktop_muted;
