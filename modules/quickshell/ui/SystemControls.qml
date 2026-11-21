@@ -48,12 +48,12 @@ Row {
         Divider {}
         BarButton {
             label: "  " + (controls.state.memory.text || "0") + "%"
-            minimumWidth: 56; buttons: Qt.NoButton; richHint: true; highlight: false
+            minimumWidth: 48; padding: 3; buttons: Qt.NoButton; richHint: true; highlight: false
             hint: controls.state.memory.tooltip || ""
         }
         BarButton {
             label: "  " + (controls.state.cpu.text || "0") + "%"
-            minimumWidth: 56; buttons: Qt.NoButton; richHint: true; highlight: false
+            minimumWidth: 48; padding: 3; buttons: Qt.NoButton; richHint: true; highlight: false
             hint: controls.state.cpu.tooltip || ""
         }
         Divider {}
