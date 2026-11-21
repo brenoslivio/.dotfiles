@@ -82,24 +82,44 @@ ShellRoot {
             WlrLayershell.namespace: "dotfiles-panel"
 
             Rectangle {
+                id: background
                 anchors.fill: parent
                 radius: 12; color: Qt.alpha(Ink.panel, 0.96)
                 border.color: Qt.alpha(Ink.lavender, 0.65)
-                Row {
-                    anchors { left: parent.left; right: parent.right; bottom: parent.bottom; margins: 5 }
-                    height: parent.height - 8
+                Item {
+                    id: spectrum
+                    anchors.fill: parent
+                    anchors.margins: background.border.width
+                    readonly property real corner: background.radius - background.border.width
+                    readonly property real baselineInset: 5 - background.border.width
                     Repeater {
+                        id: bands
                         model: 64
                         Item {
+                            id: band
                             required property int index
-                            width: parent.width / 64
-                            height: parent.height
+                            readonly property bool first: index === 0
+                            readonly property bool last: index === bands.model - 1
+                            readonly property real step: spectrum.width / bands.model
+                            x: Math.round(index * step)
+                            width: Math.round((index + 1) * step) - x - (last ? 0 : 2)
+                            anchors.bottom: parent.bottom
+                            anchors.bottomMargin: spectrum.baselineInset
+                            height: Math.min(1, (root.levels[index] || 0) / 255) * (background.height - 8)
+                            clip: first || last
+                            Behavior on height { NumberAnimation { duration: 85 } }
+                            // Reveal the panel's fixed corner curve up to this band's current level.
                             Rectangle {
+                                x: band.last ? band.width - width : 0
+                                width: band.clip ? Math.max(band.width, 2 * spectrum.corner) : band.width
+                                height: band.clip ? spectrum.height : band.height
                                 anchors.bottom: parent.bottom
-                                width: Math.max(1, parent.width - 2)
-                                height: Math.min(1, (root.levels[parent.index] || 0) / 255) * parent.height
+                                anchors.bottomMargin: band.clip ? -spectrum.baselineInset : 0
+                                topLeftRadius: band.first ? spectrum.corner : 0
+                                bottomLeftRadius: topLeftRadius
+                                topRightRadius: band.last ? spectrum.corner : 0
+                                bottomRightRadius: topRightRadius
                                 color: Qt.alpha(Ink.lavender, 0.22)
-                                Behavior on height { NumberAnimation { duration: 85 } }
                             }
                         }
                     }
