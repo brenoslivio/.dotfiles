@@ -52,6 +52,7 @@ let
   commands = {
     displays = [ (toString (import ../hypr/display-mode.nix { inherit pkgs; })) ];
     clock = [ (toString clock) ];
+    streetSearch = [ "${python}/bin/python3" "${./street_search.py}" ];
     audio = [ (lib.getExe audio) ];
     updates = [ (lib.getExe updates) ];
     tasks = [ (lib.getExe tasks) ];

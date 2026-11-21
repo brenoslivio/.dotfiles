@@ -56,6 +56,7 @@ Column {
     Text {
         width: parent.width; horizontalAlignment: Text.AlignHCenter
         text: picker.page === "edit" ? (picker.original ? "Edit place" : "Add place")
+            : picker.page === "search" ? "Find by street"
             : picker.page === "remove" ? "Remove place?" : "Saved places"
         color: Ink.lavender; font.family: "Inter"; font.pixelSize: 13; font.bold: true
     }
@@ -86,24 +87,41 @@ Column {
             onTriggered: picker.page = picker.page === "manage" ? "list" : "manage"
         }
     }
-    component Field: Controls.TextField {
-        width: picker.width; color: Ink.text; placeholderTextColor: Ink.muted
-        font.family: "Inter"; font.pixelSize: 13; selectByMouse: true
-        leftPadding: 8; rightPadding: 8
-        background: Rectangle {
-            implicitHeight: 32; color: Ink.field; radius: 5
-            border.color: parent.activeFocus ? Ink.lavender : Ink.inactive
-        }
-    }
-    Field {
+    PlaceField {
+        width: parent.width
         id: nameField
         visible: picker.page === "edit"; placeholderText: "Place name"; Accessible.name: placeholderText
         onAccepted: coordinateField.forceActiveFocus()
     }
-    Field {
+    PlaceField {
+        width: parent.width
         id: coordinateField
         visible: picker.page === "edit"; placeholderText: "Latitude, longitude"; Accessible.name: placeholderText
         onAccepted: picker.save()
+    }
+    BarButton {
+        anchors.horizontalCenter: parent.horizontalCenter
+        visible: picker.page === "edit"; label: "Find by street…"
+        onTriggered: {
+            picker.error = ""
+            picker.page = "search"
+        }
+    }
+    Loader {
+        active: picker.page === "search"; visible: active
+        width: parent.width
+        sourceComponent: StreetSearch {
+            onBack: {
+                picker.page = "edit"
+                coordinateField.forceActiveFocus()
+            }
+            onPicked: match => {
+                coordinateField.text = match.latitude + ", " + match.longitude
+                if (!nameField.text.trim()) nameField.text = match.title
+                picker.page = "edit"
+                nameField.forceActiveFocus()
+            }
+        }
     }
     Text {
         visible: picker.page === "remove"; width: parent.width

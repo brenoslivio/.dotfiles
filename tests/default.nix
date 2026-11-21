@@ -54,6 +54,7 @@ in {
     cp ${../modules/quickshell/capture.py} modules/quickshell/capture.py
     cp ${../modules/quickshell/clock.py} modules/quickshell/clock.py
     cp ${../modules/quickshell/weather.py} modules/quickshell/weather.py
+    cp ${../modules/quickshell/street_search.py} modules/quickshell/street_search.py
     cp -R ${../.github} .github
     chmod -R u+w scripts tests .github
     export HOME="$TMPDIR/home"

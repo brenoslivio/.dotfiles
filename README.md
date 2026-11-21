@@ -55,7 +55,11 @@ The current track appears beneath the date while playing or paused. Left-click
 the clock for the selected place’s calendar, forecast, and playback controls.
 The back and forward mouse buttons on the clock skip tracks. Right-click to
 switch places or choose **Add place…**, enter a name and paste latitude and
-longitude (for example, `-23.5505, -46.6333`). **Manage places…** lets you edit
+longitude (for example, `-23.5505, -46.6333`). You can also choose **Find by street…**,
+enter a street and city, and press Enter. Select a match to fill in its coordinates,
+review the place name, and click **Save**. Street-only matches are approximate.
+Address searches use [Photon](https://photon.komoot.io/) and OpenStreetMap.
+**Manage places…** lets you edit
 or remove an entry. These actions edit `config/quickshell/places.json` in
 `$DOTFILES_REPO` (default `~/.dotfiles`). Commit and push it to share your places.
 Open-Meteo supplies the time zone and forecast. The active forecast refreshes
