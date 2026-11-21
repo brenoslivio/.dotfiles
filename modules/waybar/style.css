@@ -48,6 +48,13 @@ window#waybar {
     color: @desktop_inactive;
 }
 
+#workspaces button:not(.empty) > box {
+    background-image: radial-gradient(circle closest-side, @desktop_lavender 75%, transparent 100%);
+    background-size: 4px 4px;
+    background-position: 90% 10%;
+    background-repeat: no-repeat;
+}
+
 #image.menu, #custom-clock, #custom-notification, #custom-updates, #custom-tasks,
 #mpris, #wireplumber, #backlight, #custom-displays, #custom-power {
     border-radius: 7px;
@@ -67,7 +74,7 @@ box:hover > #custom-displays, box:hover > #custom-power,
     color: @desktop_text;
 }
 
-#workspaces button.active {
+#workspaces button.active, #workspaces button.visible {
     background-color: @desktop_selection;
     background-image: linear-gradient(@desktop_magenta, @desktop_magenta);
     background-size: 16px 2px;
