@@ -92,6 +92,7 @@ in
     # Terminal apps
     git
     gh
+    codex
     openssl
     wget
     btop
