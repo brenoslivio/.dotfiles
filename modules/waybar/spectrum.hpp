@@ -55,7 +55,7 @@ class Spectrum {
     cr->close_path();
     cr->clip();
 
-    const double peak = std::min(28., h * .76);
+    const double peak = std::min(32., h * .89);
     const double step = w / levels_.size();
     const double gap = step >= 8 ? 2 : 0;
     for (size_t i = 0; i < levels_.size(); ++i) {
