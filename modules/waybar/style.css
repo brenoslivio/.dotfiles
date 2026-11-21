@@ -27,6 +27,11 @@ window#waybar {
 
 #workspaces {
     margin: 3px 5px 3px 0;
+    padding-left: 5px;
+    background-image: linear-gradient(alpha(@desktop_lavender, 0.22), alpha(@desktop_lavender, 0.22));
+    background-position: left center;
+    background-size: 1px 22px;
+    background-repeat: no-repeat;
 }
 
 #workspaces button {
