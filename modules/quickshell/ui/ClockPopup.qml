@@ -1,62 +1,56 @@
 import QtQuick
 import Quickshell
 import "Palette.js" as Ink
-import "Config.js" as Config
 
 PopupWindow {
     id: popup
     required property var clock
     required property var player
     required property string trackTitle
-    property bool showCities: false
+    property bool showPlaces: false
     readonly property date today: new Date((clock.date || "2000-01-01") + "T12:00:00")
     readonly property int year: today.getFullYear()
     readonly property int month: today.getMonth()
     readonly property int offset: (new Date(year, month, 1).getDay() + 6) % 7
     readonly property int days: new Date(year, month + 1, 0).getDate()
 
+    onVisibleChanged: if (!visible) picker.reset()
+
     anchor.edges: Edges.Bottom
     anchor.gravity: Edges.Bottom
     grabFocus: true
     color: "transparent"
-    implicitWidth: showCities ? 185 : 228
-    implicitHeight: showCities ? cities.implicitHeight + 16 : calendar.implicitHeight + 16
+    implicitWidth: showPlaces ? 270 : 228
+    implicitHeight: showPlaces ? picker.implicitHeight + 16 : calendar.implicitHeight + 16
 
     Rectangle {
         anchors.fill: parent
         color: Ink.panel; radius: 10; border.color: Ink.inactive
         focus: true
         Keys.onEscapePressed: popup.visible = false
-        Column {
-            id: cities
+        PlacePicker {
+            id: picker
             anchors.centerIn: parent
-            visible: popup.showCities
-            Repeater {
-                model: popup.clock.cities || []
-                BarButton {
-                    required property var modelData
-                    width: popup.width - 16
-                    label: (modelData.id === popup.clock.zone ? "✓  " : "") + modelData.name + "   " + modelData.time
-                    onTriggered: {
-                        Quickshell.execDetached(Config.commands.selectZone.concat(JSON.stringify(modelData.id)))
-                        popup.visible = false
-                    }
-                }
-            }
+            width: popup.width - 16
+            visible: popup.showPlaces
+            clock: popup.clock
+            onChosen: popup.visible = false
         }
         Column {
             id: calendar
             anchors.centerIn: parent
             width: 210
-            visible: !popup.showCities
+            visible: !popup.showPlaces
             spacing: 4
             Text {
                 width: calendar.width
                 horizontalAlignment: Text.AlignHCenter
+                visible: !!popup.clock.date
                 text: Qt.formatDate(popup.today, "MMMM yyyy")
                 color: Ink.text; font.bold: true; font.family: "Inter"; font.pixelSize: 14
             }
             Row {
+                visible: !!popup.clock.date
                 Repeater {
                     model: ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"]
                     Text {
@@ -69,6 +63,7 @@ PopupWindow {
                 }
             }
             Grid {
+                visible: !!popup.clock.date
                 columns: 7
                 Repeater {
                     model: popup.offset + popup.days
@@ -85,6 +80,14 @@ PopupWindow {
                             font.family: "Inter"; font.pixelSize: 12; font.bold: parent.current
                         }
                     }
+                }
+            }
+            WeatherDetails {
+                width: calendar.width
+                clock: popup.clock
+                onAddPlace: {
+                    popup.showPlaces = true
+                    picker.edit(null)
                 }
             }
             Column {

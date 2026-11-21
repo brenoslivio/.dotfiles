@@ -52,9 +52,17 @@ Click the NixOS logo at the far left of the panel to open Rofi and search for an
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)
 
 The current track appears beneath the date while playing or paused. Left-click
-the clock for the current month, song details, and playback controls. The back
-and forward mouse buttons on the clock skip tracks. Right-click to switch
-between São Paulo and Berlin. Hover over memory or CPU for the total and the five
+the clock for the selected place’s calendar, forecast, and playback controls.
+The back and forward mouse buttons on the clock skip tracks. Right-click to
+switch places or choose **Add place…**, enter a name and paste latitude and
+longitude (for example, `-23.5505, -46.6333`). **Manage places…** lets you edit
+or remove an entry. These actions edit `config/quickshell/places.json` in
+`$DOTFILES_REPO` (default `~/.dotfiles`). Commit and push it to share your places.
+Open-Meteo supplies the time zone and forecast. The active forecast refreshes
+every 30 minutes. Your selection and per-location offline cache stay in your
+local state directory. [Open-Meteo](https://open-meteo.com/)
+
+Hover over memory or CPU for the total and the five
 busiest programs. During playback, a squared audio spectrum spans the panel.
 The volume icon also indicates active microphone, camera, or screen capture.
 

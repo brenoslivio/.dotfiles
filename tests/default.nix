@@ -53,6 +53,7 @@ in {
     mkdir -p modules/quickshell
     cp ${../modules/quickshell/capture.py} modules/quickshell/capture.py
     cp ${../modules/quickshell/clock.py} modules/quickshell/clock.py
+    cp ${../modules/quickshell/weather.py} modules/quickshell/weather.py
     cp -R ${../.github} .github
     chmod -R u+w scripts tests .github
     export HOME="$TMPDIR/home"

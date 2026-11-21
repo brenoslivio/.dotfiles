@@ -18,7 +18,10 @@ let
   };
   clock = pkgs.writeShellScript "panel-clock" ''
     export PYTHONTZPATH=${pkgs.tzdata}/share/zoneinfo
-    exec ${python}/bin/python3 ${./clock.py} "$@"
+    exec ${python}/bin/python3 ${lib.fileset.toSource {
+      root = ./.;
+      fileset = lib.fileset.unions [ ./clock.py ./weather.py ];
+    }}/clock.py "$@"
   '';
   audio = control "dotfiles-audio" "panel_audio.py" [ pkgs.pulseaudio pkgs.libnotify pkgs.zenity ];
   updates = control "dotfiles-update-indicator" "panel_updates.py" [ pkgs.gh pkgs.systemd pkgs.xdg-utils ];
@@ -49,7 +52,6 @@ let
   commands = {
     displays = [ (toString (import ../hypr/display-mode.nix { inherit pkgs; })) ];
     clock = [ (toString clock) ];
-    selectZone = [ (toString clock) "apply" ];
     audio = [ (lib.getExe audio) ];
     updates = [ (lib.getExe updates) ];
     tasks = [ (lib.getExe tasks) ];

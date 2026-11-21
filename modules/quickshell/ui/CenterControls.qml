@@ -50,10 +50,11 @@ Rectangle {
         }
         BarButton {
             id: clockButton
-            label: center.state.clock.label || "…"
+            readonly property var weather: center.state.clock.weather
+            label: (center.state.clock.label || "…") + (weather?.icon ? "   " + weather.icon + " " + weather.temperature + "°" : "")
             subtitle: center.player ? (center.player.isPlaying ? "♪  " : "⏸  ") + center.trackTitle : ""
             buttons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
-            hint: calendar.visible ? "" : [center.state.clock.zone, center.trackTitle, center.player?.trackArtist].filter(Boolean).join("\n")
+            hint: calendar.visible ? "" : [center.state.clock.place?.name, center.state.clock.zone, center.trackTitle, center.player?.trackArtist].filter(Boolean).join("\n")
             onTriggered: button => {
                 if (button === Qt.MiddleButton || button === Qt.BackButton) {
                     if (center.player?.canGoPrevious) center.player.previous()
@@ -63,9 +64,9 @@ Rectangle {
                     if (center.player?.canGoNext) center.player.next()
                     return
                 }
-                const cities = button === Qt.RightButton
-                const close = calendar.visible && calendar.showCities === cities
-                calendar.showCities = cities
+                const places = button === Qt.RightButton
+                const close = calendar.visible && calendar.showPlaces === places
+                calendar.showPlaces = places
                 calendar.visible = !close
             }
             ClockPopup {
