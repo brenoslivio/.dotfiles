@@ -2,6 +2,7 @@
 
 let
   inherit (pkgs) lib;
+  papirus = pkgs.papirus-icon-theme.override { color = "magenta"; };
   python = pkgs.python3.withPackages (ps: [ ps.inotify-simple ps.pulsectl ]);
   sources = lib.fileset.toSource {
     root = ../../scripts;
@@ -56,6 +57,17 @@ let
   ui = pkgs.runCommandLocal "quickshell-panel-ui" { } ''
     mkdir -p "$out"
     cp ${./ui}/*.qml "$out/"
+    # Use the GTK panel variants for nm-applet and Blueman, including their state changes.
+    mkdir "$out/tray"
+    for icon in ${papirus}/share/icons/Papirus-Dark/16x16/panel/{nm-*,network-*,blueman*}.svg; do
+      cp -L "$icon" "$out/tray/"
+    done
+    (
+      cd "$out/tray"
+      echo 'var names = ['
+      printf '  "%s",\n' *.svg
+      echo ']'
+    ) > "$out/TrayIcons.js"
     echo 'var commands = ${builtins.toJSON commands}' > "$out/Config.js"
     sed -nE 's/^@define-color desktop_([a-z]+) (#[a-fA-F0-9]+);$/var \1 = "\2";/p' \
       ${../desktop-theme/palette.css} > "$out/Palette.js"
