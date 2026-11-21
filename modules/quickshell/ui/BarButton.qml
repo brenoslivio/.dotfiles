@@ -5,6 +5,7 @@ import "Palette.js" as Ink
 Rectangle {
     id: button
     property string label
+    property string subtitle
     property string hint
     property bool richHint: false
     property string iconSource
@@ -32,6 +33,7 @@ Rectangle {
 
     Row {
         anchors.centerIn: parent
+        anchors.verticalCenterOffset: button.subtitle ? -6 : 0
         spacing: iconSource && label ? 3 : 0
         Image {
             id: icon
@@ -57,6 +59,14 @@ Rectangle {
             font.pixelSize: button.glyph ? 19 : 13
             font.italic: button.italic
         }
+    }
+    Text {
+        visible: !!button.subtitle
+        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
+        width: Math.max(0, button.width - 2 * button.padding)
+        text: button.subtitle; textFormat: Text.PlainText
+        horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
+        color: Ink.lavender; font.family: "Inter"; font.pixelSize: 11
     }
     Rectangle {
         anchors.centerIn: parent

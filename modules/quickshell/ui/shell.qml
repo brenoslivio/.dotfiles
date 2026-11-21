@@ -201,7 +201,6 @@ ShellRoot {
                     bar: panel
                     state: root
                     anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
-                    availableWidth: Math.max(0, (parent.width - center.width) / 2 - 14)
                 }
             }
         }

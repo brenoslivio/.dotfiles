@@ -51,8 +51,10 @@ Click the NixOS logo at the far left of the panel to open Rofi and search for an
 
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)
 
-Left-click the clock for the current month. Right-click to switch between
-São Paulo and Berlin. Hover over memory or CPU for the total and the five
+The current track appears beneath the date while playing or paused. Left-click
+the clock for the current month, song details, and playback controls. The back
+and forward mouse buttons on the clock skip tracks. Right-click to switch
+between São Paulo and Berlin. Hover over memory or CPU for the total and the five
 busiest programs. During playback, a squared audio spectrum spans the panel.
 The volume icon also indicates active microphone, camera, or screen capture.
 

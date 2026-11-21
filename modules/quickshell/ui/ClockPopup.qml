@@ -6,6 +6,8 @@ import "Config.js" as Config
 PopupWindow {
     id: popup
     required property var clock
+    required property var player
+    required property string trackTitle
     property bool showCities: false
     readonly property date today: new Date((clock.date || "2000-01-01") + "T12:00:00")
     readonly property int year: today.getFullYear()
@@ -45,6 +47,7 @@ PopupWindow {
         Column {
             id: calendar
             anchors.centerIn: parent
+            width: 210
             visible: !popup.showCities
             spacing: 4
             Text {
@@ -84,6 +87,59 @@ PopupWindow {
                     }
                 }
             }
+            Column {
+                visible: !!popup.player
+                width: calendar.width
+                spacing: 4
+                Rectangle { width: parent.width; height: 1; color: Qt.alpha(Ink.lavender, 0.28) }
+                Text {
+                    width: parent.width; topPadding: 4
+                    text: popup.trackTitle; textFormat: Text.PlainText
+                    horizontalAlignment: Text.AlignHCenter
+                    wrapMode: Text.Wrap; maximumLineCount: 3; elide: Text.ElideRight
+                    color: Ink.text; font.family: "Inter"; font.pixelSize: 13; font.bold: true
+                }
+                Text {
+                    width: parent.width; visible: !!text
+                    text: popup.player?.trackArtist || ""; textFormat: Text.PlainText
+                    horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
+                    color: Ink.muted; font.family: "Inter"; font.pixelSize: 12
+                }
+                Row {
+                    anchors.horizontalCenter: parent.horizontalCenter
+                    spacing: 5
+                    TransportButton {
+                        label: "󰒮"; hint: "Previous"
+                        enabled: !!popup.player?.canGoPrevious
+                        onTriggered: popup.player.previous()
+                    }
+                    TransportButton {
+                        label: popup.player?.isPlaying ? "󰏤" : "󰐊"
+                        hint: popup.player?.isPlaying ? "Pause" : "Play"
+                        labelColor: Ink.lavender
+                        enabled: !!popup.player?.canTogglePlaying
+                        onTriggered: popup.player.togglePlaying()
+                    }
+                    TransportButton {
+                        label: "󰒭"; hint: "Next"
+                        enabled: !!popup.player?.canGoNext
+                        onTriggered: popup.player.next()
+                    }
+                }
+            }
         }
+    }
+
+    component TransportButton: BarButton {
+        minimumWidth: 34; glyph: true
+        opacity: enabled ? 1 : 0.38
+        activeFocusOnTab: enabled
+        highlight: true
+        border.color: activeFocus ? Ink.lavender : "transparent"
+        Accessible.role: Accessible.Button
+        Accessible.name: hint
+        Accessible.onPressAction: if (enabled) triggered(Qt.LeftButton)
+        Keys.onSpacePressed: triggered(Qt.LeftButton)
+        Keys.onReturnPressed: triggered(Qt.LeftButton)
     }
 }

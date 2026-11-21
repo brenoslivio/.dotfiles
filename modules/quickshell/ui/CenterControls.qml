@@ -1,11 +1,16 @@
 import QtQuick
 import Quickshell
+import Quickshell.Services.Mpris
 import "Config.js" as Config
 import "Palette.js" as Ink
 
 Rectangle {
     id: center
     required property var state
+    readonly property var players: Mpris.players.values.filter(p => !p.dbusName.toLowerCase().includes("brave")
+        && p.playbackState !== MprisPlaybackState.Stopped)
+    readonly property var player: players.find(p => p.isPlaying) || players[0] || null
+    readonly property string trackTitle: player?.trackTitle || player?.identity || ""
     color: Ink.field; radius: 8; height: 30; width: controls.implicitWidth + 10
     Row {
         id: controls
@@ -44,15 +49,30 @@ Rectangle {
         BarButton {
             id: clockButton
             label: center.state.clock.label || "…"
-            buttons: Qt.LeftButton | Qt.RightButton
-            hint: calendar.visible ? "" : center.state.clock.zone || ""
+            subtitle: center.player ? (center.player.isPlaying ? "♪  " : "⏸  ") + center.trackTitle : ""
+            buttons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
+            hint: calendar.visible ? "" : [center.state.clock.zone, center.trackTitle, center.player?.trackArtist].filter(Boolean).join("\n")
             onTriggered: button => {
+                if (button === Qt.MiddleButton || button === Qt.BackButton) {
+                    if (center.player?.canGoPrevious) center.player.previous()
+                    return
+                }
+                if (button === Qt.ForwardButton) {
+                    if (center.player?.canGoNext) center.player.next()
+                    return
+                }
                 const cities = button === Qt.RightButton
                 const close = calendar.visible && calendar.showCities === cities
                 calendar.showCities = cities
                 calendar.visible = !close
             }
-            ClockPopup { id: calendar; anchor.item: clockButton; clock: center.state.clock }
+            ClockPopup {
+                id: calendar
+                anchor.item: clockButton
+                clock: center.state.clock
+                player: center.player
+                trackTitle: center.trackTitle
+            }
         }
         BarButton {
             id: tasks
