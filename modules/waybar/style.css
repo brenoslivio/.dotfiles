@@ -117,10 +117,12 @@ window#waybar.empty #window {
 }
 
 #mpris {
-    margin-right: 8px;
+    margin: 7px 4px 7px 0;
+    padding: 0 4px;
     color: @desktop_muted;
 }
 
+#wireplumber,
 #custom-memory,
 #custom-cpu,
 #backlight,
@@ -129,8 +131,7 @@ window#waybar.empty #window {
 }
 
 #wireplumber {
-    margin: 7px 2px;
-    padding: 0 4px;
+    margin: 5px 0;
 }
 
 #custom-memory, #custom-cpu {
