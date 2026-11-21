@@ -97,7 +97,7 @@
 
     "wireplumber": {
         "capture-command": "@captureMonitor@",
-        "format": "<span font_family='FiraCode Nerd Font Mono' size='large'>{icon}</span>  {volume}%",
+        "format": "<span font_family='FiraCode Nerd Font Mono' size='large'>{icon}</span>  {volume}<small>%</small>",
         "format-icons": {"default": "󰕾", "default-muted": "󰝟"},
         "max-volume": 100,
         "scroll-step": 5,
@@ -111,13 +111,15 @@
         "adapter": "ADP0",
         "interval": 30,
         "smooth-power": true,
-        "format": "<span size='large'>{icon}</span>  {capacity}%",
+        "format": "<span size='large'>{icon}</span>",
+        "format-discharging": "<span size='large'>{icon}</span> {capacity}<small>%</small>",
+        "format-charging": "<span size='large'>󰂄</span>",
         "format-icons": ["\uf244", "\uf243", "\uf242", "\uf241", "\uf240"],
-        "tooltip-format": "{timeTo}\nBattery health · {health}% of design capacity",
-        "tooltip-format-discharging": "{power:.1f} W draw · {timeTo}",
-        "tooltip-format-charging": "Charging · {power:.1f} W\n{timeTo}\nBattery health · {health}% of design capacity",
-        "tooltip-format-plugged": "Plugged in · Charging paused\nBattery health · {health}% of design capacity",
-        "tooltip-format-full": "Fully charged\nBattery health · {health}% of design capacity"
+        "tooltip-format": "{capacity}% · {timeTo}\nBattery health · {health}% of design capacity",
+        "tooltip-format-discharging": "{capacity}% · On battery\n{power:.1f} W draw · {timeTo}",
+        "tooltip-format-charging": "{capacity}% · Charging\n{power:.1f} W · {timeTo}\nBattery health · {health}% of design capacity",
+        "tooltip-format-plugged": "{capacity}% · Plugged in · Charging paused\nBattery health · {health}% of design capacity",
+        "tooltip-format-full": "{capacity}% · Fully charged\nBattery health · {health}% of design capacity"
     },
 
     "custom/displays": {
@@ -129,22 +131,24 @@
     },
 
     "backlight": {
-        "format": "<span size='large'>\udb80\udcdf</span>  {percent}%",
-        "scroll-step": 5,
+        "format": "<span size='large'>{icon}</span>",
+        "format-icons": ["󰃞", "󰃟", "󰃠"],
+        "tooltip-format": "Brightness · {percent}%",
+        "scroll-step": 5
     },
 
     "custom/memory": {
         "exec": "@resourceMonitor@ memory",
         "return-type": "json",
         "restart-interval": 2,
-        "format": "<span size='large'></span>  {}%"
+        "format": "<span size='large'></span> {}<small>%</small>"
     },
 
     "custom/cpu": {
         "exec": "@resourceMonitor@ cpu",
         "return-type": "json",
         "restart-interval": 2,
-        "format": "<span size='large'></span>  {}%"
+        "format": "<span size='large'></span> {}<small>%</small>"
     },
 
     "tray": {
