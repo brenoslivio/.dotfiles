@@ -1,0 +1,26 @@
+--- a/include/modules/custom.hpp
++++ b/include/modules/custom.hpp
+@@ -10,1 +10,2 @@
+ #include "AIconLabel.hpp"
++#include "clock-calendar.hpp"
+@@ -35,1 +36,2 @@
+   const std::string name_;
++  std::unique_ptr<ClockCalendar> calendar_;
+--- a/src/modules/custom.cpp
++++ b/src/modules/custom.cpp
+@@ -198,1 +198,12 @@
+ bool waybar::modules::Custom::handleToggle(GdkEventButton* const& e) {
++  if (e->button == 1 && e->type == GDK_BUTTON_PRESS && config_["calendar-popup"].asBool()) {
++    if (!calendar_) calendar_ = std::make_unique<ClockCalendar>();
++    if (calendar_->get_visible()) {
++      calendar_->popdown();
++    } else if (calendar_->display(alt_)) {
++      module_widget_->unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
++      calendar_->open(event_box_, e);
++    }
++    return true;
++  }
++
+@@ -213,1 +224,2 @@
+       parseOutputJson();
++      if (calendar_ && calendar_->get_visible()) calendar_->display(alt_);

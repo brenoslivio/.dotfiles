@@ -114,6 +114,43 @@ window#waybar.empty #window {
     color: @desktop_muted;
 }
 
+#clock-calendar {
+    padding: 8px;
+    font-family: Inter, sans-serif;
+    font-size: 13px;
+    font-feature-settings: "tnum";
+}
+
+#clock-calendar menuitem {
+    padding: 0;
+    background: transparent;
+}
+
+#clock-calendar .month-title {
+    padding: 3px 0 8px;
+    font-weight: bold;
+    color: @desktop_text;
+}
+
+#clock-calendar .weekday {
+    min-width: 29px;
+    padding-bottom: 4px;
+    color: @desktop_muted;
+    font-size: 11px;
+}
+
+#clock-calendar .day {
+    min-height: 23px;
+    color: @desktop_text;
+}
+
+#clock-calendar .today {
+    background: @desktop_lavender;
+    color: @desktop_panel;
+    border-radius: 6px;
+    font-weight: bold;
+}
+
 #custom-tasks {
     padding: 0 5px;
     color: @desktop_lavender;

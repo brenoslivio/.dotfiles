@@ -56,6 +56,7 @@ in {
     chmod -R u+w scripts tests .github
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME"
+    export PYTHONTZPATH=${pkgs.tzdata}/share/zoneinfo
     python -m unittest discover -s tests -p 'test_*.py' -v
     shellcheck scripts/*.sh
     actionlint -shellcheck="" .github/workflows/*.yml
