@@ -257,24 +257,24 @@ Inspect standalone home generations with `home-manager generations`.
 
 Pending candidates have garbage-collection roots in `~/.local/state/dotfiles`;
 the protected system lives at `/nix/var/nix/profiles/dotfiles-known-good`.
-The laptop checks for CI-tested updates daily at 09:15 São Paulo time.
-The Friday monitor starts at 21:00 and checks GitHub every five minutes through
-Sunday at 21:00. A missed timer tick runs on wake. Polling GitHub stops once
-the weekly outcome is resolved.
+The circular arrow beside the Waybar bell checks the flake update PR and the
+verified desktop revision on `main` every five minutes while the laptop is awake.
+A missed check runs once on wake. Left-click to refresh immediately. The arrow
+spins as soon as you click. Automatic checks start the animation after half a
+second. The red dot stays in place while the arrow turns.
 
-SwayNC keeps the weekly report visible until dismissed and respects Do Not
-Disturb. **Open pull request** opens the proposal in Brave when its checks pass,
-fail, or need approval. A failed proposal workflow links to its Actions run.
-After merge, **NixOS update ready** appears once the current `main` revision
-passes the desktop updater's verification. Use `up` to review installation.
-The monitor also reports a quiet week, an already-active system, or an update
-scheduled for next boot. It remembers delivered statuses across restarts and
-shares tested-update notices with the daily check.
+Hover for the PR status, desktop update status, and time of the last successful
+check. A red dot marks a proposal ready for review, CI needing attention, or a
+tested system ready to apply with `up`. A system scheduled for next boot clears
+its update dot. Right-click for links to the relevant PR and Actions runs.
+The Friday GitHub workflow creates proposals. The indicator only reads GitHub.
+If offline, it keeps the last known status. After a rate limit it waits until
+GitHub permits another check.
 
-![Example Friday pull request and tested update popups](assets/previews/friday-update.png)
+[Update indicator](assets/previews/waybar-update.png) · [Manual refresh animation](assets/previews/waybar-update-refresh.gif)
 
-Inspect the weekly monitor with `systemctl --user list-timers weeklyUpdate.timer`
-and `journalctl --user -u weeklyUpdate`. Daily checks use `flakeUpdate.service`.
+Inspect the timer with `systemctl --user list-timers dotfiles-update-check.timer`
+and the check log with `journalctl --user -u dotfiles-update-check.service`.
 
 ### GitHub setup and bootstrap
 

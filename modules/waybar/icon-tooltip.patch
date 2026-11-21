@@ -1,0 +1,17 @@
+--- a/src/ALabel.cpp
++++ b/src/ALabel.cpp
+@@ -50,8 +50,12 @@
+     // Keep dynamic tooltip contents out of GtkWidget's tooltip-markup property.
+     // Setting that property queues a display-wide tooltip query, which restarts
+     // GTK's hover delay when modules update faster than the delay can expire.
+-    label_.set_has_tooltip(true);
+-    label_.signal_query_tooltip().connect(
++    // An icon and its label share the same tooltip hit area.
++    Gtk::Widget& target = config["image-name"].isString() || config["image-path"].isString()
++                              ? static_cast<Gtk::Widget&>(event_box_)
++                              : static_cast<Gtk::Widget&>(label_);
++    target.set_has_tooltip(true);
++    target.signal_query_tooltip().connect(
+         [this](int, int, bool, const Glib::RefPtr<Gtk::Tooltip>& tooltip) {
+           if (!last_tooltip_markup_.has_value() || last_tooltip_markup_->empty()) {
+             active_tooltip_.reset();

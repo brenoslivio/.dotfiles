@@ -8,7 +8,7 @@
     "spacing": 2,
 
     "modules-left": ["image#menu", "ext/workspaces", "hyprland/window"],
-    "modules-center": ["custom/notification", "custom/clock", "custom/tasks"],
+    "modules-center": ["custom/updates", "custom/notification", "custom/clock", "custom/tasks"],
     "modules-right": ["custom/cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
 
     "image#menu": {
@@ -144,6 +144,19 @@
     "tray": {
         "icon-size": 16,
         "spacing": 9
+    },
+
+    "custom/updates": {
+        "exec": "@updateControl@ status",
+        "on-click": "@updateControl@ manual",
+        "context-menu-command": "@updateControl@",
+        "signal": 9,
+        "exec-on-event": false,
+        "return-type": "json",
+        "format": "{text}",
+        "image-path": "@updateIcon@",
+        "icon-size": 18,
+        "icon-spacing": 0
     },
 
     "custom/notification": {

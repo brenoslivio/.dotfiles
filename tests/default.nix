@@ -79,7 +79,7 @@ in {
       systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
       networking.networkmanager.ensureProfiles.profiles = lib.mkForce {};
       nix.gc.automatic = lib.mkForce false;
-      home-manager.users.brenoslivio.systemd.user.timers.flakeUpdate.Install.WantedBy = lib.mkForce [];
+      home-manager.users.brenoslivio.systemd.user.timers.dotfiles-update-check.Install.WantedBy = lib.mkForce [];
     };
     testScript = ''
       start_all()

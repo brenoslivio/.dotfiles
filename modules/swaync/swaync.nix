@@ -30,9 +30,6 @@ in
   };
 
   services.swaync.enable = true;
-  services.swaync.package = pkgs.swaynotificationcenter.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./weekly-report-timeout.patch ];
-  });
   services.swaync.style = ./style.css;
   services.swaync.settings = {
     positionX = "right";

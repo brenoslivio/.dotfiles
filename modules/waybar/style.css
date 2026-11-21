@@ -165,3 +165,26 @@ tooltip {
 tooltip label {
     color: @desktop_text;
 }
+
+#custom-updates {
+    padding: 0 3px;
+    color: @desktop_lavender;
+}
+#custom-updates label {
+    color: transparent;
+    font-size: 8px;
+    padding-bottom: 12px;
+}
+#custom-updates.attention label {
+    color: #ff6675;
+}
+@keyframes update-spin {
+    from { -gtk-icon-transform: rotate(0turn); }
+    to   { -gtk-icon-transform: rotate(1turn); }
+}
+#custom-updates.checking image {
+    animation: update-spin 1s linear 500ms infinite;
+}
+#custom-updates.manual image {
+    animation: update-spin 1s linear infinite;
+}
