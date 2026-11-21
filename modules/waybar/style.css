@@ -121,7 +121,6 @@ window#waybar.empty #window {
     color: @desktop_muted;
 }
 
-#wireplumber,
 #custom-memory,
 #custom-cpu,
 #backlight,
@@ -130,7 +129,8 @@ window#waybar.empty #window {
 }
 
 #wireplumber {
-    margin: 5px 0;
+    margin: 7px 2px;
+    padding: 0 4px;
 }
 
 #custom-memory, #custom-cpu {
