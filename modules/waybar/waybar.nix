@@ -20,6 +20,7 @@ let
   };
   control = name: script: inputs: pkgs.writeShellApplication {
     inherit name;
+    runtimeEnv = pkgs.lib.optionalAttrs (name == "dotfiles-update-indicator") { DOTFILES_LEGACY_WAYBAR = "1"; };
     runtimeInputs = [ pkgs.python3 ] ++ inputs;
     text = "exec python3 ${sources}/${script} \"$@\"";
   };

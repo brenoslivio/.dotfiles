@@ -6,7 +6,7 @@ These files are installed by Home Manager under
 
 ## Inventory
 
-- `icons/nixos.svg`: NixOS logo used by Waybar.
+- `icons/nixos.svg`: NixOS logo used by the desktop panel.
 - `wallpapers/purple-neon-lights.jpg`: Hyprlock background.
 - `wallpapers/magical-mystical-landscape.jpg`: Hyprpaper wallpaper.
 - `photos/lockscreen-profile.jpg`: personal lock-screen profile image.

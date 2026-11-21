@@ -9,8 +9,9 @@ import re
 import shutil
 import sys
 import tempfile
+import time
 
-from desktop_menu import dialog, group, item, menu, notify, show_menu
+from desktop_menu import dialog, group, item, menu, menu_choices, notify, show_menu
 
 
 def task_section(lines):
@@ -167,7 +168,7 @@ def snapshot(path):
         return []
 
 
-def task_menu(path, state):
+def task_menu(path, state, *, as_json=False):
     root, choices = menu()
     lines = snapshot(path)
     projects = project_names(lines)
@@ -194,7 +195,10 @@ def task_menu(path, state):
     for file in sorted(state.glob(key + ".edit-*.json")):
         draft = json.loads(file.read_text())
         item(choices, "Resume edit · " + draft["text"], {"action": "resume", "draft": file.name})
-    show_menu(root)
+    if as_json:
+        print(json.dumps(menu_choices(choices)))
+    else:
+        show_menu(root)
 
 
 def save_dialog(path, state, action):
@@ -270,8 +274,16 @@ def capture(path, state, action=None):
 if __name__ == "__main__":
     note = Path(os.environ.get("TASKS_FILE") or Path.home() / "Dropbox/Ikiru/Ikiru.md")
     state = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state") / "dotfiles/task-capture"
-    if sys.argv[1:] == ["menu"]:
-        task_menu(note, state)
+    if sys.argv[1:] in (["menu"], ["choices"]):
+        task_menu(note, state, as_json=sys.argv[1] == "choices")
+    elif sys.argv[1:] == ["watch"]:
+        previous = None
+        while True:
+            current = status(note)
+            if current != previous:
+                print(json.dumps(current), flush=True)
+                previous = current
+            time.sleep(1)
     elif sys.argv[1:2] == ["apply"]:
         capture(note, state, json.loads(sys.argv[2]))
     elif sys.argv[1:] == ["capture"]:

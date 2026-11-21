@@ -108,8 +108,24 @@ def cached():
 
 
 def redraw():
-    subprocess.run(["systemctl", "--user", "kill", "--kill-whom=main", "--signal=RTMIN+9", "waybar.service"],
-                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    if os.environ.get("DOTFILES_LEGACY_WAYBAR"):
+        subprocess.run(["systemctl", "--user", "kill", "--kill-whom=main", "--signal=RTMIN+9", "waybar.service"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+
+def watch():
+    from inotify_simple import INotify, flags
+
+    STATE.mkdir(parents=True, exist_ok=True)
+    with INotify() as watcher:
+        mask = flags.CREATE | flags.MOVED_TO | flags.DELETE | flags.CLOSE_WRITE
+        watcher.add_watch(STATE, mask)
+        watcher.add_watch(RUNTIME, mask)
+        while True:
+            print(json.dumps(view(cached(), (RUNTIME / "checking").exists(), (RUNTIME / "manual").exists())), flush=True)
+            while not any(e.name in {CACHE.name, "checking", "manual"} or e.mask & flags.Q_OVERFLOW
+                          for e in watcher.read()):
+                pass
 
 
 def check():
@@ -195,6 +211,11 @@ def main(args):
         manual.unlink(missing_ok=True)
         checking.unlink(missing_ok=True)
         redraw()
+    elif args == ["watch"]:
+        watch()
+    elif args == ["choices"]:
+        print(json.dumps([{"label": label, "target": url} for label, url in links(cached()).items()]
+                         or [{"label": "No update links yet"}]))
     elif args == ["status"]:
         print(json.dumps(view(cached(), checking.exists(), manual.exists())))
     elif args == ["menu"]:

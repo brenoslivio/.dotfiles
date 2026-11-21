@@ -82,6 +82,18 @@ class TaskTests(unittest.TestCase):
         self.assertEqual(self.note.read_bytes(), before.replace(b"Parent", b"Revised"))
         self.assertEqual(tasks.status(self.note)["text"], "2")
 
+    def test_panel_menu_edits_nested_task_using_its_original_target(self):
+        with patch("builtins.print") as output:
+            tasks.task_menu(self.note, self.state, as_json=True)
+        add, edit = json.loads(output.call_args.args[0])
+        self.assertEqual(add["children"][0]["target"], {"action": "add", "project": "Work"})
+        work, empty = edit["children"]
+        self.assertNotIn("target", empty)
+        child = work["children"][1]
+        with patch.object(tasks, "notify"), patch.object(tasks, "dialog", return_value="Revised"):
+            tasks.capture(self.note, self.state, child["target"])
+        self.assertEqual(self.note.read_bytes(), self.original.replace("Child", "Revised").encode())
+
     def test_duplicate_siblings_and_parent_context(self):
         self.note.write_text("## Tasks\n- Work\n  - A\n    - Duplicate\n  - B\n    - Duplicate\n    - Duplicate\n")
         picks = tasks.edit_choices(tasks.read_lines(self.note), "Work")
@@ -113,6 +125,19 @@ class TaskTests(unittest.TestCase):
 
 
 class AudioTests(unittest.TestCase):
+    def test_panel_and_gtk_menu_select_the_same_route(self):
+        route = audio.Route("sink", "device_1", "speaker", "Speakers", True)
+        with patch.object(audio, "available", side_effect=[[route], []]), patch.object(audio, "pactl", return_value="[]"):
+            rows = audio.audio_choices()
+        expected = {"action": "route", "kind": "sink", "device": "device_1", "port": "speaker"}
+        self.assertEqual(rows, [{"heading": "Output"}, {"label": "Speakers", "current": True, "target": expected},
+                                {"heading": "Microphone"}, {"label": "No active devices"}])
+        with patch.object(audio, "audio_choices", return_value=rows), patch.object(audio, "show_menu") as show:
+            audio.picker()
+        speaker = show.call_args.args[0].find("./menu/section/item")
+        self.assertEqual(speaker.findtext("attribute[@name='label']"), "✓  Speakers")
+        self.assertEqual(json.loads(speaker.findtext("attribute[@name='target']")), expected)
+
     def test_plugged_headphones_leave_laptop_speakers_selectable(self):
         speaker, phones = "analog-output-speaker", "analog-output-headphones"
         device = {"name": "analog", "description": "Laptop", "active_port": phones,

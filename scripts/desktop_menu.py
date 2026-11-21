@@ -1,4 +1,4 @@
-"""Native GTK menu descriptions for Waybar and short desktop dialogs."""
+"""Desktop menu descriptions and short GTK dialogs."""
 import html
 import json
 import subprocess
@@ -28,6 +28,22 @@ def show_menu(root):
     print(ET.tostring(root, encoding="unicode"))
 
 
+def menu_choices(parent):
+    """Return the same labeled actions and submenus for a QML picker."""
+    rows = []
+    for node in parent:
+        if node.tag not in {"item", "submenu"}:
+            continue
+        label = node.findtext("attribute[@name='label']").replace("__", "_")
+        row = {"label": label}
+        target = node.findtext("attribute[@name='target']")
+        if target is not None:
+            row["target"] = json.loads(target)
+        if node.tag == "submenu":
+            row["children"] = menu_choices(node)
+        rows.append(row)
+    return rows
+
 def dialog(title, choices=None, *, message="", initial=""):
     args = ["zenity", "--title", title, "--text", message, "--width", "380"]
     if choices is None:
@@ -45,4 +61,4 @@ def dialog(title, choices=None, *, message="", initial=""):
 
 
 def notify(title, detail=""):
-    subprocess.run(["notify-send", "--app-name=Waybar", "--", title, html.escape(detail)], check=True)
+    subprocess.run(["notify-send", "--app-name=Desktop panel", "--", title, html.escape(detail)], check=True)

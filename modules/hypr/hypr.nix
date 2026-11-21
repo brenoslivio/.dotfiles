@@ -1,9 +1,6 @@
 { lib, pkgs, ... }:
 let
-  displayMode = pkgs.writeShellScript "display-mode" ''
-    export PATH="${lib.makeBinPath [ pkgs.hyprland pkgs.rofi ]}:$PATH"
-    exec ${pkgs.python3}/bin/python3 ${./display_mode.py} "$@"
-  '';
+  displayMode = import ./display-mode.nix { inherit pkgs; };
 in
 {
   home.file = {

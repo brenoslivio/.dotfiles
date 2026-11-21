@@ -19,10 +19,10 @@ also exposed separately for user-only changes; servers use a minimal profile.
 
 ### Ahimsa desktop
 
-Waybar shows workspaces on the left, the date and time in the center, and
+Quickshell shows workspaces on the left, the date and time in the center, and
 system controls on the right. The magenta underline marks the active workspace.
 
-![Waybar with workspace 4 active and the display button immediately left of power](assets/previews/waybar.png)
+![Quickshell desktop panel on the laptop](assets/previews/quickshell-panel.png)
 
 Click the bell to open notifications, or right-click it to toggle Do Not Disturb.
 While the laptop is discharging, it shows a low-battery popup at 20% and a
@@ -32,7 +32,7 @@ The notification center, power controls, and GTK menus share the Rofi palette.
 
 [Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png)
 
-Right-click the volume indicator to open its GTK menu. Choose an output or
+Right-click the volume indicator to open the audio menu. Choose an output or
 microphone by name. The checkmarks reflect the audio server's current defaults
 and ports. On the laptop, choose **Speakers** or **Headphones** with the wired
 headphones still plugged in. If a Bluetooth microphone requires call-quality
@@ -47,11 +47,18 @@ kept for the next capture. If another editor changes the selected task, choose
 **Resume edit** from the menu to recover the draft and choose its destination.
 `TASKS_FILE` overrides the note for both the counter and the menus.
 
-[Audio picker](assets/previews/waybar-audio-picker.png) · [Task menu](assets/previews/waybar-task-capture.png) · [Task editor](assets/previews/waybar-task-editor.png)
-
-Click the NixOS logo at the far left of Waybar to open Rofi and search for an app.
+Click the NixOS logo at the far left of the panel to open Rofi and search for an app.
 
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)
+
+Left-click the clock for the current month. Right-click to switch between
+São Paulo and Berlin. Hover over memory or CPU for the total and the five
+busiest programs. During playback, a squared audio spectrum spans the panel.
+The volume icon also indicates active microphone, camera, or screen capture.
+
+The panel starts with Hyprland on each display. Press **Super+W** to hide or
+show it. Use `systemctl --user restart quickshell-panel.service` to restart it
+and `journalctl --user -u quickshell-panel.service -b` to inspect its log.
 
 When an HDMI display is connected, click the monitor icon beside the power
 button to choose a layout. **Mirror** shows the same desktop on both screens.
@@ -194,9 +201,6 @@ Passwords, private SSH keys, and cloud credentials are absent. After installing:
 4. Authenticate GitHub CLI with `gh auth login` for update verification.
 5. Sign in to Dropbox, Proton VPN, and other personal services.
 
-Waybar's task and research widgets tolerate missing Dropbox files. Override
-their paths with `TASKS_FILE` and `RESEARCH_FILE`.
-
 ## Assets
 
 Desktop images are tracked under `assets/` and installed to
@@ -257,7 +261,7 @@ Inspect standalone home generations with `home-manager generations`.
 
 Pending candidates have garbage-collection roots in `~/.local/state/dotfiles`;
 the protected system lives at `/nix/var/nix/profiles/dotfiles-known-good`.
-The circular arrow beside the Waybar bell checks the flake update PR and the
+The circular arrow beside the panel bell checks the flake update PR and the
 verified desktop revision on `main` every five minutes while the laptop is awake.
 A missed check runs once on wake. Left-click to refresh immediately. The arrow
 spins as soon as you click. Automatic checks start the animation after half a
@@ -270,8 +274,6 @@ its update dot. Right-click for links to the relevant PR and Actions runs.
 The Friday GitHub workflow creates proposals. The indicator only reads GitHub.
 If offline, it keeps the last known status. After a rate limit it waits until
 GitHub permits another check.
-
-[Update indicator](assets/previews/waybar-update.png) · [Manual refresh animation](assets/previews/waybar-update-refresh.gif)
 
 Inspect the timer with `systemctl --user list-timers dotfiles-update-check.timer`
 and the check log with `journalctl --user -u dotfiles-update-check.service`.

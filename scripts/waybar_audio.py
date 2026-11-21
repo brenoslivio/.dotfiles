@@ -69,23 +69,35 @@ def headset_profiles(cards):
             yield card, max(voice)[1]
 
 
-def picker():
-    root, choices = menu()
+def audio_choices():
+    rows = []
     for kind, heading in [("sink", "Output"), ("source", "Microphone")]:
-        section = group(choices, heading, "section")
+        rows.append({"heading": heading})
         items = available(kind)
         counts = Counter(route.label for route in items)
         for route in items:
             label = route.label if counts[route.label] == 1 else f"{route.label} · {route.device}"
-            item(section, ("✓  " if route.current else "     ") + label,
-                 {"action": "route", "kind": kind, "device": route.device, "port": route.port})
+            rows.append({"label": label, "current": route.current,
+                         "target": {"action": "route", "kind": kind, "device": route.device, "port": route.port}})
         if kind == "source":
             for card, profile in headset_profiles(json.loads(pactl("-f", "json", "list", "cards"))):
                 name = card["properties"].get("device.description", card["name"])
-                item(section, f"Use {name} microphone…",
-                     {"action": "headset", "card": card["name"], "profile": profile})
+                rows.append({"label": f"Use {name} microphone…",
+                             "target": {"action": "headset", "card": card["name"], "profile": profile}})
         if not items:
-            item(section, "No active devices")
+            rows.append({"label": "No active devices"})
+    return rows
+
+
+def picker():
+    root, choices = menu()
+    section = choices
+    for row in audio_choices():
+        if "heading" in row:
+            section = group(choices, row["heading"], "section")
+        else:
+            mark = ("✓  " if row["current"] else "     ") if "current" in row else ""
+            item(section, mark + row["label"], row.get("target"))
     item(choices, "Open mixer", {"action": "mixer"})
     show_menu(root)
 
@@ -166,6 +178,8 @@ if __name__ == "__main__":
     try:
         if sys.argv[1:] == ["mic-mute"]:
             mic_mute()
+        elif sys.argv[1:] == ["choices"]:
+            print(json.dumps(audio_choices()))
         elif sys.argv[1:2] == ["apply"]:
             apply(json.loads(sys.argv[2]))
         else:

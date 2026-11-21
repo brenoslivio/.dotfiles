@@ -38,7 +38,7 @@ in {
     cp -rs ${home.config.home-files}/. "$HOME/"
     export XDG_RUNTIME_DIR="$TMPDIR/runtime"
     mkdir -m700 "$XDG_RUNTIME_DIR"
-    python ${./generated_config.py} ${home.config.home-files}
+    python ${./generated_config.py} ${home.config.home-files} ${(import ../modules/quickshell/package.nix { inherit pkgs; }).ui}
     fish --no-config --no-execute ${home.config.home-files}/.config/fish/config.fish
     luac -p ${home.config.home-files}/.config/hypr/hyprland.lua
     Hyprland --verify-config --config ${home.config.home-files}/.config/hypr/hyprland.lua
@@ -99,7 +99,7 @@ in {
       machine.wait_until_succeeds("pgrep -u brenoslivio fish")
       uid = machine.succeed("id -u brenoslivio").strip()
       machine.wait_for_unit(f"user@{uid}.service")
-      machine.succeed("test -f /home/brenoslivio/.config/waybar/config.jsonc")
+      machine.succeed("test -f /home/brenoslivio/.config/systemd/user/quickshell-panel.service")
       machine.succeed("test -f /home/brenoslivio/.config/hypr/hyprland.lua")
       machine.succeed("test -f /home/brenoslivio/.config/containers/containers.conf")
       machine.succeed("su - brenoslivio -c 'git --version'")

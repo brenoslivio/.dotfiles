@@ -59,7 +59,7 @@ def zone_menu(path):
     show_menu(root)
 
 
-def stream(path):
+def stream(path, render=local_clock):
     from inotify_simple import INotify, flags
 
     # Match the previous clock's date formatting, including LC_ALL precedence.
@@ -73,7 +73,7 @@ def stream(path):
         zone = read_zone(path)
         while True:
             instant = datetime.now(timezone.utc)
-            print(json.dumps(local_clock(instant, zone)), flush=True)
+            print(json.dumps(render(instant, zone)), flush=True)
             events = watcher.read(timeout=1000 - instant.microsecond // 1000)
             if any(e.name == path.name or e.mask & flags.Q_OVERFLOW for e in events):
                 zone = read_zone(path)

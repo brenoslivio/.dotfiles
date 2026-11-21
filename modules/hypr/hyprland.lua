@@ -98,7 +98,7 @@ hl.bind("SUPER + L", hl.dsp.exec_cmd(lock))
 hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd(lock), { locked = true })
 hl.bind("SUPER + B", hl.dsp.exec_cmd(terminal .. " --class clipse -e 'clipse'"))
 hl.bind("XF86PowerOff", hl.dsp.exec_cmd("wlogout"))
-hl.bind("SUPER + W", hl.dsp.exec_cmd("~/.config/waybar/launch.sh"))
+hl.bind("SUPER + W", hl.dsp.exec_cmd("~/.config/quickshell/toggle-panel"))
 hl.bind("SUPER + Q", hl.dsp.exec_cmd(terminal))
 hl.bind("SUPER + D", hl.dsp.exec_cmd(terminal .. " --class dropdown"))
 hl.bind("SUPER + C", hl.dsp.window.close())
@@ -170,7 +170,7 @@ hl.window_rule({
     match = { class = "^$", title = "^$", xwayland = true, float = true, fullscreen = false, pin = false },
     no_focus = true,
 })
-hl.layer_rule({ name = "waybar-blur", match = { namespace = "^(waybar)$" }, blur = true })
+hl.layer_rule({ name = "panel-blur", match = { namespace = "^(dotfiles-panel)$" }, blur = true })
 hl.layer_rule({ name = "rofi-blur", match = { namespace = "^(rofi)$" }, blur = true })
 hl.layer_rule({ name = "hyprpicker-no-animation", match = { namespace = "^(hyprpicker)$" }, no_anim = true })
 hl.layer_rule({ name = "selection-no-animation", match = { namespace = "^(selection)$" }, no_anim = true })
