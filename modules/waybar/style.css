@@ -25,7 +25,7 @@ window#waybar {
     border-radius: 7px;
 }
 
-#workspaces, #battery {
+#workspaces, #custom-memory, #battery {
     background-image: linear-gradient(alpha(@desktop_lavender, 0.22), alpha(@desktop_lavender, 0.22));
     background-size: 1px 22px;
     background-repeat: no-repeat;
@@ -140,6 +140,11 @@ window#waybar.empty #window {
 #battery {
     padding-right: 10px;
     background-position: right center;
+}
+
+#custom-memory {
+    padding-left: 10px;
+    background-position: left center;
 }
 
 #wireplumber.multiple-captures {
