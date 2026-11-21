@@ -30,7 +30,7 @@ critical alert at 10% that stays until dismissed. Plugging in re-arms both alert
 Hover over the power button to see its label, then click to open the power menu.
 The notification center, power controls, and GTK menus share the Rofi palette.
 
-[Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png)
+[Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png) · [Tray context menu](assets/previews/quickshell-tray-menu.png)
 
 Right-click the volume indicator to open the audio menu. Choose an output or
 microphone by name. The checkmarks reflect the audio server's current defaults

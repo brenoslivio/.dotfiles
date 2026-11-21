@@ -5,6 +5,17 @@ import "TrayIcons.js" as TrayIcons
 
 Row {
     spacing: 2
+    Component {
+        id: submenu
+        TrayMenu {
+            required property var modelData
+            handle: modelData.entry
+            title: modelData.entry.text
+            enabled: modelData.entry.enabled
+            entryIcon: menuIcon(modelData.entry.icon)
+            submenuFactory: submenu
+        }
+    }
     Repeater {
         model: SystemTray.items
         BarButton {
@@ -24,18 +35,19 @@ Row {
                 if (dropbox) return "file://" + decodeURIComponent(dropbox[2]) + "/hicolor/16x16/status/" + dropbox[1] + ".png"
                 return url
             }
-            hint: nativeMenu.visible ? "" : modelData.tooltipTitle || modelData.title || modelData.id
+            hint: trayMenu.visible ? "" : modelData.tooltipTitle || modelData.title || modelData.id
             buttons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
             onTriggered: button => {
                 if (button === Qt.MiddleButton) modelData.secondaryActivate()
-                else if ((button === Qt.RightButton || modelData.onlyMenu) && modelData.menu) nativeMenu.open()
+                else if ((button === Qt.RightButton || modelData.onlyMenu) && modelData.menu)
+                    trayMenu.popup(entry, 0, entry.height + 2)
                 else if (button === Qt.LeftButton) modelData.activate()
             }
             onScrolled: delta => modelData.scroll(delta, false)
-            QsMenuAnchor {
-                id: nativeMenu
-                menu: entry.modelData.menu
-                anchor.item: entry; anchor.edges: Edges.Bottom; anchor.gravity: Edges.Bottom
+            TrayMenu {
+                id: trayMenu
+                handle: entry.modelData.menu
+                submenuFactory: submenu
             }
         }
     }
