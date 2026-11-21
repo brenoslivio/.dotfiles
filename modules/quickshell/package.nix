@@ -27,11 +27,25 @@ let
     set -o pipefail
     ${pkgs.pipewire}/bin/pw-dump -mN | ${python}/bin/python3 ${./capture.py}
   '';
-  powerTheme = pkgs.runCommandLocal "panel-power-theme" { } ''
-    mkdir -p "$out/wlogout" "$out/desktop-theme"
-    cp -r ${../wlogout}/icons ${../wlogout}/style.css "$out/wlogout/"
-    cp ${../desktop-theme/palette.css} "$out/desktop-theme/palette.css"
+  systemctl = "${pkgs.systemd}/bin/systemctl";
+  lock = "${pkgs.hyprlock}/bin/hyprlock";
+  sleepAndLock = mode: pkgs.writeShellScript "panel-${mode}" ''
+    ${systemctl} ${mode}
+    exec ${lock} --grace 0
   '';
+  logout = pkgs.writeShellScript "panel-logout" ''
+    ${pkgs.coreutils}/bin/sleep 1
+    exec ${pkgs.hyprland}/bin/hyprctl dispatch 'hl.dsp.exit()'
+  '';
+  powerAction = label: glyph: key: command: { inherit label glyph key command; };
+  powerActions = [
+    (powerAction "Lock" "󰌾" "l" [ lock "--grace" "0" ])
+    (powerAction "Suspend" "󰖔" "u" [ (toString (sleepAndLock "suspend")) ])
+    (powerAction "Hibernate" "󰜗" "h" [ (toString (sleepAndLock "hibernate")) ])
+    (powerAction "Log Out" "󰍃" "e" [ (toString logout) ])
+    (powerAction "Reboot" "󰜉" "r" [ systemctl "reboot" ])
+    (powerAction "Shut Down" "󰐥" "s" [ systemctl "poweroff" ])
+  ];
   commands = {
     displays = [ (toString (import ../hypr/display-mode.nix { inherit pkgs; })) ];
     clock = [ (toString clock) ];
@@ -47,7 +61,6 @@ let
     capture = [ (toString capture) ];
     mixer = [ "${pkgs.pavucontrol}/bin/pavucontrol" "-t" "3" ];
     obsidian = [ "${pkgs.obsidian}/bin/obsidian" ];
-    power = [ "${pkgs.wlogout}/bin/wlogout" "-l" "${../wlogout}/layout" "-C" "${powerTheme}/wlogout/style.css" ];
     logo = "file://${../../assets/icons/nixos.svg}";
     bellIcon = "file://${../../assets/icons/notification-bell.svg}";
     updateIcon = "file://${../../assets/icons/flake-update.svg}";
@@ -68,6 +81,7 @@ let
       echo ']'
     ) > "$out/TrayIcons.js"
     echo 'var commands = ${builtins.toJSON commands}' > "$out/Config.js"
+    echo 'var actions = ${builtins.toJSON powerActions}' > "$out/PowerActions.js"
     sed -nE 's/^@define-color desktop_([a-z]+) (#[a-fA-F0-9]+);$/var \1 = "\2";/p' \
       ${../desktop-theme/palette.css} > "$out/Palette.js"
   '';

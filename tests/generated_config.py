@@ -31,11 +31,14 @@ for name, command in commands.items():
 
 with (root / ".config/containers/containers.conf").open("rb") as stream:
     tomllib.load(stream)
-# wlogout accepts a sequence of JSON objects, rather than a JSON array.
-remaining = (root / ".config/wlogout/layout").read_text().strip()
-while remaining:
-    _, end = json.JSONDecoder().raw_decode(remaining)
-    remaining = remaining[end:].lstrip()
+power_actions = json.loads((ui / "PowerActions.js").read_text().removeprefix("var actions = "))
+assert [(action["label"], action["key"]) for action in power_actions] == [
+    ("Lock", "l"), ("Suspend", "u"), ("Hibernate", "h"),
+    ("Log Out", "e"), ("Reboot", "r"), ("Shut Down", "s"),
+]
+for action in power_actions:
+    assert os.access(action["command"][0], os.X_OK), action["label"]
+assert os.access(root / ".config/quickshell/power-menu", os.X_OK)
 for directory in (".config/hypr", ".config/rofi"):
     for path in (root / directory).rglob("*.sh"):
         subprocess.run(["bash", "-n", str(path)], check=True)

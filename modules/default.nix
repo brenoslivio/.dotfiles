@@ -40,7 +40,6 @@ in
     ./swaync/swaync.nix
     ./quickshell/home.nix
     ./wayland_flags/wayland_flags.nix
-    ./wlogout/wlogout.nix
   ];
 
   home.username = primaryUser;
@@ -145,7 +144,6 @@ in
     libnotify
     clipse
     wl-clipboard
-    wlogout
     
     # Fonts
     inter

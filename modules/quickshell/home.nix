@@ -4,6 +4,15 @@ let
   panel = import ./package.nix { inherit pkgs; };
 in {
   home.packages = [ panel panel.audio ];
+  xdg.configFile."quickshell/power-menu".source = pkgs.writeShellScript "power-menu" ''
+    ${pkgs.systemd}/bin/systemctl --user start quickshell-panel.service || exit 1
+    # A freshly started panel can take a moment to register its IPC handler.
+    for attempt in {1..30}; do
+      if [[ $(${panel}/bin/quickshell-panel ipc call powerMenu toggle) == true ]]; then exit 0; fi
+      ${pkgs.coreutils}/bin/sleep 0.1
+    done
+    exit 1
+  '';
   xdg.configFile."quickshell/toggle-panel".source = pkgs.writeShellScript "toggle-panel" ''
     if ${pkgs.systemd}/bin/systemctl --user is-active --quiet quickshell-panel.service; then
       exec ${pkgs.systemd}/bin/systemctl --user stop quickshell-panel.service

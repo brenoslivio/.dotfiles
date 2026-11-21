@@ -28,6 +28,15 @@ ShellRoot {
     property var hardware: ({})
     property var display: ({})
     readonly property var displayCommand: Config.commands.displays
+    IpcHandler {
+        target: "powerMenu"
+        function toggle(): bool {
+            const panel = panels.instances.find(p => p.monitor && p.monitor === Hyprland.focusedMonitor)
+            if (!panel) return false
+            panel.togglePowerMenu()
+            return true
+        }
+    }
 
     Feed { command: Config.commands.notifications.concat("-swb"); onLine: data => root.notifications = JSON.parse(data) }
     Feed { command: Config.commands.tasks.concat("watch"); onLine: data => root.tasks = JSON.parse(data) }
@@ -66,6 +75,7 @@ ShellRoot {
     }
 
     Variants {
+        id: panels
         model: Quickshell.screens
         PanelWindow {
             id: panel
@@ -74,6 +84,7 @@ ShellRoot {
             readonly property var monitor: Hyprland.monitorFor(screen)
             readonly property var workspace: monitor?.activeWorkspace
             readonly property var focusedWindow: Hyprland.activeToplevel
+            function togglePowerMenu() { right.togglePowerMenu() }
             anchors { left: true; right: true; top: true }
             margins { left: 14; right: 14; top: 10 }
             implicitHeight: 38
@@ -187,6 +198,7 @@ ShellRoot {
                 }
                 SystemControls {
                     id: right
+                    bar: panel
                     state: root
                     anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }
                     availableWidth: Math.max(0, (parent.width - center.width) / 2 - 14)

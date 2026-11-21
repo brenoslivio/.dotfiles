@@ -6,8 +6,10 @@ import "Config.js" as Config
 
 Row {
     id: controls
+    required property PanelWindow bar
     required property var state
     required property int availableWidth
+    function togglePowerMenu() { powerMenu.visible = !powerMenu.visible }
     readonly property var players: Mpris.players.values.filter(p => !p.dbusName.toLowerCase().includes("brave")
         && p.playbackState !== MprisPlaybackState.Stopped)
     readonly property var player: players.find(p => p.isPlaying) || players[0]
@@ -85,9 +87,20 @@ Row {
             onTriggered: Quickshell.execDetached(controls.state.displayCommand.concat("menu"))
         }
         BarButton {
+            id: power
             label: "⏻"; glyph: true; labelColor: Ink.lavender
-            hint: "Power menu"
-            onTriggered: Quickshell.execDetached(Config.commands.power)
+            hint: powerMenu.visible ? "" : "Power menu"
+            selected: powerMenu.visible
+            onTriggered: controls.togglePowerMenu()
+            PowerMenu { id: powerMenu; bar: controls.bar }
+            TapHandler {
+                parent: controls.bar.contentItem
+                enabled: powerMenu.visible
+                acceptedButtons: Qt.AllButtons
+                onTapped: point => {
+                    if (!power.contains(parent.mapToItem(power, point.position))) powerMenu.visible = false
+                }
+            }
         }
     }
 }
