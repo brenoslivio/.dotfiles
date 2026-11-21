@@ -124,8 +124,8 @@ window#waybar.empty #window {
 }
 
 #wireplumber,
-#memory,
-#cpu,
+#custom-memory,
+#custom-cpu,
 #backlight,
 #battery {
     padding: 0 6px;
@@ -135,7 +135,7 @@ window#waybar.empty #window {
     margin: 5px 0;
 }
 
-#memory, #cpu {
+#custom-memory, #custom-cpu {
     min-width: 46px;
     color: @desktop_muted;
 }

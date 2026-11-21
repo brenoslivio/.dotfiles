@@ -9,7 +9,7 @@
 
     "modules-left": ["image#menu", "hyprland/workspaces", "hyprland/window"],
     "modules-center": ["custom/notification", "custom/updates", "custom/clock", "custom/tasks"],
-    "modules-right": ["custom/cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
+    "modules-right": ["custom/cava", "mpris", "wireplumber", "custom/memory", "custom/cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
 
     "image#menu": {
         "path": "@nixosIcon@",
@@ -129,14 +129,18 @@
         "scroll-step": 5,
     },
 
-    "memory": {
-        "interval": 1,
-        "format": "<span size='large'></span>  {percentage}%"
+    "custom/memory": {
+        "exec": "@resourceMonitor@ memory",
+        "return-type": "json",
+        "restart-interval": 2,
+        "format": "<span size='large'></span>  {}%"
     },
 
-    "cpu": {
-        "interval": 1,
-        "format": "<span size='large'></span>  {usage}%"
+    "custom/cpu": {
+        "exec": "@resourceMonitor@ cpu",
+        "return-type": "json",
+        "restart-interval": 2,
+        "format": "<span size='large'></span>  {}%"
     },
 
     "tray": {

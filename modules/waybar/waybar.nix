@@ -31,6 +31,7 @@ in
       taskIcon = "${../../assets/icons/tasks.svg}";
       audioControl = pkgs.lib.getExe audio;
       taskControl = pkgs.lib.getExe tasks;
+      resourceMonitor = "${pkgs.python3}/bin/python3 ${../../scripts/waybar_resources.py}";
       nixosIcon = "${../../assets/icons/nixos.svg}";
     };
     ".config/waybar/style.css".source = ./style.css;
