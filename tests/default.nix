@@ -50,6 +50,8 @@ in {
   } ''
     cp -R ${../scripts} scripts
     cp -R ${./.} tests
+    mkdir -p modules/waybar
+    cp ${../modules/waybar/capture.py} modules/waybar/capture.py
     cp -R ${../.github} .github
     chmod -R u+w scripts tests .github
     export HOME="$TMPDIR/home"

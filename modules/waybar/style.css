@@ -25,13 +25,16 @@ window#waybar {
     border-radius: 7px;
 }
 
+#workspaces, #battery {
+    background-image: linear-gradient(alpha(@desktop_lavender, 0.22), alpha(@desktop_lavender, 0.22));
+    background-size: 1px 22px;
+    background-repeat: no-repeat;
+}
+
 #workspaces {
     margin: 3px 5px 3px 0;
     padding-left: 5px;
-    background-image: linear-gradient(alpha(@desktop_lavender, 0.22), alpha(@desktop_lavender, 0.22));
     background-position: left center;
-    background-size: 1px 22px;
-    background-repeat: no-repeat;
 }
 
 #workspaces button {
@@ -132,6 +135,11 @@ window#waybar.empty #window {
 
 #wireplumber {
     margin: 5px 0;
+}
+
+#battery {
+    padding-right: 10px;
+    background-position: right center;
 }
 
 #wireplumber.multiple-captures {

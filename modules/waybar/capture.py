@@ -7,8 +7,6 @@ from collections import defaultdict
 from pathlib import Path
 from selectors import DefaultSelector, EVENT_READ
 
-from inotify_simple import INotify, flags
-
 
 def update_graph(graph, batch):
     for obj in batch:
@@ -87,11 +85,13 @@ def capture_status(graph, direct_cameras):
             resource = "microphone"
         elif source_class.startswith("Video/Source") and stream_class.startswith("Stream/Input/Video"):
             producer = props(source.get("client.id")).get("application.process.binary", "")
-            if (source.get("media.role") == "Screen" or source.get("node.name", "").startswith("xdph-streaming-")
-                    or (producer.startswith("xdg-desktop-portal-") and source.get("media.role") != "Camera")):
-                resource = "screen sharing"
-            elif source.get("media.role") == "Camera" or source.get("device.api") in {"v4l2", "libcamera"}:
+            if source.get("media.role") == "Camera" or source.get("device.api") in {"v4l2", "libcamera"}:
                 resource = "camera"
+            # Hyprland puts the stream ID in media.name when node.name is the Nix wrapper.
+            elif (source.get("media.role") == "Screen"
+                  or any(source.get(key, "").startswith("xdph-streaming-") for key in ("media.name", "node.name"))
+                  or producer.removeprefix(".").startswith("xdg-desktop-portal-")):
+                resource = "screen sharing"
             else:
                 continue
         else:
@@ -121,6 +121,8 @@ def capture_status(graph, direct_cameras):
 
 
 def main():
+    from inotify_simple import INotify, flags
+
     graph, owners = {}, set()
     buffer = bytearray()
     previous = None
