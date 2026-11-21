@@ -41,7 +41,7 @@ class Spectrum {
     Gdk::RGBA ink("#d891ed");
     style->lookup_color("desktop_lavender", ink);
 
-    // box is allocated inside the window's border. Clip the wave to the inner corners.
+    // The box is allocated inside the window's border. Clip the columns to its inner corners.
     int radius = 0;
     gtk_style_context_get(style->gobj(), GTK_STATE_FLAG_NORMAL, GTK_STYLE_PROPERTY_BORDER_RADIUS,
                           &radius, nullptr);
@@ -56,18 +56,16 @@ class Spectrum {
     cr->clip();
 
     const double peak = std::min(22., h * .60);
-    const double step = w / (levels_.size() - 1);
-    double y = h - peak * levels_.front();
-    cr->move_to(0, h);
-    cr->line_to(0, y);
-    for (size_t i = 1; i < levels_.size(); ++i) {
-      const double mid = (i - .5) * step;
-      const double next = h - peak * levels_[i];
-      cr->curve_to(mid, y, mid, next, i * step, next);
-      y = next;
+    const double step = w / levels_.size();
+    const double gap = step >= 8 ? 2 : 0;
+    for (size_t i = 0; i < levels_.size(); ++i) {
+      const double left = std::round(i * step);
+      const double width = std::round((i + 1) * step) - left - gap;
+      const double height = std::round(peak * levels_[i]);
+      if (width > 0 && height > 0) {
+        cr->rectangle(left + gap / 2, h - height, width, height);
+      }
     }
-    cr->line_to(w, h);
-    cr->close_path();
     auto fill = Cairo::LinearGradient::create(0, h, 0, h - peak);
     fill->add_color_stop_rgba(0, ink.get_red(), ink.get_green(), ink.get_blue(), .19);
     fill->add_color_stop_rgba(1, ink.get_red(), ink.get_green(), ink.get_blue(), .08);
