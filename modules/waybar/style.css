@@ -124,6 +124,10 @@ window#waybar.empty #window {
     padding: 0 6px;
 }
 
+#wireplumber {
+    margin: 5px 0;
+}
+
 #memory, #cpu {
     min-width: 46px;
     color: @desktop_muted;

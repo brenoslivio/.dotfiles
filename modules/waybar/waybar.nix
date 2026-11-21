@@ -28,6 +28,7 @@ in
       updateControl = pkgs.lib.getExe updates;
       updateIcon = "${../../assets/icons/flake-update.svg}";
       bellIcon = "${../../assets/icons/notification-bell.svg}";
+      taskIcon = "${../../assets/icons/tasks.svg}";
       audioControl = pkgs.lib.getExe audio;
       taskControl = pkgs.lib.getExe tasks;
       nixosIcon = "${../../assets/icons/nixos.svg}";

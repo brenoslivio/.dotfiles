@@ -8,7 +8,7 @@
     "spacing": 2,
 
     "modules-left": ["image#menu", "ext/workspaces", "hyprland/window"],
-    "modules-center": ["custom/updates", "custom/notification", "custom/clock", "custom/tasks"],
+    "modules-center": ["custom/notification", "custom/updates", "custom/clock", "custom/tasks"],
     "modules-right": ["custom/cava", "mpris", "wireplumber", "memory", "cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
 
     "image#menu": {
@@ -86,7 +86,10 @@
         "exec": "@taskControl@",
         "interval": 1,
         "return-type": "json",
-        "format": "  {}",
+        "format": "{}",
+        "image-path": "@taskIcon@",
+        "icon-size": 18,
+        "icon-spacing": 3,
         "tooltip": true,
         "on-click": "obsidian",
         "context-menu-command": "@taskControl@"
