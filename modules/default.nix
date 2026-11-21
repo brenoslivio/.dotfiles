@@ -193,6 +193,7 @@ in
       [Desktop Entry]
       Type=Application
       Name=Brave Web Browser
+      Icon=brave-browser
       Hidden=true
     '';
   };
