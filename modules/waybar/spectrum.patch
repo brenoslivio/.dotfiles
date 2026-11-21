@@ -1,0 +1,20 @@
+--- a/src/bar.cpp
++++ b/src/bar.cpp
+@@ -14,2 +14,3 @@
+ #include "util/hosts_check.hpp"
++#include "spectrum.hpp"
+ #include "util/kill_signal.hpp"
+@@ -802,2 +803,13 @@
+ auto waybar::Bar::setupWidgets() -> void {
++  if (orientation == Gtk::ORIENTATION_HORIZONTAL && config["spectrum-command"].isString()) {
++    auto spectrum = Spectrum::acquire(config["spectrum-command"].asString());
++    spectrum->changed.connect(sigc::mem_fun(box_, &Gtk::Widget::queue_draw));
++    // GTK has already painted the window. Draw before the box paints its children.
++    box_.signal_draw().connect(
++        [this, spectrum](const Cairo::RefPtr<Cairo::Context>& cr) {
++          spectrum->draw(cr, box_, window);
++          return false;
++        },
++        false);
++  }
+   window.add(box_);

@@ -2,8 +2,12 @@
 
 let
   waybar = pkgs.waybar.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./context-menu.patch ./icon-tooltip.patch ];
+    patches = (old.patches or [ ]) ++ [ ./context-menu.patch ./icon-tooltip.patch ./spectrum.patch ];
+    postPatch = (old.postPatch or "") + ''
+      cp ${./spectrum.hpp} include/spectrum.hpp
+    '';
   });
+  spectrumPython = pkgs.python3.withPackages (ps: [ ps.pulsectl ]);
   sources = pkgs.lib.fileset.toSource {
     root = ../../scripts;
     fileset = pkgs.lib.fileset.unions [
@@ -24,6 +28,7 @@ in
   home.packages = [ audio waybar ];
   home.file = {
     ".config/waybar/config.jsonc".source = pkgs.replaceVars ./config.jsonc {
+      spectrumCommand = "exec ${spectrumPython}/bin/python3 ${./spectrum.py} ${pkgs.cava}/bin/cava -p ${./cava.conf}";
       # Keep the image available independently of home-file activation order.
       updateControl = pkgs.lib.getExe updates;
       updateIcon = "${../../assets/icons/flake-update.svg}";
@@ -35,17 +40,12 @@ in
       nixosIcon = "${../../assets/icons/nixos.svg}";
     };
     ".config/waybar/style.css".source = ./style.css;
-    ".config/waybar/cava.conf".source = ./cava.conf;
     ".config/waybar/launch.sh" = {
       source = ./launch.sh;
       executable = true;
     };
     ".config/waybar/scripts/clock.sh" = {
       source = ./scripts/clock.sh;
-      executable = true;
-    };
-    ".config/waybar/scripts/cava.sh" = {
-      source = ./scripts/cava.sh;
       executable = true;
     };
     ".config/waybar/scripts/research.sh" = {

@@ -116,13 +116,6 @@ window#waybar.empty #window {
     color: @desktop_lavender;
 }
 
-#custom-cava {
-    margin-right: 4px;
-    color: @desktop_inactive;
-    font-family: "FiraCode Nerd Font Mono";
-    font-size: 11px;
-}
-
 #mpris {
     margin-right: 8px;
     color: @desktop_muted;
