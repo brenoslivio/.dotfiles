@@ -22,7 +22,7 @@ class ScreenShareTests(unittest.TestCase):
         portal.clear()
         source["media.name"] = "xdph-streaming-123"
         self.assertEqual(capture_status(graph, {"brave"}), {
-            "icon": "󰍹", "multiple": True, "details": "Brave · Screen sharing and camera",
+            "icon": "󱡶", "multiple": True, "details": "Brave · Screen sharing and camera",
         })
         graph[4][1]["state"] = "paused"
         self.assertEqual(capture_status(graph, ())["icon"], "")

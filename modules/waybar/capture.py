@@ -109,7 +109,7 @@ def capture_status(graph, direct_cameras):
         name = names_by_binary.get(binary) or BROWSERS.get(binary, binary)
         apps[" ".join(name.split())[:80]].add("camera")
 
-    icons = {"screen sharing": "󰍹", "camera": "", "microphone": ""}
+    icons = {"screen sharing": "󱡶", "camera": "󰖠", "microphone": "󰍬"}
     active = set().union(*apps.values())
     details = []
     for name, resources in sorted(apps.items(), key=lambda item: item[0].casefold()):
