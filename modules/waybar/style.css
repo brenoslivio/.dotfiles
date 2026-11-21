@@ -114,16 +114,22 @@ window#waybar.empty #window {
     color: @desktop_muted;
 }
 
+#clock-calendar-layer {
+    background: transparent;
+    box-shadow: none;
+}
+
 #clock-calendar {
-    padding: 8px;
+    background: @desktop_panel;
+    border: 1px solid @desktop_edge;
+    border-radius: 10px;
     font-family: Inter, sans-serif;
     font-size: 13px;
     font-feature-settings: "tnum";
 }
 
-#clock-calendar menuitem {
-    padding: 0;
-    background: transparent;
+#clock-calendar > grid {
+    margin: 8px;
 }
 
 #clock-calendar .month-title {

@@ -13,10 +13,10 @@
 +  if (e->button == 1 && e->type == GDK_BUTTON_PRESS && config_["calendar-popup"].asBool()) {
 +    if (!calendar_) calendar_ = std::make_unique<ClockCalendar>();
 +    if (calendar_->get_visible()) {
-+      calendar_->popdown();
++      calendar_->dismiss();
 +    } else if (calendar_->display(alt_)) {
 +      module_widget_->unset_state_flags(Gtk::STATE_FLAG_PRELIGHT);
-+      calendar_->open(event_box_, e);
++      calendar_->open(event_box_);
 +    }
 +    return true;
 +  }
