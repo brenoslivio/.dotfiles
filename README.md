@@ -19,10 +19,10 @@ also exposed separately for user-only changes; servers use a minimal profile.
 
 ### Ahimsa desktop
 
-Waybar shows workspaces on the left, the date and time in the center, and
+Quickshell shows workspaces on the left, the date and time in the center, and
 system controls on the right. The magenta underline marks the active workspace.
 
-![Waybar with workspace 4 active and the display button immediately left of power](assets/previews/waybar.png)
+![Quickshell desktop panel on the laptop](assets/previews/quickshell-panel.png)
 
 Click the bell to open notifications, or right-click it to toggle Do Not Disturb.
 While the laptop is discharging, it shows a low-battery popup at 20% and a
@@ -30,11 +30,49 @@ critical alert at 10% that stays until dismissed. Plugging in re-arms both alert
 Hover over the power button to see its label, then click to open the power menu.
 The notification center, power controls, and GTK menus share the Rofi palette.
 
-[Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png)
+[Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png) · [Tray context menu](assets/previews/quickshell-tray-menu.png)
 
-Click the NixOS logo at the far left of Waybar to open Rofi and search for an app.
+Right-click the volume indicator to open the audio menu. Choose an output or
+microphone by name. The checkmarks reflect the audio server's current defaults
+and ports. On the laptop, choose **Speakers** or **Headphones** with the wired
+headphones still plugged in. If a Bluetooth microphone requires call-quality
+playback, the menu asks before switching profiles. Left-click opens the mixer,
+scrolling adjusts volume, and the microphone mute key shows its resulting state.
+
+Right-click the task count beside the clock and choose **Add task…** or **Edit
+task…**, then a project in Ikiru. Editing opens the selected task's full text.
+Enter saves and Escape cancels. Nested tasks keep their indentation and children.
+Left-click opens Obsidian. If the note is unavailable, a submitted addition is
+kept for the next capture. If another editor changes the selected task, choose
+**Resume edit** from the menu to recover the draft and choose its destination.
+`TASKS_FILE` overrides the note for both the counter and the menus.
+
+Click the NixOS logo at the far left of the panel to open Rofi and search for an app.
 
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)
+
+The current track appears beneath the date while playing or paused. Left-click
+the clock for the selected place’s calendar, forecast, and playback controls.
+The back and forward mouse buttons on the clock skip tracks. Right-click to
+switch places or choose **Add place…**, enter a name and paste latitude and
+longitude (for example, `-23.5505, -46.6333`). You can also choose **Find by street…**,
+enter a street and city, and press Enter. Select a match to fill in its coordinates,
+review the place name, and click **Save**. Street-only matches are approximate.
+Address searches use [Photon](https://photon.komoot.io/) and OpenStreetMap.
+**Manage places…** lets you edit
+or remove an entry. These actions edit `config/quickshell/places.json` in
+`$DOTFILES_REPO` (default `~/.dotfiles`). Commit and push it to share your places.
+Open-Meteo supplies the time zone and forecast. The active forecast refreshes
+every 30 minutes. Your selection and per-location offline cache stay in your
+local state directory. [Open-Meteo](https://open-meteo.com/)
+
+Hover over memory or CPU for the total and the five
+busiest programs. During playback, a squared audio spectrum spans the panel.
+The volume icon also indicates active microphone, camera, or screen capture.
+
+The panel starts with Hyprland on each display. Press **Super+W** to hide or
+show it. Use `systemctl --user restart quickshell-panel.service` to restart it
+and `journalctl --user -u quickshell-panel.service -b` to inspect its log.
 
 When an HDMI display is connected, click the monitor icon beside the power
 button to choose a layout. **Mirror** shows the same desktop on both screens.
@@ -177,9 +215,6 @@ Passwords, private SSH keys, and cloud credentials are absent. After installing:
 4. Authenticate GitHub CLI with `gh auth login` for update verification.
 5. Sign in to Dropbox, Proton VPN, and other personal services.
 
-Waybar's task and research widgets tolerate missing Dropbox files. Override
-their paths with `TASKS_FILE` and `RESEARCH_FILE`.
-
 ## Assets
 
 Desktop images are tracked under `assets/` and installed to
@@ -240,24 +275,22 @@ Inspect standalone home generations with `home-manager generations`.
 
 Pending candidates have garbage-collection roots in `~/.local/state/dotfiles`;
 the protected system lives at `/nix/var/nix/profiles/dotfiles-known-good`.
-The laptop checks for CI-tested updates daily at 09:15 São Paulo time.
-The Friday monitor starts at 21:00 and checks GitHub every five minutes through
-Sunday at 21:00. A missed timer tick runs on wake. Polling GitHub stops once
-the weekly outcome is resolved.
+The circular arrow beside the panel bell checks the flake update PR and the
+verified desktop revision on `main` every five minutes while the laptop is awake.
+A missed check runs once on wake. Left-click to refresh immediately. The arrow
+spins as soon as you click. Automatic checks start the animation after half a
+second. The red dot stays in place while the arrow turns.
 
-SwayNC keeps the weekly report visible until dismissed and respects Do Not
-Disturb. **Open pull request** opens the proposal in Brave when its checks pass,
-fail, or need approval. A failed proposal workflow links to its Actions run.
-After merge, **NixOS update ready** appears once the current `main` revision
-passes the desktop updater's verification. Use `up` to review installation.
-The monitor also reports a quiet week, an already-active system, or an update
-scheduled for next boot. It remembers delivered statuses across restarts and
-shares tested-update notices with the daily check.
+Hover for the PR status, desktop update status, and time of the last successful
+check. A red dot marks a proposal ready for review, CI needing attention, or a
+tested system ready to apply with `up`. A system scheduled for next boot clears
+its update dot. Right-click for links to the relevant PR and Actions runs.
+The Friday GitHub workflow creates proposals. The indicator only reads GitHub.
+If offline, it keeps the last known status. After a rate limit it waits until
+GitHub permits another check.
 
-![Example Friday pull request and tested update popups](assets/previews/friday-update.png)
-
-Inspect the weekly monitor with `systemctl --user list-timers weeklyUpdate.timer`
-and `journalctl --user -u weeklyUpdate`. Daily checks use `flakeUpdate.service`.
+Inspect the timer with `systemctl --user list-timers dotfiles-update-check.timer`
+and the check log with `journalctl --user -u dotfiles-update-check.service`.
 
 ### GitHub setup and bootstrap
 

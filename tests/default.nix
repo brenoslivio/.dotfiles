@@ -38,7 +38,7 @@ in {
     cp -rs ${home.config.home-files}/. "$HOME/"
     export XDG_RUNTIME_DIR="$TMPDIR/runtime"
     mkdir -m700 "$XDG_RUNTIME_DIR"
-    python ${./generated_config.py} ${home.config.home-files}
+    python ${./generated_config.py} ${home.config.home-files} ${(import ../modules/quickshell/package.nix { inherit pkgs; }).ui}
     fish --no-config --no-execute ${home.config.home-files}/.config/fish/config.fish
     luac -p ${home.config.home-files}/.config/hypr/hyprland.lua
     Hyprland --verify-config --config ${home.config.home-files}/.config/hypr/hyprland.lua
@@ -50,10 +50,16 @@ in {
   } ''
     cp -R ${../scripts} scripts
     cp -R ${./.} tests
+    mkdir -p modules/quickshell
+    cp ${../modules/quickshell/capture.py} modules/quickshell/capture.py
+    cp ${../modules/quickshell/clock.py} modules/quickshell/clock.py
+    cp ${../modules/quickshell/weather.py} modules/quickshell/weather.py
+    cp ${../modules/quickshell/street_search.py} modules/quickshell/street_search.py
     cp -R ${../.github} .github
     chmod -R u+w scripts tests .github
     export HOME="$TMPDIR/home"
     mkdir -p "$HOME"
+    export PYTHONTZPATH=${pkgs.tzdata}/share/zoneinfo
     python -m unittest discover -s tests -p 'test_*.py' -v
     shellcheck scripts/*.sh
     actionlint -shellcheck="" .github/workflows/*.yml
@@ -79,7 +85,7 @@ in {
       systemd.services.NetworkManager-wait-online.enable = lib.mkForce false;
       networking.networkmanager.ensureProfiles.profiles = lib.mkForce {};
       nix.gc.automatic = lib.mkForce false;
-      home-manager.users.brenoslivio.systemd.user.timers.flakeUpdate.Install.WantedBy = lib.mkForce [];
+      home-manager.users.brenoslivio.systemd.user.timers.dotfiles-update-check.Install.WantedBy = lib.mkForce [];
     };
     testScript = ''
       start_all()
@@ -96,7 +102,7 @@ in {
       machine.wait_until_succeeds("pgrep -u brenoslivio fish")
       uid = machine.succeed("id -u brenoslivio").strip()
       machine.wait_for_unit(f"user@{uid}.service")
-      machine.succeed("test -f /home/brenoslivio/.config/waybar/config.jsonc")
+      machine.succeed("test -f /home/brenoslivio/.config/systemd/user/quickshell-panel.service")
       machine.succeed("test -f /home/brenoslivio/.config/hypr/hyprland.lua")
       machine.succeed("test -f /home/brenoslivio/.config/containers/containers.conf")
       machine.succeed("su - brenoslivio -c 'git --version'")

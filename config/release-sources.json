@@ -12,7 +12,7 @@
   "caddy": {"repo": "caddyserver/caddy", "tags": ["v{version}"]},
   "systemd": {"repo": "systemd/systemd", "tags": ["v{version}"]},
   "hyprland": {"repo": "hyprwm/Hyprland", "tags": ["v{version}"]},
-  "waybar": {"repo": "Alexays/Waybar", "tags": ["{version}"]},
+  "quickshell": {"url": "https://quickshell.org/changelog/"},
   "fish": {"repo": "fish-shell/fish-shell", "tags": ["{version}"]},
   "fastfetch": {"repo": "fastfetch-cli/fastfetch", "tags": ["{version}"]},
   "kitty": {"repo": "kovidgoyal/kitty", "tags": ["v{version}"]},

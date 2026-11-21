@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Install only CI-verified revisions; keep activation separate from checkout state."""
 import argparse
+from email.parser import BytesHeaderParser
 import fcntl
 import io
 import json
@@ -13,6 +14,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from urllib.parse import urlencode
 import zipfile
 
 REPOSITORY = "brenoslivio/.dotfiles"
@@ -38,11 +40,42 @@ def run(*args, capture=True, binary=False):
     return result.stdout if binary else (result.stdout or "").strip()
 
 
+class GitHubError(subprocess.CalledProcessError):
+    def __init__(self, response, headers):
+        super().__init__(response.returncode, response.args, stderr=response.stderr)
+        detail = response.stderr.decode(errors="replace").strip()
+        self.retry_after = 0
+        if headers.get("Retry-After") or headers.get("X-RateLimit-Remaining") == "0" or "rate limit" in detail.lower():
+            self.retry_after = time.time() + int(headers.get("Retry-After", 60))
+            if headers.get("X-RateLimit-Remaining") == "0":
+                self.retry_after = max(self.retry_after, int(headers.get("X-RateLimit-Reset", 0)))
+            self.summary = "GitHub rate limit reached"
+        elif "HTTP 401" in detail or "gh auth login" in detail:
+            self.summary = "GitHub sign-in required · run gh auth login"
+        else:
+            self.summary = "Could not reach GitHub or access the repository"
+
+    def __str__(self):
+        return self.stderr.decode(errors="replace").strip() or self.summary
+
+
 def api(endpoint, *, binary=False):
-    return run("gh", "api", "--hostname", "github.com", f"repos/{REPOSITORY}/{endpoint}", binary=binary)
+    result = subprocess.run(["gh", "api", "--include", "--hostname", "github.com",
+                             f"repos/{REPOSITORY}/{endpoint}"], capture_output=True)
+    # gh uses LF for the status line and may use CRLF for the HTTP headers.
+    parts = re.split(rb"\r?\n\r?\n", result.stdout, maxsplit=1)
+    if result.returncode:
+        headers = BytesHeaderParser().parsebytes(parts[0].partition(b"\n")[2])
+        raise GitHubError(result, headers)
+    if len(parts) != 2:
+        raise ValueError("GitHub returned an incomplete HTTP response.")
+    body = parts[1]
+    return body if binary else body.decode()
 
 
-def api_json(endpoint):
+def api_json(endpoint, **params):
+    if params:
+        endpoint += "?" + urlencode(params)
     return json.loads(api(endpoint))
 
 
@@ -112,6 +145,7 @@ def evidence(sha, host=HOST):
         manifest = json.loads(archive.read(info))
     manifest = validate_manifest(manifest, sha, candidate, host)
     manifest["ci_url"] = candidate["html_url"]
+    manifest["expires_at"] = artifacts[0].get("expires_at")
     return manifest
 
 
@@ -264,22 +298,9 @@ def system_label(path, state):
     return label
 
 
-def notify(directory):
-    sha = api_json("git/ref/heads/main")["object"]["sha"]
-    state = read_state(directory)
-    label = system_label(evidence(sha)["system_path"], state)
-    key = f"{sha}:{label}"
-    if state.get("notified") != key:
-        if label != "active":
-            run("notify-send", f"Tested NixOS update: {HOST}", f"{sha[:12]}: {label}", capture=False)
-            state["daily_notice"] = {"key": key, "at": time.time()}
-        state["notified"] = key
-        atomic_json(directory / "state.json", state)
-
-
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("command", choices=["up", "home", "up-vps", "status-vps", "confirm-vps", "rollback-vps", "notify", "weekly-notify", "status", "mark-good", "rollback", "rollback-good"], nargs="?", default="up")
+    parser.add_argument("command", choices=["up", "home", "up-vps", "status-vps", "confirm-vps", "rollback-vps", "status", "mark-good", "rollback", "rollback-good"], nargs="?", default="up")
     args = parser.parse_args()
     if socket.gethostname() != HOST:
         raise UpdateError(f"This updater supports {HOST} only.")
@@ -304,12 +325,6 @@ def main():
             print(json.dumps({**read_state(directory), **system_status()}, indent=2))
         elif args.command == "mark-good":
             preserve_good()
-        elif args.command == "weekly-notify":
-            sys.modules["update"] = sys.modules[__name__]
-            import weekly_update
-            weekly_update.monitor(directory)
-        elif args.command == "notify":
-            notify(directory)
         elif args.command == "rollback":
             run("sudo", "nixos-rebuild", "switch", "--rollback", capture=False)
         elif args.command == "rollback-good":
