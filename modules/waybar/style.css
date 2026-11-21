@@ -140,7 +140,7 @@ window#waybar.empty #window {
 }
 
 #custom-memory, #custom-cpu {
-    min-width: 40px;
+    min-width: 46px;
     padding: 0 4px;
     color: @desktop_muted;
 }
@@ -153,6 +153,11 @@ window#waybar.empty #window {
 #custom-memory {
     padding-left: 10px;
     background-position: left center;
+}
+
+#custom-cpu {
+    /* The module gap and tray margin supply the rest of the space before the divider. */
+    padding-right: 1px;
 }
 
 #wireplumber.multiple-captures {

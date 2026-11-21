@@ -141,14 +141,16 @@
         "exec": "@resourceMonitor@ memory",
         "return-type": "json",
         "restart-interval": 2,
-        "format": "<span size='large'></span> {}<small>%</small>"
+        "align": 0.0,
+        "format": "<span font_desc='FiraCode Nerd Font Propo 12'></span> {text:\u2007>2}<small>%</small>"
     },
 
     "custom/cpu": {
         "exec": "@resourceMonitor@ cpu",
         "return-type": "json",
         "restart-interval": 2,
-        "format": "<span size='large'></span> {}<small>%</small>"
+        "align": 1.0,
+        "format": "<span font_desc='FiraCode Nerd Font Propo 12'></span> {text:\u2007>2}<small>%</small>"
     },
 
     "tray": {
