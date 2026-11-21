@@ -21,6 +21,9 @@ Row {
         BarButton {
             id: entry
             required property var modelData
+            // These AppIndicators export a menu but omit both Activate and ItemIsMenu.
+            readonly property bool primaryOpensMenu: modelData.onlyMenu || modelData.id === "nm-applet"
+                || /^dropbox-client(?:-|$)/.test(modelData.id)
             visible: modelData.status !== Status.Passive
             minimumWidth: 19; padding: 2; iconSize: 16
             iconSource: {
@@ -36,10 +39,12 @@ Row {
                 return url
             }
             hint: trayMenu.visible ? "" : modelData.tooltipTitle || modelData.title || modelData.id
-            buttons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton
+            buttons: (primaryOpensMenu && !modelData.menu ? Qt.NoButton : Qt.LeftButton | Qt.MiddleButton)
+                | (modelData.menu ? Qt.RightButton : Qt.NoButton)
+            highlight: buttons !== Qt.NoButton
             onTriggered: button => {
                 if (button === Qt.MiddleButton) modelData.secondaryActivate()
-                else if ((button === Qt.RightButton || modelData.onlyMenu) && modelData.menu)
+                else if (button === Qt.RightButton || primaryOpensMenu)
                     trayMenu.popup(entry, 0, entry.height + 2)
                 else if (button === Qt.LeftButton) modelData.activate()
             }
