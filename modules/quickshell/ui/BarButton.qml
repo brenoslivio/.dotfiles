@@ -5,6 +5,7 @@ import "Palette.js" as Ink
 Rectangle {
     id: button
     property string label
+    property alias labelFormat: caption.textFormat
     property string subtitle
     property string hint
     property bool richHint: false

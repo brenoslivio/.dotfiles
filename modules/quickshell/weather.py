@@ -54,8 +54,8 @@ def fetch(coords):
     params = urlencode({
         "latitude": coords[0], "longitude": coords[1], "timezone": "auto",
         "current": "temperature_2m,apparent_temperature,is_day,weather_code",
-        "daily": "temperature_2m_max,temperature_2m_min,precipitation_probability_max",
-        "forecast_days": 1,
+        "daily": "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
+        "forecast_days": 7,
     })
     with urlopen("https://api.open-meteo.com/v1/forecast?" + params, timeout=10) as response:
         data = json.load(response)
@@ -63,12 +63,18 @@ def fetch(coords):
     ZoneInfo(zone)
     current, daily = data["current"], data["daily"]
     description, icon = condition(current["weather_code"], current["is_day"])
+    week = []
+    for day, code, high, low, rain in zip(daily["time"], daily["weather_code"], daily["temperature_2m_max"],
+                                          daily["temperature_2m_min"], daily["precipitation_probability_max"], strict=True):
+        summary, symbol = condition(code, True) if code is not None else ("Condition unavailable", "—")
+        week.append({"date": day, "description": summary, "icon": symbol, "rain": rain,
+                     "high": round(high) if high is not None else None, "low": round(low) if low is not None else None})
+    today = week[0]
     return {
         "zone": zone, "updated": int(datetime.now(timezone.utc).timestamp()),
         "description": description, "icon": icon, "temperature": round(current["temperature_2m"]),
-        "feels": round(current["apparent_temperature"]), "high": round(daily["temperature_2m_max"][0]),
-        "low": round(daily["temperature_2m_min"][0]), "rain": daily["precipitation_probability_max"][0],
-        "day": daily["time"][0],
+        "feels": round(current["apparent_temperature"]), "high": today["high"],
+        "low": today["low"], "rain": today["rain"], "day": today["date"], "week": week,
     }
 
 
@@ -80,6 +86,10 @@ def cached(directory, coords):
     try:
         data = json.loads(cache_file(directory, coords).read_text())
         ZoneInfo(data["zone"])
+        week = data.get("week", [])
+        if not isinstance(week, list) or not all(isinstance(day, dict) and isinstance(day.get("date"), str)
+                                                 for day in week):
+            data.pop("week", None)
         if all(key in data for key in ("temperature", "icon", "feels", "description", "high", "low", "day", "rain")):
             if isinstance(data["updated"], int):
                 return data

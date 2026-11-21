@@ -43,7 +43,7 @@ def status(path):
         return {"text": "0", "tooltip": f"Task file unavailable: {html.escape(str(path))}\nRight-click to keep a draft"}
     tooltip = [("  ✓ " if indent else "• ") + html.escape(text) for _, indent, text in items]
     return {"text": str(sum(bool(indent) for _, indent, _ in items)),
-            "tooltip": "\n".join([*tooltip, "Right-click to add or edit tasks"])}
+            "tooltip": "\n".join([*tooltip, "Right-click to open the task notepad"])}
 
 
 def insert_task(lines, project, text):
@@ -70,7 +70,7 @@ def version(stat):
     return stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns, stat.st_ctime_ns
 
 
-def save_task(path, project, text, target=None):
+def update_note(path, edit):
     path = path.resolve(strict=True)
     if not os.access(path, os.W_OK):
         raise PermissionError("The task note is read-only.")
@@ -78,10 +78,7 @@ def save_task(path, project, text, target=None):
     for _ in range(3):
         before = version(path.stat())
         lines = read_lines(path)
-        if target is None:
-            insert_task(lines, project, text)
-        else:
-            replace_task(lines, target, text)
+        edit(lines)
         with tempfile.NamedTemporaryFile(dir=path.parent, prefix=".task-", delete=False,
                                          mode="w", encoding="utf-8", newline="") as stream:
             temp = Path(stream.name)
@@ -97,6 +94,15 @@ def save_task(path, project, text, target=None):
             finally:
                 temp.unlink(missing_ok=True)
     raise ValueError("The note is changing. Try again after syncing.")
+
+
+def save_task(path, project, text, target=None):
+    def edit(lines):
+        if target is None:
+            insert_task(lines, project, text)
+        else:
+            replace_task(lines, target, text)
+    update_note(path, edit)
 
 
 def project_tasks(lines, project):
@@ -168,6 +174,86 @@ def snapshot(path):
         return []
 
 
+def section_body(lines):
+    if sum(bool(re.fullmatch(r"##\s+Tasks\s*", line)) for line in lines) != 1:
+        raise ValueError("The note needs one ## Tasks heading.")
+    section = task_section(lines)
+    body = "".join(lines[section.start:section.stop]).replace("\r\n", "\n").replace("\r", "\n")
+    # The line ending before the next heading belongs to the section boundary.
+    return section, body.removesuffix("\n")
+
+
+class SectionChanged(ValueError):
+    def __init__(self, current):
+        self.current = current
+        super().__init__("Tasks changed in the note.")
+
+
+def notepad(path, state, request):
+    state.mkdir(parents=True, exist_ok=True, mode=0o700)
+    key = note_key(path)
+    draft = state / (key + ".notepad.json")
+    action = request["action"]
+    if action == "open":
+        error = ""
+        try:
+            _, current = section_body(read_lines(path))
+        except (OSError, UnicodeError, ValueError) as exc:
+            current, error = None, str(exc)
+        saved = json.loads(draft.read_text()) if draft.exists() else {}
+        return {"base": saved.get("base", current), "text": saved.get("text", current or ""),
+                "cursor": saved.get("cursor", 0), "draft": bool(saved), "error": error,
+                "conflict": current if saved and saved["base"] != current else None,
+                "legacy": bool(legacy_drafts(path, state))}
+    if action not in ("draft", "save"):
+        raise ValueError("Unknown notepad action.")
+    base, text = request["base"], request["text"]
+    if text == base and action == "draft":
+        draft.unlink(missing_ok=True)
+        return {}
+    write_draft(draft, {"base": base, "text": text, "cursor": request["cursor"]})
+    if action == "draft":
+        return {}
+
+    def edit(lines):
+        section, current = section_body(lines)
+        if current == text:
+            return
+        if current != base:
+            raise SectionChanged(current)
+        if re.search(r"^#{1,6}\s", text, re.MULTILINE):
+            raise ValueError("A Markdown heading would end the Tasks section. Use a project bullet instead.")
+        header = section.start - 1
+        newline = next(("\r\n" if line.endswith("\r\n") else "\n" for line in lines if line.endswith("\n")), "\n")
+        terminated = lines[-1].endswith(("\n", "\r")) or section.stop < len(lines)
+        if text and not lines[header].endswith(("\n", "\r")):
+            lines[header] += newline
+        body = text.replace("\n", newline) + (newline if text and terminated else "")
+        lines[section.start:section.stop] = [body]
+
+    try:
+        with (state / (key + ".lock")).open("a") as lock:
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            update_note(path, edit)
+    except SectionChanged as exc:
+        return {"conflict": exc.current}
+    except BlockingIOError:
+        raise ValueError("Finish the other task edit, then save again.") from None
+    draft.unlink()
+    return {}
+
+
+def legacy_drafts(path, state):
+    key = note_key(path)
+    choices = []
+    if (state / (key + ".json")).exists():
+        choices.append({"label": "Resume task addition", "target": {"action": "capture"}})
+    for file in sorted(state.glob(key + ".edit-*.json")):
+        data = json.loads(file.read_text())
+        choices.append({"label": "Resume edit · " + data["text"], "target": {"action": "resume", "draft": file.name}})
+    return choices
+
+
 def task_choices(path, state):
     choices = []
     lines = snapshot(path)
@@ -187,9 +273,7 @@ def task_choices(path, state):
             edit.append({"label": project, "children": tasks} if tasks else {"label": project + " (empty)"})
     else:
         choices.extend([{"label": "Add task…", "target": {"action": "add", "project": ""}}, {"label": "Edit task…"}])
-    for file in sorted(state.glob(note_key(path) + ".edit-*.json")):
-        draft = json.loads(file.read_text())
-        choices.append({"label": "Resume edit · " + draft["text"], "target": {"action": "resume", "draft": file.name}})
+    choices.extend(row for row in legacy_drafts(path, state) if row["target"]["action"] == "resume")
     return choices
 
 
@@ -266,7 +350,15 @@ def capture(path, state, action=None):
 if __name__ == "__main__":
     note = Path(os.environ.get("TASKS_FILE") or Path.home() / "Dropbox/Ikiru/Ikiru.md")
     state = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state") / "dotfiles/task-capture"
-    if sys.argv[1:] == ["choices"]:
+    if sys.argv[1:] == ["notepad"]:
+        try:
+            result = notepad(note, state, json.loads(sys.stdin.readline()))
+        except (OSError, UnicodeError, ValueError) as exc:
+            result = {"error": str(exc)}
+        print(json.dumps(result))
+    elif sys.argv[1:] == ["drafts"]:
+        print(json.dumps(legacy_drafts(note, state)))
+    elif sys.argv[1:] == ["choices"]:
         print(json.dumps(task_choices(note, state)))
     elif sys.argv[1:] == ["watch"]:
         previous = None

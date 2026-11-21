@@ -23,6 +23,8 @@ ShellRoot {
     property var notifications: ({})
     property var updates: ({})
     property var tasks: ({})
+    readonly property alias taskNotepad: notepad
+    TaskNotepad { id: notepad }
     property var memory: ({})
     property var cpu: ({})
     property var hardware: ({})

@@ -9,7 +9,6 @@ Rectangle {
     required property var state
     // playerctld stays on the bus after the last player exits and can leave stale metadata.
     readonly property var players: Mpris.players.values.filter(p => p.dbusName !== "org.mpris.MediaPlayer2.playerctld"
-        && !p.dbusName.toLowerCase().includes("brave")
         && p.playbackState !== MprisPlaybackState.Stopped)
     readonly property var player: players.find(p => p.isPlaying) || players[0] || null
     readonly property string trackTitle: player?.trackTitle || player?.identity || ""
@@ -51,7 +50,11 @@ Rectangle {
         BarButton {
             id: clockButton
             readonly property var weather: center.state.clock.weather
-            label: (center.state.clock.label || "…") + (weather?.icon ? "   " + weather.icon + "  " + weather.temperature + "°" : "")
+            readonly property string utcOffset: center.state.clock.utcOffset || ""
+            labelFormat: Text.StyledText
+            label: (center.state.clock.label || "…").replace(/ /g, "&nbsp;")
+                + (utcOffset ? " <font size='-1' color='" + Ink.inactive + "'>(" + utcOffset + ")</font>" : "")
+                + (weather?.icon ? "&nbsp;&nbsp;&nbsp;" + weather.icon + "&nbsp;&nbsp;" + weather.temperature + "°" : "")
             subtitle: center.player ? (center.player.isPlaying ? "♪  " : "⏸  ") + center.trackTitle : ""
             buttons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
             hint: calendar.visible ? "" : [center.state.clock.place?.name, center.state.clock.zone, center.trackTitle, center.player?.trackArtist].filter(Boolean).join("\n")
@@ -81,14 +84,13 @@ Rectangle {
             id: tasks
             iconSource: Config.commands.taskIcon; labelColor: Ink.lavender
             label: center.state.tasks.text || "0"
-            hint: taskMenu.visible ? "" : center.state.tasks.tooltip || ""
+            hint: center.state.taskNotepad.visible ? "" : center.state.tasks.tooltip || ""
             richHint: true
             buttons: Qt.LeftButton | Qt.RightButton
             onTriggered: button => {
-                if (button === Qt.RightButton) taskMenu.toggle()
+                if (button === Qt.RightButton) center.state.taskNotepad.openAt(tasks)
                 else Quickshell.execDetached(Config.commands.obsidian)
             }
-            ActionMenu { id: taskMenu; anchor.item: tasks; command: Config.commands.tasks }
         }
     }
 }

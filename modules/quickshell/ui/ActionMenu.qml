@@ -6,6 +6,7 @@ import "Palette.js" as Ink
 PopupWindow {
     id: popup
     required property var command
+    property string choicesArgument: "choices"
     property var entries: []
     property var parents: []
     property bool requested: false
@@ -37,7 +38,7 @@ PopupWindow {
     }
     Process {
         id: reader
-        command: popup.command.concat("choices")
+        command: popup.command.concat(popup.choicesArgument)
         stdout: StdioCollector {
             onStreamFinished: {
                 if (!popup.requested) return

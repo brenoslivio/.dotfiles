@@ -39,13 +39,14 @@ headphones still plugged in. If a Bluetooth microphone requires call-quality
 playback, the menu asks before switching profiles. Left-click opens the mixer,
 scrolling adjusts volume, and the microphone mute key shows its resulting state.
 
-Right-click the task count beside the clock and choose **Add task…** or **Edit
-task…**, then a project in Ikiru. Editing opens the selected task's full text.
-Enter saves and Escape cancels. Nested tasks keep their indentation and children.
-Left-click opens Obsidian. If the note is unavailable, a submitted addition is
-kept for the next capture. If another editor changes the selected task, choose
-**Resume edit** from the menu to recover the draft and choose its destination.
-`TASKS_FILE` overrides the note for both the counter and the menus.
+Right-click the task count beside the clock to open the notepad on the Markdown
+body of Ikiru’s `## Tasks` section. Enter continues a bullet, and Tab or Shift+Tab
+indents or outdents the current line or selection. Ctrl+S saves to the note.
+Escape or × closes the window and keeps unfinished edits and the cursor as a local
+draft. If another editor changed the section, **Review changes** shows the current
+note above your editable draft. **Older drafts…** opens recovery for earlier
+task captures when available. Left-click opens Obsidian. `TASKS_FILE` overrides
+the note for both the notepad and the counter.
 
 Click the NixOS logo at the far left of the panel to open Rofi and search for an app.
 
@@ -53,6 +54,8 @@ Click the NixOS logo at the far left of the panel to open Rofi and search for an
 
 The current track appears beneath the date while playing or paused. Left-click
 the clock for the selected place’s calendar, forecast, and playback controls.
+Choose **7 days** below the place name for daily highs, lows, and precipitation
+probabilities. Hover over a weather icon for the day's condition.
 The back and forward mouse buttons on the clock skip tracks. Right-click to
 switch places or choose **Add place…**, enter a name and paste latitude and
 longitude (for example, `-23.5505, -46.6333`). You can also choose **Find by street…**,

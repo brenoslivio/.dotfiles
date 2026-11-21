@@ -107,7 +107,7 @@ def frame(instant, places, selection, forecasts, failed):
         zone = forecasts.get(key, {}).get("zone") or weather.STARTER_ZONES.get(key)
         local = instant.astimezone(ZoneInfo(zone)) if zone else None
         rows.append({"id": p["id"], "name": p["name"], "latitude": key[0], "longitude": key[1],
-                     "time": local.strftime("%H:%M") if local else "…"})
+                     "time": local.strftime("%H:%M (%:z)") if local else "…"})
     key = coords(place) if place else None
     forecast = forecasts.get(key, {})
     zone = forecast.get("zone") or weather.STARTER_ZONES.get(key)
@@ -115,8 +115,11 @@ def frame(instant, places, selection, forecasts, failed):
     label = f"{now:%a, %d. %b}  󰥔  {now:%H:%M:%S}"
     if place and not zone:
         label = "Time zone unavailable" if key in failed else "Finding time zone…"
+    local_date = now.date().isoformat() if zone or not place else ""
     return {
-        "label": label, "date": now.date().isoformat() if zone or not place else "",
+        "label": label, "utcOffset": now.strftime("%:z") if zone or not place else "",
+        "date": local_date,
+        "week": [day for day in forecast.get("week", []) if day["date"] >= local_date],
         "zone": zone or "", "places": rows, "place": place, "weather": forecast,
         "offline": key in failed,
         "updated": datetime.fromtimestamp(forecast["updated"], ZoneInfo(zone)).strftime("%d %b %H:%M") if forecast else "",
@@ -169,7 +172,10 @@ def stream(path, directory):
                 for key in candidates:
                     if timestamp < retries.get(key, 0):
                         continue
-                    if timestamp - forecasts[key].get("updated", 0) >= weather.REFRESH:
+                    forecast = forecasts[key]
+                    new_local_day = key == active and forecast and (
+                        datetime.fromtimestamp(forecast["updated"], ZoneInfo(forecast["zone"])).date().isoformat() != value["date"])
+                    if "week" not in forecast or new_local_day or timestamp - forecast["updated"] >= weather.REFRESH:
                         requested = key
                         pending = executor.submit(weather.fetch, key)
                         break

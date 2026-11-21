@@ -22,6 +22,47 @@ class TaskTests(unittest.TestCase):
         self.note.write_bytes(self.original.encode())
         self.note.chmod(0o640)
 
+    def pad(self, action, **values):
+        return tasks.notepad(self.note, self.state, {"action": action, **values})
+
+    def test_notepad_restores_draft_and_updates_only_section(self):
+        base = self.pad("open")["text"]
+        text = base.replace("Parent", "Revised").replace("Child", "First\n\t\t- Second")
+        self.pad("draft", base=base, text=text, cursor=8)
+        self.assertEqual((self.pad("open")["text"], self.pad("open")["cursor"]), (text, 8))
+        self.note.write_bytes(self.note.read_bytes().replace(b"Intro", b"Changed intro"))
+        self.pad("save", base=base, text=text, cursor=8)
+        expected = self.original.replace("Intro", "Changed intro").replace("Parent", "Revised").replace("Child", "First\r\n\t\t- Second")
+        self.assertEqual(self.note.read_bytes(), expected.encode())
+        self.assertFalse(self.pad("open")["draft"])
+        self.assertEqual(tasks.status(self.note)["text"], "3")
+
+    def test_notepad_review_rechecks_concurrent_changes(self):
+        base = self.pad("open")["text"]
+        self.note.write_bytes(self.note.read_bytes().replace(b"Parent", b"External"))
+        result = self.pad("save", base=base, text="- My draft", cursor=2)
+        self.assertIn("External", result["conflict"])
+        self.assertEqual(self.pad("open")["text"], "- My draft")
+        self.note.write_bytes(self.note.read_bytes().replace(b"External", b"Newer"))
+        result = self.pad("save", base=result["conflict"], text="- My draft", cursor=2)
+        self.assertIn("Newer", result["conflict"])
+        self.pad("save", base=result["conflict"], text="- Merged", cursor=2)
+        self.assertEqual(self.pad("open")["text"], "- Merged")
+
+    def test_notepad_unavailable_and_empty_sections(self):
+        self.note.unlink()
+        self.assertIsNone(self.pad("open")["base"])
+        self.pad("draft", base=None, text="- Offline", cursor=3)
+        self.note.write_text("## Tasks\n## Other\nContent")
+        self.assertEqual(self.pad("save", base=None, text="- Offline", cursor=3)["conflict"], "")
+        self.pad("save", base="", text="- Offline", cursor=3)
+        self.assertEqual(self.note.read_text(), "## Tasks\n- Offline\n## Other\nContent")
+        self.pad("save", base="- Offline", text="", cursor=0)
+        self.assertEqual(self.note.read_text(), "## Tasks\n## Other\nContent")
+        with self.assertRaises(ValueError):
+            self.pad("save", base="", text="## Outside", cursor=0)
+        self.assertEqual(self.pad("open")["text"], "## Outside")
+
     def test_preserves_format_metadata_and_symlink(self):
         link = self.root / "link"
         link.symlink_to(self.note)

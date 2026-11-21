@@ -14,7 +14,11 @@ PopupWindow {
     readonly property int offset: (new Date(year, month, 1).getDay() + 6) % 7
     readonly property int days: new Date(year, month + 1, 0).getDate()
 
-    onVisibleChanged: if (!visible) picker.reset()
+    onVisibleChanged: if (!visible) {
+        picker.reset()
+        weatherDetails.weekly = false
+    }
+    onShowPlacesChanged: if (showPlaces) weatherDetails.weekly = false
 
     anchor.edges: Edges.Bottom
     anchor.gravity: Edges.Bottom
@@ -83,6 +87,7 @@ PopupWindow {
                 }
             }
             WeatherDetails {
+                id: weatherDetails
                 width: calendar.width
                 clock: popup.clock
                 onAddPlace: {
