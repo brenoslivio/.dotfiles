@@ -5,8 +5,10 @@ import "Palette.js" as Ink
 Controls.TextArea {
     id: editor
     textFormat: TextEdit.PlainText; wrapMode: TextEdit.Wrap; selectByMouse: true
-    padding: 10; color: Ink.text; selectionColor: Ink.selection; selectedTextColor: Ink.text
-    font.family: "Inter"; font.pixelSize: 14
+    padding: 12; color: Ink.text; selectionColor: Ink.selection; selectedTextColor: Ink.text
+    font.family: "Inter"; font.pixelSize: 16
+    FontMetrics { id: metrics; font: editor.font }
+    tabStopDistance: metrics.advanceWidth("  ")
     placeholderText: "- Project"; placeholderTextColor: Ink.inactive
     background: null
 
@@ -17,7 +19,8 @@ Controls.TextArea {
         const stop = last === -1 ? length : last
         const original = text.slice(first, stop)
         const indents = text.match(/^[ \t]+(?=- )/gm) || []
-        const indent = indents.length ? indents.reduce((a, b) => a.length <= b.length ? a : b) : "  "
+        const shortest = indents.length ? indents.reduce((a, b) => a.length <= b.length ? a : b) : "  "
+        const indent = shortest.startsWith("\t") ? "\t" : shortest.slice(0, 2)
         const lines = original.split("\n")
         const edited = lines.map(line => {
             if (!outdent) return indent + line

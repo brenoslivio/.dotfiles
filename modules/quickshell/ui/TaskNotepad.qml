@@ -139,11 +139,10 @@ PanelWindow {
             }
             Caption { visible: pad.reviewing; text: "Current tasks in the note"; color: Ink.lavender }
             Controls.ScrollView {
-                visible: pad.reviewing; Layout.fillWidth: true; Layout.preferredHeight: 69; clip: true
-                Controls.TextArea {
-                    text: pad.changedSection ?? ""; textFormat: TextEdit.PlainText; readOnly: true
-                    selectByMouse: true; wrapMode: TextEdit.Wrap; padding: 7
-                    color: Ink.muted; font.family: "Inter"; font.pixelSize: 13
+                visible: pad.reviewing; Layout.fillWidth: true; Layout.preferredHeight: 76; clip: true
+                TaskTextArea {
+                    text: pad.changedSection ?? ""; readOnly: true
+                    padding: 7; placeholderText: ""
                     background: Rectangle { color: Ink.field; radius: 5 }
                 }
             }
