@@ -187,7 +187,10 @@ ShellRoot {
                     }
                     Text {
                         anchors { left: appIcon.visible ? appIcon.right : parent.left; leftMargin: 6; right: parent.right; verticalCenter: parent.verticalCenter }
-                        text: windowInfo.title.length > 60 ? windowInfo.title.slice(0, 59) + "…" : windowInfo.title
+                        text: {
+                            const characters = Array.from(windowInfo.title)
+                            return characters.length > 70 ? characters.slice(0, 69).join("") + "…" : windowInfo.title
+                        }
                         elide: Text.ElideRight; textFormat: Text.PlainText
                         color: Ink.muted; font.family: "Inter"; font.pixelSize: 13
                     }

@@ -1,4 +1,4 @@
-"""Report active desktop captures to the WirePlumber volume button."""
+"""Report active screen, microphone, and camera captures to the desktop panel."""
 import json
 import os
 import sys
@@ -109,15 +109,18 @@ def capture_status(graph, direct_cameras):
         name = names_by_binary.get(binary) or BROWSERS.get(binary, binary)
         apps[" ".join(name.split())[:80]].add("camera")
 
-    icons = {"screen sharing": "󱡶", "camera": "󰖠", "microphone": "󰍬"}
-    active = set().union(*apps.values())
+    icons = {"screen sharing": "󱡶", "microphone": "󰍬", "camera": "󰖠"}
+    names_by_resource = defaultdict(list)
     details = []
     for name, resources in sorted(apps.items(), key=lambda item: item[0].casefold()):
         ordered = [key for key in icons if key in resources]
+        for key in ordered:
+            names_by_resource[key].append(name)
         label = ordered[0] if len(ordered) == 1 else ", ".join(ordered[:-1]) + " and " + ordered[-1]
         details.append(f"{name} · {label.capitalize()}")
-    return {"icon": next((icon for key, icon in icons.items() if key in active), ""),
-            "multiple": len(active) > 1, "details": "\n".join(details)}
+    indicators = [{"icon": icon, "hint": "\n".join([resource.capitalize(), *names_by_resource[resource]])}
+                  for resource, icon in icons.items() if resource in names_by_resource]
+    return {"indicators": indicators, "details": "\n".join(details)}
 
 
 def main():

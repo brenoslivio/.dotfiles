@@ -9,12 +9,21 @@ Row {
     required property var state
     function togglePowerMenu() { powerMenu.visible = !powerMenu.visible }
     spacing: 2
+    Repeater {
+        model: controls.state.capture.indicators || []
+        BarButton {
+            required property var modelData
+            label: modelData.icon; hint: modelData.hint
+            glyph: true; labelColor: Ink.lavender
+            minimumWidth: 21; padding: 2; buttons: Qt.NoButton; highlight: false
+            Accessible.name: hint
+        }
+    }
     BarButton {
         id: volume
         readonly property var audio: controls.state.sink?.audio
-        label: (controls.state.capture.icon || (audio?.muted ? "󰝟" : "󰕾")) + "  "
+        label: (audio?.muted ? "󰝟" : "󰕾") + "  "
             + (audio ? Math.round(audio.volume * 100) + "%" : "—")
-        marked: controls.state.capture.multiple === true
         hint: audioMenu.visible ? "" : [controls.state.sink?.description || "Audio output", controls.state.capture.details,
             "Right-click to choose output or microphone"].filter(Boolean).join("\n")
         buttons: Qt.LeftButton | Qt.RightButton

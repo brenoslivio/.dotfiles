@@ -71,7 +71,8 @@ local state directory. [Open-Meteo](https://open-meteo.com/)
 
 Hover over memory or CPU for the total and the five
 busiest programs. During playback, a squared audio spectrum spans the panel.
-The volume icon also indicates active microphone, camera, or screen capture.
+Active screen sharing, microphone use, and camera use each show an icon beside
+the volume control. Hover over an icon to see which applications are using it.
 
 The panel starts with Hyprland on each display. Press **Super+W** to hide or
 show it. Use `systemctl --user restart quickshell-panel.service` to restart it

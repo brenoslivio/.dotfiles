@@ -22,12 +22,31 @@ class ScreenShareTests(unittest.TestCase):
         portal.clear()
         source["media.name"] = "xdph-streaming-123"
         self.assertEqual(capture_status(graph, {"brave"}), {
-            "icon": "󱡶", "multiple": True, "details": "Brave · Screen sharing and camera",
+            "indicators": [{"icon": "󱡶", "hint": "Screen sharing\nBrave"},
+                           {"icon": "󰖠", "hint": "Camera\nBrave"}],
+            "details": "Brave · Screen sharing and camera",
         })
         graph[4][1]["state"] = "paused"
-        self.assertEqual(capture_status(graph, ())["icon"], "")
+        self.assertEqual(capture_status(graph, ())["indicators"], [])
         graph[4][1]["state"] = "active"
         portal["application.process.binary"] = wrapper
         del source["media.name"]
         source["media.role"] = "Camera"
         self.assertEqual(capture_status(graph, ())["details"], "Brave · Camera")
+
+    def test_concurrent_captures_list_each_app_under_its_resource(self):
+        graph = {
+            1: ("Node", {"props": {"media.class": "Audio/Source"}}),
+            2: ("Node", {"props": {"media.class": "Stream/Input/Audio", "application.name": "Recorder"}}),
+            3: ("Link", {"output-node-id": 1, "input-node-id": 2, "state": "active"}),
+            4: ("Node", {"props": {"media.class": "Stream/Input/Audio", "application.process.binary": "brave"}}),
+            5: ("Link", {"output-node-id": 1, "input-node-id": 4, "state": "active"}),
+            6: ("Node", {"props": {"media.class": "Video/Source", "media.role": "Screen"}}),
+            7: ("Node", {"props": {"media.class": "Stream/Input/Video", "application.process.binary": "brave"}}),
+            8: ("Link", {"output-node-id": 6, "input-node-id": 7, "state": "active"}),
+        }
+        self.assertEqual(capture_status(graph, {"brave"})["indicators"], [
+            {"icon": "󱡶", "hint": "Screen sharing\nBrave"},
+            {"icon": "󰍬", "hint": "Microphone\nBrave\nRecorder"},
+            {"icon": "󰖠", "hint": "Camera\nBrave"},
+        ])
