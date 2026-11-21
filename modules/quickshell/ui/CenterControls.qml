@@ -7,7 +7,9 @@ import "Palette.js" as Ink
 Rectangle {
     id: center
     required property var state
-    readonly property var players: Mpris.players.values.filter(p => !p.dbusName.toLowerCase().includes("brave")
+    // playerctld stays on the bus after the last player exits and can leave stale metadata.
+    readonly property var players: Mpris.players.values.filter(p => p.dbusName !== "org.mpris.MediaPlayer2.playerctld"
+        && !p.dbusName.toLowerCase().includes("brave")
         && p.playbackState !== MprisPlaybackState.Stopped)
     readonly property var player: players.find(p => p.isPlaying) || players[0] || null
     readonly property string trackTitle: player?.trackTitle || player?.identity || ""
