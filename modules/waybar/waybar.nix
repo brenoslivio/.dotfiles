@@ -2,11 +2,12 @@
 
 let
   waybar = pkgs.waybar.overrideAttrs (old: {
-    patches = (old.patches or [ ]) ++ [ ./context-menu.patch ./icon-tooltip.patch ./spectrum.patch ];
+    patches = (old.patches or [ ]) ++ [ ./context-menu.patch ./icon-tooltip.patch ./spectrum.patch ./capture.patch ];
     postPatch = (old.postPatch or "") + ''
       cp ${./spectrum.hpp} include/spectrum.hpp
     '';
   });
+  capturePython = pkgs.python3.withPackages (ps: [ ps.inotify-simple ]);
   spectrumPython = pkgs.python3.withPackages (ps: [ ps.pulsectl ]);
   sources = pkgs.lib.fileset.toSource {
     root = ../../scripts;
@@ -35,7 +36,7 @@ in
       bellIcon = "${../../assets/icons/notification-bell.svg}";
       taskIcon = "${../../assets/icons/tasks.svg}";
       audioControl = pkgs.lib.getExe audio;
-      captureMonitor = "${pkgs.pipewire}/bin/pw-dump -mN | ${pkgs.python3}/bin/python3 ${./capture.py}";
+      captureMonitor = "${pkgs.pipewire}/bin/pw-dump -mN | ${capturePython}/bin/python3 ${./capture.py}";
       taskControl = pkgs.lib.getExe tasks;
       resourceMonitor = "${pkgs.python3}/bin/python3 ${../../scripts/waybar_resources.py}";
       nixosIcon = "${../../assets/icons/nixos.svg}";

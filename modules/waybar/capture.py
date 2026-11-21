@@ -1,7 +1,13 @@
-"""Show active microphone and desktop capture links reported by pw-dump --monitor."""
+"""Report active desktop captures to the WirePlumber volume button."""
 import json
+import os
 import sys
-from html import escape
+import time
+from collections import defaultdict
+from pathlib import Path
+from selectors import DefaultSelector, EVENT_READ
+
+from inotify_simple import INotify, flags
 
 
 def update_graph(graph, batch):
@@ -18,8 +24,52 @@ def update_graph(graph, batch):
                                  ("props", "state", "input-node-id", "output-node-id") if k in info})
 
 
-def capture_status(graph):
-    microphones, screens = set(), set()
+BROWSERS = {"brave": "Brave", "chromium": "Chromium", "chrome": "Google Chrome",
+            "firefox": "Firefox", "firefox-esr": "Firefox"}
+
+
+def camera_devices():
+    devices = set()
+    for entry in Path("/sys/class/video4linux").glob("video*"):
+        try:
+            number = (entry / "dev").read_text().strip()
+            properties = Path("/run/udev/data", "c" + number).read_text()
+        except OSError:
+            continue
+        if any(":capture:" in line for line in properties.splitlines()
+               if line.startswith("E:ID_V4L_CAPABILITIES=")):
+            devices.add("/dev/" + entry.name)
+    return devices
+
+
+def camera_owners(devices):
+    """Read descriptor targets only. Opening the webcam ourselves would affect its state."""
+    owners = set()
+    if not devices:
+        return owners
+    for proc in Path("/proc").glob("[0-9]*"):
+        try:
+            if proc.stat().st_uid != os.getuid():
+                continue
+            for fd in (proc / "fd").iterdir():
+                try:
+                    target = os.readlink(fd)
+                except OSError:
+                    continue
+                if target in devices:
+                    name = (proc / "comm").read_text().strip()
+                    # Brokers open the physical device on behalf of PipeWire consumers.
+                    if name not in {"pipewire", "wireplumber", "pipewire-pulse"}:
+                        owners.add(name)
+                    break
+        except OSError:
+            continue
+    return owners
+
+
+def capture_status(graph, direct_cameras):
+    apps = defaultdict(set)
+    names_by_binary = {}
 
     def props(object_id):
         return graph.get(object_id, ("", {}))[1].get("props", {})
@@ -34,43 +84,87 @@ def capture_status(graph):
         if source_class.startswith("Audio/Source") and stream_class.startswith("Stream/Input/Audio"):
             if str(stream.get("stream.monitor", "")).lower() == "true":
                 continue
-            apps = microphones
-        elif source_class == "Video/Source" and stream_class.startswith("Stream/Input/Video"):
-            # A webcam produces the same stream class as a shared window. Check the producer.
+            resource = "microphone"
+        elif source_class.startswith("Video/Source") and stream_class.startswith("Stream/Input/Video"):
             producer = props(source.get("client.id")).get("application.process.binary", "")
-            if not (producer.startswith("xdg-desktop-portal-")
-                    or source.get("node.name", "").startswith("xdph-streaming-")
-                    or source.get("media.role") == "Screen"):
+            if (source.get("media.role") == "Screen" or source.get("node.name", "").startswith("xdph-streaming-")
+                    or (producer.startswith("xdg-desktop-portal-") and source.get("media.role") != "Camera")):
+                resource = "screen sharing"
+            elif source.get("media.role") == "Camera" or source.get("device.api") in {"v4l2", "libcamera"}:
+                resource = "camera"
+            else:
                 continue
-            apps = screens
         else:
             continue
-        app = (stream.get("application.name") or props(stream.get("client.id")).get("application.name")
-               or stream.get("node.name") or "Unknown application")
-        apps.add(escape(" ".join(app.split())[:80]))
+        client = props(stream.get("client.id"))
+        binary = stream.get("application.process.binary") or client.get("application.process.binary")
+        name = (BROWSERS.get(binary) or stream.get("application.name") or client.get("application.name")
+                or stream.get("node.name") or "Unknown application")
+        name = " ".join(name.split())[:80]
+        if binary:
+            names_by_binary[binary] = name
+        apps[name].add(resource)
 
-    icons, sections = [], []
-    for apps, icon, title in ((microphones, "", "Microphone"), (screens, "󰍹", "Screen sharing")):
-        if apps:
-            icons.append(icon)
-            sections.append(f"<b>{title}</b>\n" + "\n".join(sorted(apps, key=str.casefold)))
-    return {"text": "  ".join(icons), "tooltip": "\n\n".join(sections)}
+    for binary in direct_cameras:
+        name = names_by_binary.get(binary) or BROWSERS.get(binary, binary)
+        apps[" ".join(name.split())[:80]].add("camera")
+
+    icons = {"screen sharing": "󰍹", "camera": "", "microphone": ""}
+    active = set().union(*apps.values())
+    details = []
+    for name, resources in sorted(apps.items(), key=lambda item: item[0].casefold()):
+        ordered = [key for key in icons if key in resources]
+        label = ordered[0] if len(ordered) == 1 else ", ".join(ordered[:-1]) + " and " + ordered[-1]
+        details.append(f"{name} · {label.capitalize()}")
+    return {"icon": next((icon for key, icon in icons.items() if key in active), ""),
+            "multiple": len(active) > 1, "details": "\n".join(details)}
 
 
 def main():
-    graph, lines, previous = {}, [], None
-    for line in sys.stdin:
-        lines.append(line)
-        # pw-dump indents nested arrays and ends each update with an unindented bracket.
-        if line.rstrip() != "]":
-            continue
-        update_graph(graph, json.loads("".join(lines)))
-        lines.clear()
-        status = capture_status(graph)
-        if status != previous:
-            print(json.dumps(status), flush=True)
-            previous = status
-    print(json.dumps({"text": ""}), flush=True)
+    graph, owners = {}, set()
+    buffer = bytearray()
+    previous = None
+    rescan_devices = True
+    due = time.monotonic() + 0.65
+    with INotify() as notify, DefaultSelector() as selector:
+        directory = notify.add_watch("/dev", flags.CREATE | flags.DELETE | flags.MOVED_FROM | flags.MOVED_TO)
+        selector.register(notify, EVENT_READ)
+        selector.register(sys.stdin.buffer, EVENT_READ)
+        while True:
+            timeout = None if due is None else max(0, due - time.monotonic())
+            for key, _ in selector.select(timeout):
+                if key.fileobj is notify:
+                    for event in notify.read():
+                        if event.wd == directory and not event.name.startswith("video"):
+                            continue
+                        if event.wd == directory or event.mask & (flags.Q_OVERFLOW | flags.IGNORED):
+                            rescan_devices = True
+                        # Ignore short camera probes, including those made during hotplug.
+                        due = time.monotonic() + 0.65
+                else:
+                    chunk = os.read(key.fd, 65536)
+                    if not chunk:
+                        return
+                    buffer.extend(chunk)
+                    # pw-dump indents nested arrays. Only the outer batch ends at column zero.
+                    while (end := buffer.find(b"\n]\n")) != -1:
+                        update_graph(graph, json.loads(buffer[:end + 2]))
+                        del buffer[:end + 3]
+            if due is not None and time.monotonic() >= due:
+                if rescan_devices:
+                    # Adding a watch twice reuses it. Linux removes watches for deleted devices.
+                    for device in Path("/dev").glob("video[0-9]*"):
+                        try:
+                            notify.add_watch(device, flags.OPEN | flags.CLOSE_WRITE | flags.CLOSE_NOWRITE)
+                        except OSError:
+                            pass  # The device may disappear during enumeration.
+                    rescan_devices = False
+                owners = camera_owners(camera_devices())
+                due = None
+            status = capture_status(graph, owners)
+            if status != previous:
+                print(json.dumps(status), flush=True)
+                previous = status
 
 
 if __name__ == "__main__":

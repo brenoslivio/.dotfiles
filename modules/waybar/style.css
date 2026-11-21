@@ -134,14 +134,11 @@ window#waybar.empty #window {
     margin: 5px 0;
 }
 
-#custom-capture {
-    margin: 7px 0;
-    padding: 0 6px;
-    border-radius: 7px;
-    background: @desktop_selection;
-    color: @desktop_lavender;
-    font-family: "FiraCode Nerd Font Mono";
-    font-size: 15px;
+#wireplumber.multiple-captures {
+    background-image: radial-gradient(circle closest-side, @desktop_lavender 80%, transparent 100%);
+    background-size: 5px 5px;
+    background-position: 17px 3px;
+    background-repeat: no-repeat;
 }
 
 #custom-memory, #custom-cpu {

@@ -10,7 +10,7 @@
 
     "modules-left": ["image#menu", "hyprland/workspaces", "hyprland/window"],
     "modules-center": ["custom/notification", "custom/updates", "custom/clock", "custom/tasks"],
-    "modules-right": ["mpris", "custom/capture", "wireplumber", "custom/memory", "custom/cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
+    "modules-right": ["mpris", "wireplumber", "custom/memory", "custom/cpu", "tray", "backlight", "battery", "custom/displays", "custom/power"],
 
     "image#menu": {
         "path": "@nixosIcon@",
@@ -95,20 +95,15 @@
         "signal": 1
     },
 
-    "custom/capture": {
-        "exec": "@captureMonitor@",
-        "return-type": "json",
-        "restart-interval": 2,
-        "hide-empty-text": true
-    },
-
     "wireplumber": {
-        "format": "<span size='large'>\udb81\udd7e</span>  {volume}%",
+        "capture-command": "@captureMonitor@",
+        "format": "<span font_family='FiraCode Nerd Font Mono' size='large'>{icon}</span>  {volume}%",
+        "format-icons": {"default": "󰕾", "default-muted": "󰝟"},
         "max-volume": 100,
         "scroll-step": 5,
         "on-click": "pavucontrol -t 3",
         "context-menu-command": "@audioControl@",
-        "tooltip-format": "{node_name}\nRight-click to choose output or microphone"
+        "tooltip-format": "{node_name}{capture_details}\nRight-click to choose output or microphone"
     },
 
     "battery": {
