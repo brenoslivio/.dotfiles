@@ -51,7 +51,7 @@ Rectangle {
         BarButton {
             id: clockButton
             readonly property var weather: center.state.clock.weather
-            label: (center.state.clock.label || "…") + (weather?.icon ? "   " + weather.icon + " " + weather.temperature + "°" : "")
+            label: (center.state.clock.label || "…") + (weather?.icon ? "   " + weather.icon + "  " + weather.temperature + "°" : "")
             subtitle: center.player ? (center.player.isPlaying ? "♪  " : "⏸  ") + center.trackTitle : ""
             buttons: Qt.LeftButton | Qt.RightButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
             hint: calendar.visible ? "" : [center.state.clock.place?.name, center.state.clock.zone, center.trackTitle, center.player?.trackArtist].filter(Boolean).join("\n")
