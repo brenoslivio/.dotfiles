@@ -25,6 +25,7 @@
     "ext/workspaces": {
         "format": "{icon}",
         "on-click": "activate",
+        "cursor": "pointer",
         "format-icons": {
             "1": "󰖟",
             "2": "󰏫",
