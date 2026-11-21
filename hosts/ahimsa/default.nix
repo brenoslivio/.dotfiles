@@ -1,5 +1,5 @@
 {
-  imports = [ ./hardware.nix ];
+  imports = [ ./hardware.nix ./audio.nix ];
 
   networking.hostName = "ahimsa";
 

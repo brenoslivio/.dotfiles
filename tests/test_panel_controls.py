@@ -173,9 +173,9 @@ class AudioTests(unittest.TestCase):
                                 {"heading": "Microphone"}, {"label": "No active devices"}])
 
     def test_plugged_headphones_leave_laptop_speakers_selectable(self):
-        speaker, phones = "analog-output-speaker", "analog-output-headphones"
+        speaker, phones = "analog-output-speaker-ideapad", "analog-output-headphones"
         device = {"name": "analog", "description": "Laptop", "active_port": phones,
-                  "ports": [{"name": speaker, "description": "Speakers", "availability": "not available"},
+                  "ports": [{"name": speaker, "description": "Speakers", "availability": "availability unknown"},
                             {"name": phones, "description": "Headphones", "availability": "available"},
                             {"name": "hdmi-output-0", "description": "HDMI", "availability": "not available"}]}
         for selected in (phones, speaker):
@@ -183,7 +183,9 @@ class AudioTests(unittest.TestCase):
             routes = audio.routes("sink", [device], "analog")
             self.assertEqual([r.port for r in routes], [speaker, phones])
             self.assertEqual([r.port for r in routes if r.current], [selected])
-        device["ports"][0]["availability"] = "availability unknown"
+        device["ports"][0].update(name="analog-output-speaker", availability="not available")
+        self.assertEqual([r.port for r in audio.routes("sink", [device], "analog")], [phones])
+        device["ports"][0].update(name=speaker, availability="availability unknown")
         device["ports"][1]["availability"] = "not available"
         self.assertEqual([r.port for r in audio.routes("sink", [device], "analog")], [speaker])
 
