@@ -7,8 +7,8 @@ let
   sources = lib.fileset.toSource {
     root = ../../scripts;
     fileset = lib.fileset.unions [
-      ../../scripts/waybar_clock.py ../../scripts/waybar_audio.py ../../scripts/desktop_menu.py
-      ../../scripts/waybar_updates.py ../../scripts/update.py ../../scripts/waybar_tasks.py
+      ../../scripts/panel_audio.py ../../scripts/desktop_menu.py
+      ../../scripts/panel_updates.py ../../scripts/update.py ../../scripts/panel_tasks.py
     ];
   };
   control = name: script: inputs: pkgs.writeShellApplication {
@@ -17,16 +17,15 @@ let
     text = ''exec ${python}/bin/python3 ${sources}/${script} "$@"'';
   };
   clock = pkgs.writeShellScript "panel-clock" ''
-    export PYTHONPATH=${sources}
     export PYTHONTZPATH=${pkgs.tzdata}/share/zoneinfo
-    exec ${python}/bin/python3 ${./clock.py}
+    exec ${python}/bin/python3 ${./clock.py} "$@"
   '';
-  audio = control "dotfiles-audio" "waybar_audio.py" [ pkgs.pulseaudio pkgs.libnotify pkgs.zenity pkgs.pavucontrol ];
-  updates = control "dotfiles-update-indicator" "waybar_updates.py" [ pkgs.gh pkgs.systemd pkgs.xdg-utils ];
-  tasks = control "dotfiles-tasks" "waybar_tasks.py" [ pkgs.zenity pkgs.libnotify ];
+  audio = control "dotfiles-audio" "panel_audio.py" [ pkgs.pulseaudio pkgs.libnotify pkgs.zenity ];
+  updates = control "dotfiles-update-indicator" "panel_updates.py" [ pkgs.gh pkgs.systemd pkgs.xdg-utils ];
+  tasks = control "dotfiles-tasks" "panel_tasks.py" [ pkgs.zenity pkgs.libnotify ];
   capture = pkgs.writeShellScript "panel-capture" ''
     set -o pipefail
-    ${pkgs.pipewire}/bin/pw-dump -mN | ${python}/bin/python3 ${../waybar/capture.py}
+    ${pkgs.pipewire}/bin/pw-dump -mN | ${python}/bin/python3 ${./capture.py}
   '';
   powerTheme = pkgs.runCommandLocal "panel-power-theme" { } ''
     mkdir -p "$out/wlogout" "$out/desktop-theme"
@@ -36,15 +35,15 @@ let
   commands = {
     displays = [ (toString (import ../hypr/display-mode.nix { inherit pkgs; })) ];
     clock = [ (toString clock) ];
-    selectZone = [ "${python}/bin/python3" "${sources}/waybar_clock.py" "apply" ];
+    selectZone = [ (toString clock) "apply" ];
     audio = [ (lib.getExe audio) ];
     updates = [ (lib.getExe updates) ];
     tasks = [ (lib.getExe tasks) ];
-    resources = [ "${python}/bin/python3" "${../../scripts/waybar_resources.py}" ];
+    resources = [ "${python}/bin/python3" "${../../scripts/panel_resources.py}" ];
     hardware = [ "${python}/bin/python3" "${./hardware.py}" ];
     brightness = [ "${pkgs.brightnessctl}/bin/brightnessctl" "-c" "backlight" "set" ];
     notifications = [ "${pkgs.swaynotificationcenter}/bin/swaync-client" ];
-    spectrum = [ "${python}/bin/python3" "${../waybar/spectrum.py}" "${pkgs.cava}/bin/cava" "-p" "${../waybar/cava.conf}" ];
+    spectrum = [ "${python}/bin/python3" "${./spectrum.py}" "${pkgs.cava}/bin/cava" "-p" "${./cava.conf}" ];
     capture = [ (toString capture) ];
     mixer = [ "${pkgs.pavucontrol}/bin/pavucontrol" "-t" "3" ];
     obsidian = [ "${pkgs.obsidian}/bin/obsidian" ];

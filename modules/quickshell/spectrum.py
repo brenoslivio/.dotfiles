@@ -1,4 +1,4 @@
-"""Feed one CAVA stream to Waybar while the default output has audible playback."""
+"""Feed one CAVA stream to Quickshell while the default output has audible playback."""
 import signal
 import subprocess
 import sys
@@ -32,7 +32,7 @@ def stop(child):
 
 def monitor(command):
     child = output = None
-    with pulsectl.Pulse("Waybar spectrum") as pulse:
+    with pulsectl.Pulse("Quickshell spectrum") as pulse:
         pulse.event_mask_set("server", "sink", "sink_input")
         pulse.event_callback_set(refresh)
         try:
@@ -54,4 +54,4 @@ if __name__ == "__main__":
     try:
         monitor(sys.argv[1:])
     except (pulsectl.PulseError, pulsectl.PulseDisconnected):
-        sys.exit(1)  # Waybar retries the subscription after the audio server returns.
+        sys.exit(1)  # Quickshell retries the subscription after the audio server returns.

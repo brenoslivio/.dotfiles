@@ -1,4 +1,4 @@
-"""Stream Linux memory or CPU usage and a per-program ranking to Waybar."""
+"""Stream Linux memory or CPU usage and a per-program ranking to the panel."""
 
 from collections import Counter
 import html

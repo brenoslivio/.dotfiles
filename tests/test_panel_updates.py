@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-import waybar_updates as w
+import panel_updates as w
 import update
 
 SHA = "a" * 40
@@ -24,7 +24,6 @@ class IndicatorTests(unittest.TestCase):
         state = Path(tmp.name)
         for name, path in (("STATE", state), ("RUNTIME", state / "run"), ("CACHE", state / "cache")):
             self.enterContext(patch.object(w, name, path))
-        self.redraw = self.enterContext(patch.object(w, "redraw"))
 
     def test_pr_filter_and_required_jobs(self):
         with patch.object(update, "api_json", return_value=[PR]) as api, patch.object(w, "latest", return_value=RUN), \

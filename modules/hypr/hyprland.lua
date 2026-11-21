@@ -158,11 +158,6 @@ for _, rule in ipairs({
     rule.move = "monitor_w*0.25 monitor_h*0.08"
     hl.window_rule(rule)
 end
-hl.window_rule({
-    name = "cava-waybar", match = { class = "^(cava-waybar)$" }, pin = true, float = true,
-    size = "monitor_w*0.985 monitor_h*0.04", move = "monitor_w*0.0075 monitor_h*0.014",
-    no_initial_focus = true, no_focus = true,
-})
 hl.window_rule({ name = "clipse", match = { class = "^(clipse)$" }, float = true, size = "622 652" })
 hl.window_rule({ name = "suppress-maximize", match = { class = ".*" }, suppress_event = "maximize" })
 hl.window_rule({

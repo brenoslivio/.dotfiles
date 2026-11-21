@@ -11,7 +11,7 @@ import sys
 import tempfile
 import time
 
-from desktop_menu import dialog, group, item, menu, menu_choices, notify, show_menu
+from desktop_menu import dialog, notify
 
 
 def task_section(lines):
@@ -168,37 +168,29 @@ def snapshot(path):
         return []
 
 
-def task_menu(path, state, *, as_json=False):
-    root, choices = menu()
+def task_choices(path, state):
+    choices = []
     lines = snapshot(path)
     projects = project_names(lines)
     if projects:
-        add = group(choices, "Add task…")
-        edit = group(choices, "Edit task…")
+        add, edit = [], []
+        choices.extend([{"label": "Add task…", "children": add}, {"label": "Edit task…", "children": edit}])
         for project in dict.fromkeys(projects):
             if projects.count(project) > 1:
-                item(add, project + " (duplicate project)")
-                item(edit, project + " (duplicate project)")
+                disabled = {"label": project + " (duplicate project)"}
+                add.append(disabled)
+                edit.append(disabled)
                 continue
-            item(add, project, {"action": "add", "project": project})
-            available = edit_choices(lines, project)
-            if available:
-                project_menu = group(edit, project)
-                for label, target in available:
-                    item(project_menu, label, {"action": "edit", "target": target})
-            else:
-                item(edit, project + " (empty)")
+            add.append({"label": project, "target": {"action": "add", "project": project}})
+            tasks = [{"label": label, "target": {"action": "edit", "target": target}}
+                     for label, target in edit_choices(lines, project)]
+            edit.append({"label": project, "children": tasks} if tasks else {"label": project + " (empty)"})
     else:
-        item(choices, "Add task…", {"action": "add", "project": ""})
-        item(choices, "Edit task…")
-    key = note_key(path)
-    for file in sorted(state.glob(key + ".edit-*.json")):
+        choices.extend([{"label": "Add task…", "target": {"action": "add", "project": ""}}, {"label": "Edit task…"}])
+    for file in sorted(state.glob(note_key(path) + ".edit-*.json")):
         draft = json.loads(file.read_text())
-        item(choices, "Resume edit · " + draft["text"], {"action": "resume", "draft": file.name})
-    if as_json:
-        print(json.dumps(menu_choices(choices)))
-    else:
-        show_menu(root)
+        choices.append({"label": "Resume edit · " + draft["text"], "target": {"action": "resume", "draft": file.name}})
+    return choices
 
 
 def save_dialog(path, state, action):
@@ -274,8 +266,8 @@ def capture(path, state, action=None):
 if __name__ == "__main__":
     note = Path(os.environ.get("TASKS_FILE") or Path.home() / "Dropbox/Ikiru/Ikiru.md")
     state = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state") / "dotfiles/task-capture"
-    if sys.argv[1:] in (["menu"], ["choices"]):
-        task_menu(note, state, as_json=sys.argv[1] == "choices")
+    if sys.argv[1:] == ["choices"]:
+        print(json.dumps(task_choices(note, state)))
     elif sys.argv[1:] == ["watch"]:
         previous = None
         while True:

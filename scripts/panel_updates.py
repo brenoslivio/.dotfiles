@@ -1,4 +1,4 @@
-"""Read GitHub update status for Waybar. Only the systemd oneshot contacts GitHub."""
+"""Read GitHub update status for the panel. Only the systemd oneshot contacts GitHub."""
 from datetime import datetime
 import json
 import os
@@ -9,7 +9,6 @@ import time
 import zipfile
 
 import update
-from desktop_menu import item, menu, show_menu
 
 BRANCH = "automation/flake-update"
 WEB = f"https://github.com/{update.REPOSITORY}"
@@ -107,12 +106,6 @@ def cached():
         return {}
 
 
-def redraw():
-    if os.environ.get("DOTFILES_LEGACY_WAYBAR"):
-        subprocess.run(["systemctl", "--user", "kill", "--kill-whom=main", "--signal=RTMIN+9", "waybar.service"],
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-
-
 def watch():
     from inotify_simple import INotify, flags
 
@@ -133,7 +126,6 @@ def check():
     if data.get("retry_after", 0) > time.time():
         return
     (RUNTIME / "checking").touch()
-    redraw()
     errors = []
     for name, fetch in (("proposal", proposal), ("system", system)):
         try:
@@ -195,11 +187,9 @@ def main(args):
     checking = RUNTIME / "checking"
     if args == ["manual"]:
         manual.touch()
-        redraw()
         result = subprocess.run(["systemctl", "--user", "start", "--no-block", UNIT])
         if result.returncode:
             manual.unlink(missing_ok=True)
-            redraw()
         return result.returncode
     if args == ["check"]:
         check()
@@ -210,7 +200,6 @@ def main(args):
             update.atomic_json(CACHE, data)
         manual.unlink(missing_ok=True)
         checking.unlink(missing_ok=True)
-        redraw()
     elif args == ["watch"]:
         watch()
     elif args == ["choices"]:
@@ -218,14 +207,6 @@ def main(args):
                          or [{"label": "No update links yet"}]))
     elif args == ["status"]:
         print(json.dumps(view(cached(), checking.exists(), manual.exists())))
-    elif args == ["menu"]:
-        root, choices = menu()
-        targets = links(cached())
-        for label, url in targets.items():
-            item(choices, label, url)
-        if not targets:
-            item(choices, "No update links yet")
-        show_menu(root)
     elif len(args) == 2 and args[0] == "apply":
         url = json.loads(args[1])
         if url in links(cached()).values():

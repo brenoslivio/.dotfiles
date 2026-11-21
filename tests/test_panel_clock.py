@@ -4,8 +4,8 @@ import sys
 import tempfile
 import unittest
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
-from waybar_clock import DEFAULT_ZONE, local_clock, read_zone, save_zone
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "modules/quickshell"))
+from clock import DEFAULT_ZONE, frame, read_zone, save_zone
 
 
 class ClockTests(unittest.TestCase):
@@ -14,22 +14,23 @@ class ClockTests(unittest.TestCase):
         for zone, date, time in [(DEFAULT_ZONE, "2027-01-31", "20:30:00"),
                                  ("Europe/Berlin", "2027-02-01", "00:30:00")]:
             with self.subTest(zone=zone):
-                frame = local_clock(instant, zone)
-                self.assertEqual(frame["alt"], date)
-                self.assertIn(time, frame["text"])
-                self.assertIn(zone, frame["tooltip"])
+                value = frame(instant, zone)
+                self.assertEqual(value["date"], date)
+                self.assertIn(time, value["label"])
+                self.assertEqual(value["zone"], zone)
 
     def test_berlin_spring_clock_change(self):
         for hour, expected in [(0, "01:30:00"), (1, "03:30:00")]:
             instant = datetime(2027, 3, 28, hour, 30, tzinfo=timezone.utc)
-            self.assertIn(expected, local_clock(instant, "Europe/Berlin")["text"])
+            self.assertIn(expected, frame(instant, "Europe/Berlin")["label"])
 
     def test_existing_preference_and_explicit_selection(self):
         with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory) / "waybar/clock_timezone"
+            path = Path(directory) / "quickshell/clock_timezone"
             self.assertEqual(read_zone(path), DEFAULT_ZONE)
-            path.parent.mkdir()
-            path.write_text("Europe/Berlin\n")
+            old = Path(directory) / "waybar/clock_timezone"
+            old.parent.mkdir()
+            old.write_text("Europe/Berlin\n")
             self.assertEqual(read_zone(path), "Europe/Berlin")
             save_zone(path, DEFAULT_ZONE)
             self.assertEqual(read_zone(path), DEFAULT_ZONE)

@@ -7,7 +7,7 @@ import subprocess
 import sys
 import time
 
-from desktop_menu import group, item, menu, notify, show_menu
+from desktop_menu import notify
 
 
 def pactl(*args):
@@ -89,19 +89,6 @@ def audio_choices():
     return rows
 
 
-def picker():
-    root, choices = menu()
-    section = choices
-    for row in audio_choices():
-        if "heading" in row:
-            section = group(choices, row["heading"], "section")
-        else:
-            mark = ("✓  " if row["current"] else "     ") if "current" in row else ""
-            item(section, mark + row["label"], row.get("target"))
-    item(choices, "Open mixer", {"action": "mixer"})
-    show_menu(root)
-
-
 def select_route(kind, device, port):
     def selected():
         return next((r for r in available(kind) if (r.device, r.port) == (device, port)), None)
@@ -157,9 +144,7 @@ def switch_headset(action):
 
 
 def apply(action):
-    if action["action"] == "mixer":
-        subprocess.Popen(["pavucontrol"])
-    elif action["action"] == "headset":
+    if action["action"] == "headset":
         switch_headset(action)
     elif action["action"] == "route":
         select_route(action["kind"], action["device"], action["port"])
@@ -183,7 +168,7 @@ if __name__ == "__main__":
         elif sys.argv[1:2] == ["apply"]:
             apply(json.loads(sys.argv[2]))
         else:
-            picker()
+            sys.exit("Usage: dotfiles-audio {mic-mute | choices | apply ACTION_JSON}")
     except ValueError as error:
         notify("Audio selection unavailable", str(error))
     except subprocess.CalledProcessError:
