@@ -221,26 +221,38 @@ def replace_section(body, section):
     return body[:body.index(START)] + block + body[body.index(END)+len(END):]
 
 
-def find_pr(run):
+def find_pr():
     candidates = u.api_json(f'pulls?state=open&base=main&head=brenoslivio:{BRANCH}')
     for candidate in candidates:
         pr = u.api_json(f"pulls/{candidate['number']}")
-        if (pr['head']['repo']['full_name'] == u.REPOSITORY and pr['head']['sha'] == run['head_sha']
-                and pr['head']['ref'] == BRANCH and pr['state'] == 'open'):
+        if (pr['head']['repo']['full_name'] == u.REPOSITORY and pr['head']['ref'] == BRANCH
+                and pr['base']['ref'] == 'main' and pr['state'] == 'open'):
             return pr
     return None
 
 
+def latest_pr_run(pr, workflow):
+    # Include in-progress attempts so an older completed build cannot win.
+    runs = u.pages(f"actions/workflows/ci.yml/runs?event=pull_request&branch={BRANCH}&head_sha={pr['head']['sha']}",
+                   'workflow_runs')
+    matching = [run for run in runs if run['workflow_id'] == workflow['id']
+                and run['path'] == '.github/workflows/ci.yml' and run['event'] == 'pull_request'
+                and (run.get('head_repository') or {}).get('full_name') == u.REPOSITORY
+                and run['head_branch'] == BRANCH and run['head_sha'] == pr['head']['sha']]
+    return max(matching, key=lambda run: (run['id'], run['run_attempt']), default=None)
+
+
 def render():
-    event = json.loads(Path(os.environ['GITHUB_EVENT_PATH']).read_text())
-    run = u.api_json(f"actions/runs/{event['workflow_run']['id']}")
-    workflow = u.api_json('actions/workflows/ci.yml')
-    if (run['workflow_id'] != workflow['id'] or run['path'] != '.github/workflows/ci.yml'
-            or run['event'] != 'pull_request' or run['status'] != 'completed'
-            or run['head_repository']['full_name'] != u.REPOSITORY or run['head_branch'] != BRANCH):
-        raise ValueError('Not a trusted weekly PR CI run')
-    pr = find_pr(run)
+    pr = find_pr()
     if pr is None:
+        return
+    workflow = u.api_json('actions/workflows/ci.yml')
+    run = latest_pr_run(pr, workflow)
+    if not run or run['status'] != 'completed' or run['conclusion'] == 'action_required':
+        print('Waiting for weekly PR CI to finish.')
+        return
+    marker = f"<!-- package-report:complete {pr['base']['sha']} {pr['head']['sha']} {run['id']} {run['run_attempt']} -->"
+    if marker in (pr.get('body') or ''):
         return
     baselines = u.pages(f"actions/workflows/ci.yml/runs?event=push&branch=main&head_sha={pr['base']['sha']}", 'workflow_runs')
     baselines = [r for r in baselines if r['status'] == 'completed' and r['conclusion'] == 'success']
@@ -273,6 +285,8 @@ def render():
         section += f'<details><summary>Dependencies and rebuilds ({len(other)})</summary>\n\n{table(other[:60])}\n\n</details>\n'
     section += (f'\n{len(rows)} changed package groups. Notes describe the target release; upstream links provide the full changelog. '
                 f"[Complete tables and JSON](https://github.com/{u.REPOSITORY}/actions/runs/{os.environ['GITHUB_RUN_ID']})\n")
+    if not warnings:
+        section += marker + '\n'
     directory = Path('package-report')
     directory.mkdir(exist_ok=True)
     (directory/'report.md').write_text(prefix + table(rows) + '\n')
