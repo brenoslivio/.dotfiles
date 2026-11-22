@@ -61,6 +61,9 @@ in
     userns = "keep-id"
   '';
 
+  xdg.configFile."zed/settings.json".source =
+    config.lib.file.mkOutOfStoreSymlink "${config.home.sessionVariables.DOTFILES_REPO}/modules/zed/settings.json";
+
   home.packages = with pkgs; [
     # Qt packages and themes
     libsForQt5.qt5ct
