@@ -119,6 +119,7 @@ in
     gimp
     popsicle
     vscode
+    zed-editor
     vlc
     jellyfin-desktop
     galaxy-buds-client
