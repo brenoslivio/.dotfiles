@@ -237,10 +237,21 @@ notes, Nixpkgs changelog/homepage links, or an explicit fallback. Full compariso
 the first successful main CI seeds the baseline.
 
 Weekly proposals run Friday at 15:23 UTC (12:23 São Paulo). Existing PRs and
-manual fixes and their CI runs are retained. Approve bot-triggered PR CI if GitHub asks.
+manual fixes and their CI runs are retained. The proposal workflow pushes the branch
+with its built-in token and opens the PR as a GitHub App so PR checks start automatically.
 Merge or close the proposal and delete its branch before the next one. Use
 Actions' “Run workflow” for an earlier proposal, or `flake-update` on a clean
 proposal branch to update inputs locally and run quick checks.
+
+### One-time setup for automatic Friday PR checks
+
+1. Register a private GitHub App under your account. Set the homepage to this
+   repository, disable webhooks, and grant **Contents** read-only and
+   **Pull requests** read and write.
+2. Install the app on this repository only and generate a private key in the app settings.
+3. Under the repository’s **Settings → Secrets and variables → Actions**, add the
+   app’s client ID as the variable `FLAKE_UPDATE_APP_CLIENT_ID` and the contents
+   of the downloaded PEM file as the secret `FLAKE_UPDATE_APP_PRIVATE_KEY`.
 
 ### What `up` does
 
