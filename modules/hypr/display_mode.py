@@ -1,4 +1,4 @@
-"""Manage the laptop/HDMI layout and the Waybar display picker."""
+"""Manage the laptop/HDMI layout and the display picker."""
 
 import json
 import os

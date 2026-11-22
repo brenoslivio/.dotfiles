@@ -82,7 +82,10 @@
       # Kept intentionally for the fast, user-only `home` Fish function.
       homeConfigurations = lib.genAttrs userNames mkHome;
 
-      packages.${system}.updater = import ./scripts/updater-package.nix { inherit pkgs; };
+      packages.${system} = {
+        updater = import ./scripts/updater-package.nix { inherit pkgs; };
+        quickshell-panel = import ./modules/quickshell/package.nix { inherit pkgs; };
+      };
 
       checks.${system} = import ./tests {
         inherit pkgs;

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "aabc376ce7364bde928db68522f28766",
+    "name": "São Carlos",
+    "latitude": -22.0069361,
+    "longitude": -47.8940239
+  },
+  {
+    "id": "d7d1747f36ae47e48851c635047533f6",
+    "name": "Leipzig",
+    "latitude": 51.3505496,
+    "longitude": 12.4647987
+  },
+  {
+    "id": "5330c5d954c54752bb29c2d72479e05d",
+    "name": "Brisbane",
+    "latitude": -27.4773884,
+    "longitude": 153.0283366
+  },
+  {
+    "id": "9fa05a22156044beb5d043a7319b278e",
+    "name": "São Paulo",
+    "latitude": -23.5031697,
+    "longitude": -46.7190137
+  }
+]

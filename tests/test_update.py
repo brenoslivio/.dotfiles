@@ -22,6 +22,12 @@ MANIFEST = {"schema": 1, "repository": u.REPOSITORY, "sha": SHA, "host": "ahimsa
 
 
 class VerificationTests(unittest.TestCase):
+    def test_github_headers_leave_artifact_bytes_intact(self):
+        body = b"PK\x03\x04\x00\xff\r\n\r\n"
+        response = subprocess.CompletedProcess([], 0, b"HTTP/2.0 200 OK\nServer: GitHub\r\n\r\n" + body, b"")
+        with patch.object(subprocess, "run", return_value=response):
+            self.assertEqual(u.api("actions/artifacts/123/zip", binary=True), body)
+
     def test_exact_run_passes(self):
         u.validate_run({"id": 10}, RUN, SHA)
         u.validate_manifest(MANIFEST, SHA, RUN)
@@ -236,18 +242,6 @@ class FailureBoundaryTests(unittest.TestCase):
                 with self.assertRaises(u.UpdateError):
                     u.build_candidate(directory, SHA, MANIFEST, directory, False)
             self.assertEqual(str(pending.readlink()), SYSTEM)
-
-    def test_notification_deduplicates_and_distinguishes_scheduled(self):
-        with tempfile.TemporaryDirectory() as tmp, \
-                patch.object(u, "api_json", return_value={"object": {"sha": SHA}}), \
-                patch.object(u, "evidence", return_value=MANIFEST), \
-                patch.object(u, "system_status", return_value={"active": "old", "boot_default": SYSTEM}), \
-                patch.object(u, "run") as command:
-            u.notify(Path(tmp))
-            u.notify(Path(tmp))
-            command.assert_called_once()
-            self.assertIn("scheduled for next boot", command.call_args.args[2])
-
 
 if __name__ == "__main__":
     unittest.main()

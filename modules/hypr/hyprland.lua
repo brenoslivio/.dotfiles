@@ -97,8 +97,8 @@ hl.bind("SHIFT + Print", hl.dsp.exec_cmd("hyprshot -m region"))
 hl.bind("SUPER + L", hl.dsp.exec_cmd(lock))
 hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd(lock), { locked = true })
 hl.bind("SUPER + B", hl.dsp.exec_cmd(terminal .. " --class clipse -e 'clipse'"))
-hl.bind("XF86PowerOff", hl.dsp.exec_cmd("wlogout"))
-hl.bind("SUPER + W", hl.dsp.exec_cmd("~/.config/waybar/launch.sh"))
+hl.bind("XF86PowerOff", hl.dsp.exec_cmd("~/.config/quickshell/power-menu"))
+hl.bind("SUPER + W", hl.dsp.exec_cmd("~/.config/quickshell/toggle-panel"))
 hl.bind("SUPER + Q", hl.dsp.exec_cmd(terminal))
 hl.bind("SUPER + D", hl.dsp.exec_cmd(terminal .. " --class dropdown"))
 hl.bind("SUPER + C", hl.dsp.window.close())
@@ -131,12 +131,12 @@ for key, command in pairs({
     XF86AudioRaiseVolume = [[wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}' | xargs -I[] notify-send -e -u low -h string:x-canonical-private-synchronous:volume_notif -h int:value:[] "🔊 Volume : []%"]],
     XF86AudioLowerVolume = [[wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}' | xargs -I[] notify-send -e -u low -h string:x-canonical-private-synchronous:volume_notif -h int:value:[] "🔊 Volume : []%"]],
     XF86AudioMute = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
-    XF86AudioMicMute = "wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle",
     XF86MonBrightnessUp = "brightnessctl s 10%+",
     XF86MonBrightnessDown = "brightnessctl s 10%-",
 }) do
     hl.bind(key, hl.dsp.exec_cmd(command), { locked = true, repeating = true })
 end
+hl.bind("XF86AudioMicMute", hl.dsp.exec_cmd("dotfiles-audio mic-mute"), { locked = true })
 for key, command in pairs({
     XF86AudioNext = "playerctl next", XF86AudioPause = "playerctl play-pause",
     XF86AudioPlay = "playerctl play-pause", XF86AudioPrev = "playerctl previous",
@@ -158,11 +158,6 @@ for _, rule in ipairs({
     rule.move = "monitor_w*0.25 monitor_h*0.08"
     hl.window_rule(rule)
 end
-hl.window_rule({
-    name = "cava-waybar", match = { class = "^(cava-waybar)$" }, pin = true, float = true,
-    size = "monitor_w*0.985 monitor_h*0.04", move = "monitor_w*0.0075 monitor_h*0.014",
-    no_initial_focus = true, no_focus = true,
-})
 hl.window_rule({ name = "clipse", match = { class = "^(clipse)$" }, float = true, size = "622 652" })
 hl.window_rule({ name = "suppress-maximize", match = { class = ".*" }, suppress_event = "maximize" })
 hl.window_rule({
@@ -170,7 +165,7 @@ hl.window_rule({
     match = { class = "^$", title = "^$", xwayland = true, float = true, fullscreen = false, pin = false },
     no_focus = true,
 })
-hl.layer_rule({ name = "waybar-blur", match = { namespace = "^(waybar)$" }, blur = true })
+hl.layer_rule({ name = "panel-blur", match = { namespace = "^(dotfiles-panel)$" }, blur = true })
 hl.layer_rule({ name = "rofi-blur", match = { namespace = "^(rofi)$" }, blur = true })
 hl.layer_rule({ name = "hyprpicker-no-animation", match = { namespace = "^(hyprpicker)$" }, no_anim = true })
 hl.layer_rule({ name = "selection-no-animation", match = { namespace = "^(selection)$" }, no_anim = true })
