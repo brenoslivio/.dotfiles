@@ -97,7 +97,7 @@ class IndicatorTests(unittest.TestCase):
             self.assertEqual(w.ordinary_prs(items), [])
 
     def test_badge_priority_across_prs(self):
-        data = {"system": {"attention": True, "text": "Tested system update ready"}}
+        data = {"system": {"attention": True, "text": "Current main · CI failed"}}
         self.assertEqual(w.view(data, False, False)["class"], [])
         data["proposal"] = {"pr": 16, "attention": False}
         self.assertEqual(w.view(data, False, False)["class"], ["pending"])
@@ -128,13 +128,31 @@ class IndicatorTests(unittest.TestCase):
         with patch.object(update, "api_json", return_value={"object": {"sha": SHA}}), \
                 patch.object(w, "latest", return_value=RUN) as latest, \
                 patch.object(update, "evidence", return_value=MANIFEST) as evidence, \
-                patch.object(update, "system_status", return_value={}) as local:
+                patch.object(update, "system_status", return_value={}) as local, \
+                patch.object(update, "clean_checkout") as checkout, patch.object(w, "active_revision", return_value=None) as revision:
             available = w.system({})
-            self.assertTrue(available["attention"])
+            self.assertTrue(w.system_view(available)["attention"])
+            self.assertEqual(w.view({"system": available}, False, False)["class"], ["attention"])
+            pending_pr = {"pr": 17, "attention": False}
+            self.assertEqual(w.view({"system": available, "pull_requests": [pending_pr]}, False, False)["class"], ["attention"])
+            checkout.side_effect = update.UpdateError("Switch to main before updating.")
+            self.assertEqual(w.view({"system": available, "pull_requests": [pending_pr]}, False, False)["class"], ["pending"])
+            checkout.side_effect = None
+            update.atomic_json(w.STATE / "state.json", {"last_system_action": {"sha": SHA, "path": "/tested", "choice": "switch"}})
+            custom = w.view({"system": available}, False, False)
+            self.assertEqual(custom["class"], [])
+            self.assertIn("already applied", custom["tooltip"])
+            self.assertNotIn("run up", custom["tooltip"])
+            self.assertEqual(w.view({"system": available, "pull_requests": [{"pr": 17, "attention": True}]}, False, False)["class"], ["attention"])
+            revision.return_value = "b" * 40
+            self.assertTrue(w.system_view(available)["attention"])
             local.return_value = {"boot_default": "/tested"}
-            self.assertIn("next boot", w.system(available)["text"])
+            scheduled = w.system(available)
+            self.assertIn("next boot", w.system_view(scheduled)["text"])
+            self.assertEqual(w.view({"system": scheduled}, False, False)["class"], [])
+            self.assertEqual(w.view({"system": scheduled, "pull_requests": [pending_pr]}, False, False)["class"], ["pending"])
             local.return_value = {"active": "/tested"}
-            self.assertFalse(w.system(available)["attention"])
+            self.assertFalse(w.system_view(w.system(available))["attention"])
             evidence.assert_called_once_with(SHA)
             latest.return_value = {**RUN, "run_attempt": 2, "conclusion": None, "status": "in_progress"}
             self.assertIn("running", w.system(available)["text"])

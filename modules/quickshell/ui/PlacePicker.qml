@@ -63,15 +63,29 @@ Column {
     ListView {
         id: list
         visible: picker.page === "list" || picker.page === "manage"
-        width: parent.width; height: Math.min(picker.places.length * 30, 210)
+        width: parent.width; height: Math.min(contentHeight, 240)
         clip: true; model: picker.places; boundsBehavior: Flickable.StopAtBounds
-        Controls.ScrollBar.vertical: Controls.ScrollBar {}
-        delegate: BarButton {
+        Controls.ScrollBar.vertical: Controls.ScrollBar { id: scrollbar }
+        delegate: Controls.ItemDelegate {
+            id: row
             required property var modelData
             width: list.width
-            label: picker.page === "manage" ? "✎  " + modelData.name
-                : (picker.clock.place?.id === modelData.id ? "✓  " : "") + modelData.name + "   " + modelData.time
-            onTriggered: {
+            padding: 6; hoverEnabled: true
+            horizontalPadding: padding + scrollbar.implicitWidth
+            text: picker.page === "manage" ? "✎  " + modelData.name
+                : (picker.clock.place?.id === modelData.id && !picker.clock.zoneMismatch ? "✓  " : "") + modelData.name + "   " + (modelData.zone || "…") + "   " + modelData.time
+            contentItem: Text {
+                text: row.text; textFormat: Text.PlainText; wrapMode: Text.Wrap
+                horizontalAlignment: Text.AlignHCenter
+                color: row.hovered || row.visualFocus ? Ink.text : Ink.muted
+                font.family: "Inter"; font.pixelSize: 13
+            }
+            background: Rectangle { radius: 7; color: row.hovered || row.visualFocus ? Ink.selection : "transparent" }
+            Controls.ToolTip.visible: row.hovered
+            Controls.ToolTip.delay: 650
+            Controls.ToolTip.text: modelData.zone ? "System time zone · " + modelData.zone : "Time zone lookup required"
+            HoverHandler { cursorShape: Qt.PointingHandCursor }
+            onClicked: {
                 if (picker.page === "manage") picker.edit(modelData)
                 else picker.submit("select", {id: modelData.id})
             }
@@ -131,6 +145,7 @@ Column {
     Text {
         width: parent.width; visible: !!text
         text: picker.error || picker.clock.error || ""; textFormat: Text.PlainText
+        horizontalAlignment: Text.AlignHCenter
         wrapMode: Text.WrapAnywhere; color: Ink.lavender; font.family: "Inter"; font.pixelSize: 12
     }
     Row {

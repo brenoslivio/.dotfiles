@@ -16,6 +16,12 @@ units = root / ".config/systemd/user"
 unit = ConfigParser(interpolation=None)
 unit.read(units / "quickshell-panel.service")
 assert os.access(unit["Service"]["ExecStart"], os.X_OK)
+assert unit["Service"]["BusName"] == "org.freedesktop.Notifications"
+activation = ConfigParser()
+activation.read(root / ".local/share/dbus-1/services/org.freedesktop.Notifications.service")
+assert activation["D-BUS Service"]["SystemdService"] == "quickshell-panel.service"
+assert not (units / "swaync.service").exists()
+assert (units / "battery-alert.timer").exists()
 assert (units / "wayland-session@hyprland.desktop.target.wants/quickshell-panel.service").exists()
 assert not (units / "waybar.service").exists()
 ui = Path(sys.argv[2])
@@ -37,6 +43,7 @@ assert [(action["label"], action["key"]) for action in power_actions] == [
     ("Log Out", "e"), ("Reboot", "r"), ("Shut Down", "s"),
 ]
 for action in power_actions:
+    assert (ui / (action["symbol"] + "-symbolic.svg")).is_file(), action["label"]
     assert os.access(action["command"][0], os.X_OK), action["label"]
 assert os.access(root / ".config/quickshell/power-menu", os.X_OK)
 for directory in (".config/hypr", ".config/rofi"):

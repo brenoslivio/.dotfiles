@@ -4,6 +4,22 @@ from pathlib import Path
 import time
 
 
+def external_power(directory):
+    online = []
+    for supply in directory.iterdir():
+        try:
+            kind = (supply / "type").read_text().strip()
+            if kind not in {"Mains", "Wireless"} and not kind.startswith("USB"):
+                continue
+            scope = supply / "scope"
+            if scope.exists() and scope.read_text().strip() == "Device":
+                continue
+            online.append(int((supply / "online").read_text()) != 0)
+        except (OSError, ValueError):
+            continue
+    return any(online) if online else None
+
+
 def battery_info(directory):
     try:
         props = dict(line.split("=", 1) for line in (directory / "BAT0/uevent").read_text().splitlines())
@@ -24,7 +40,15 @@ def battery_info(directory):
         full, now, design = (number("CHARGE_" + key) for key in ("FULL", "NOW", "FULL_DESIGN"))
         rate = number("CURRENT_NOW")
 
-    lines = [f"{capacity}% · {status}"]
+    plugged = external_power(directory)
+    if plugged is None and status in {"Charging", "Discharging"}:
+        plugged = status == "Charging"
+    label = status
+    if plugged:
+        label = "Plugged · Charging" if status == "Charging" else "Plugged"
+    elif plugged is False:
+        label = "On battery"
+    lines = [f"{capacity}% · {label}"]
     if status in {"Charging", "Discharging"} and rate > 0 and full > 0:
         remaining = now if status == "Discharging" else max(0, full - now)
         minutes = round(60 * remaining / rate)
@@ -32,7 +56,7 @@ def battery_info(directory):
         lines.append(f"{watts:.1f} W · {minutes // 60}h {minutes % 60:02d}m {end}")
     if design:
         lines.append(f"Battery health · {full / design:.0%} of design capacity")
-    return {"level": capacity, "status": status, "tooltip": "\n".join(lines)}
+    return {"level": capacity, "status": status, "plugged": plugged, "label": label, "tooltip": "\n".join(lines)}
 
 
 def brightness():

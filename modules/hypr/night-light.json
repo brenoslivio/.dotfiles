@@ -1,0 +1,7 @@
+[
+  {"time": "06:00", "temperature": 6500},
+  {"time": "18:00", "temperature": 5625},
+  {"time": "19:00", "temperature": 4750},
+  {"time": "20:00", "temperature": 3875},
+  {"time": "21:00", "temperature": 3000}
+]

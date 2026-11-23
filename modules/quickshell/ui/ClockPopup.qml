@@ -52,7 +52,7 @@ PopupWindow {
     anchor.gravity: Edges.Bottom
     grabFocus: true
     color: "transparent"
-    implicitWidth: showPlaces ? (picker.page === "search" ? 340 : 270) : 228
+    implicitWidth: showPlaces ? Math.min(560, (screen?.width || 576) - 16) : 228
     implicitHeight: showPlaces ? picker.implicitHeight + 16 : calendar.implicitHeight + 16
 
     Rectangle {

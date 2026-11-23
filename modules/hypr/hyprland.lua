@@ -99,6 +99,7 @@ hl.bind("switch:on:Lid Switch", hl.dsp.exec_cmd(lock), { locked = true })
 hl.bind("SUPER + B", hl.dsp.exec_cmd(terminal .. " --class clipse -e 'clipse'"))
 hl.bind("XF86PowerOff", hl.dsp.exec_cmd("~/.config/quickshell/power-menu"))
 hl.bind("SUPER + W", hl.dsp.exec_cmd("~/.config/quickshell/toggle-panel"))
+hl.bind("SUPER + SHIFT + W", hl.dsp.exec_cmd("~/.config/quickshell/toggle-panel --restart"))
 hl.bind("SUPER + Q", hl.dsp.exec_cmd(terminal))
 hl.bind("SUPER + D", hl.dsp.exec_cmd(terminal .. " --class dropdown"))
 hl.bind("SUPER + C", hl.dsp.window.close())
@@ -128,8 +129,8 @@ hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true })
 hl.bind("SUPER + F", hl.dsp.window.fullscreen())
 
 for key, command in pairs({
-    XF86AudioRaiseVolume = [[wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%+ && wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}' | xargs -I[] notify-send -e -u low -h string:x-canonical-private-synchronous:volume_notif -h int:value:[] "🔊 Volume : []%"]],
-    XF86AudioLowerVolume = [[wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%- && wpctl get-volume @DEFAULT_AUDIO_SINK@ | awk '{print int($2 * 100)}' | xargs -I[] notify-send -e -u low -h string:x-canonical-private-synchronous:volume_notif -h int:value:[] "🔊 Volume : []%"]],
+    XF86AudioRaiseVolume = "~/.config/quickshell/audio volume-up",
+    XF86AudioLowerVolume = "~/.config/quickshell/audio volume-down",
     XF86AudioMute = "wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle",
     XF86MonBrightnessUp = "brightnessctl s 10%+",
     XF86MonBrightnessDown = "brightnessctl s 10%-",
