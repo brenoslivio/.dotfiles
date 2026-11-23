@@ -88,15 +88,24 @@ def extended_mode():
     return None
 
 
-def picker(action):
+def request_mode(mode):
+    if mode not in MODES:
+        sys.exit("Unknown display layout.")
     if not connected():
-        return
-    outputs = monitors()
-    current = topology(outputs)
+        sys.exit("The HDMI display is disconnected.")
+    write_mode(RUNTIME / "request", mode)
+
+
+def picker(action):
+    plugged = connected()
+    current = topology(monitors()) if plugged else "Laptop"
     if current == "Extended":
         current = extended_mode()
     if action == "status":
-        print(json.dumps({"text": "󰍹", "tooltip": f"Displays · {current or 'Switching…'}"}))
+        print(json.dumps({"connected": plugged, "current": current, "modes": MODES if plugged else [],
+                          "text": "󰍹" if plugged else "", "tooltip": f"Displays · {current or 'Switching…'}"}))
+        return
+    if not plugged:
         return
     rows = [mode + ("  ✓" if mode == current else "") for mode in MODES]
     result = subprocess.run(
@@ -109,8 +118,8 @@ def picker(action):
                        "element { children: [element-text]; }"],
         input="\n".join(rows), text=True, stdout=subprocess.PIPE,
     )
-    if result.returncode == 0 and connected():
-        write_mode(RUNTIME / "request", MODES[int(result.stdout)])
+    if result.returncode == 0:
+        request_mode(MODES[int(result.stdout)])
 
 
 def unlocked():
@@ -293,7 +302,9 @@ def watch():
 if __name__ == "__main__":
     if sys.argv[1:] in (["status"], ["menu"]):
         picker(sys.argv[1])
+    elif len(sys.argv) == 3 and sys.argv[1] == "set":
+        request_mode(sys.argv[2])
     elif not sys.argv[1:]:
         watch()
     else:
-        sys.exit("Usage: display-mode [status|menu]")
+        sys.exit("Usage: display-mode [status|menu|set LAYOUT]")

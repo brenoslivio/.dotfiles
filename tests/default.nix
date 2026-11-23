@@ -60,6 +60,7 @@ in {
     cp -R ${./.} tests
     mkdir -p modules/quickshell modules/hypr
     cp ${../modules/quickshell/hardware.py} modules/quickshell/hardware.py
+    cp ${../modules/quickshell/airplane.py} modules/quickshell/airplane.py
     cp ${../modules/hypr/night_light.py} modules/hypr/night_light.py
     cp ${../modules/hypr/night-light.json} modules/hypr/night-light.json
     cp ${../modules/quickshell/capture.py} modules/quickshell/capture.py

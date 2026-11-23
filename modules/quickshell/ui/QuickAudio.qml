@@ -70,7 +70,7 @@ Rectangle {
                 maximum: audio.media.boostAllowed ? 200 : 100
                 boostRange: audio.media.boostAllowed
                 onToggleMute: if (audio.media.output) audio.media.output.muted = !muted
-                onAdjusted: percent => { if (audio.media.output) audio.media.output.volume = percent / 100 }
+                onAdjusted: percent => audio.media.setOutputVolume(percent / 100)
             }
             PanelSwitch {
                 width: parent.width

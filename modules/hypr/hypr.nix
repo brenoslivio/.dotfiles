@@ -2,6 +2,22 @@
 let
   displayMode = import ./display-mode.nix { inherit pkgs; };
   nightLight = lib.getExe (import ./night-light.nix { inherit pkgs; });
+  mediaPython = pkgs.python3.withPackages (ps: [ ps.dbus-python ps.pillow ]);
+  lockMedia = pkgs.writeShellScript "hyprlock-media" ''
+    export PATH=${lib.makeBinPath [ pkgs.curl ]}:$PATH
+    exec ${mediaPython}/bin/python3 ${./lock_media.py}
+  '';
+  blankCover = pkgs.runCommand "hyprlock-blank.png" {} ''
+    ${mediaPython}/bin/python3 -c 'from PIL import Image; import sys; Image.new("RGBA", (1, 1)).save(sys.argv[1], "PNG")' "$out"
+  '';
+  lockCover = pkgs.writeShellScript "hyprlock-cover" ''
+    cover="$XDG_RUNTIME_DIR/hyprlock-media/cover.png"
+    if [[ -f "$cover" ]]; then
+      echo "$cover"
+    else
+      echo ${blankCover}
+    fi
+  '';
 in
 {
   home.file = {
@@ -12,7 +28,10 @@ in
     '';
     ".config/hypr/hyprland.lua".source = ./hyprland.lua;
     ".config/hypr/hypridle.conf".source = ./hypridle.conf;
-    ".config/hypr/hyprlock.conf".source = ./hyprlock.conf;
+    ".config/hypr/hyprlock.conf".text = lib.replaceStrings
+      [ "@lockMedia@" "@lockCover@" "@blankCover@" ]
+      [ (toString lockMedia) (toString lockCover) (toString blankCover) ]
+      (builtins.readFile ./hyprlock.conf);
     ".config/hypr/hyprpaper.conf".source = ./hyprpaper.conf;
     ".config/hypr/hyprdocked.sh" = {
       source = displayMode;

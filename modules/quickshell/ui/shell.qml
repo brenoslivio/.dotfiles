@@ -234,7 +234,8 @@ ShellRoot {
                         id: appIcon
                         anchors { left: parent.left; leftMargin: 9; verticalCenter: parent.verticalCenter }
                         width: 16; height: width
-                        source: windowInfo.entry?.icon ? Quickshell.iconPath(windowInfo.entry.icon) : ""
+                        source: windowInfo.appId.toLowerCase() === "nemo" ? "nemo-folder.svg"
+                            : windowInfo.entry?.icon ? Quickshell.iconPath(windowInfo.entry.icon) : ""
                         visible: !!source.toString()
                     }
                     Text {

@@ -44,21 +44,24 @@ Row {
             required property string metric
             required property var sample
             id: metricButton
-            minimumWidth: Math.max(48, metricLabel.implicitWidth + 6)
+            minimumWidth: metricLabel.implicitWidth + 2 * padding
             padding: 3; color: "transparent"; richHint: true
+            TextMetrics { id: fullScale; font: reading.font; text: "100%" }
             Row {
                 id: metricLabel
                 anchors.centerIn: parent; spacing: 4
                 SettingsIcon { width: 17; anchors.verticalCenter: parent.verticalCenter; symbol: metricButton.metric === "Memory" ? "ram" : "cpu" }
                 Text {
+                    id: reading
                     anchors.verticalCenter: parent.verticalCenter
+                    width: Math.ceil(fullScale.advanceWidth); horizontalAlignment: Text.AlignRight
                     text: (metricButton.sample.text ?? "–") + "%"
                     color: Ink.muted; font.family: "Inter"; font.pixelSize: 13
                 }
             }
             hint: resourcePopup.visible ? "" : sample.tooltip ?? ""
             Accessible.name: metric + " " + (sample.text ?? "–") + "%, open resources"
-            onTriggered: resourcePopup.toggle(metric)
+            onTriggered: controls.state.controlPopup = resourcePopup.visible ? null : resourcePopup
         }
         Row {
             id: metrics
@@ -73,12 +76,6 @@ Row {
     Divider {}
     Tray { id: tray; anchors.verticalCenter: parent.verticalCenter }
     Divider { visible: tray.implicitWidth > 0 }
-    BarButton {
-        visible: !!controls.state.display.text
-        label: controls.state.display.text || ""; glyph: true; labelColor: Ink.lavender
-        hint: controls.state.display.tooltip || ""
-        onTriggered: Quickshell.execDetached(controls.state.displayCommand.concat("menu"))
-    }
     component StatusIcon: SettingsIcon {
         anchors.verticalCenter: parent.verticalCenter
         width: 22
@@ -90,8 +87,9 @@ Row {
         Row {
             id: indicators
             anchors.centerIn: parent; spacing: 6
-            StatusIcon { symbol: quick.wifiIcon }
-            StatusIcon { symbol: quick.bluetoothIcon }
+            StatusIcon { visible: quick.flight.on === true; symbol: "airplane-mode" }
+            StatusIcon { visible: !quick.flight.on; symbol: quick.wifiIcon }
+            StatusIcon { visible: !quick.flight.on; symbol: quick.bluetoothIcon }
             StatusIcon {
                 visible: quick.brightness != null; symbol: quick.brightnessIcon
                 WheelHandler {
@@ -105,7 +103,8 @@ Row {
             StatusIcon { symbol: "system-shutdown"; color: Ink.lavender }
         }
         Accessible.name: "Quick Settings"
-        hint: quick.visible ? "" : ["Quick Settings", quick.brightness != null ? "Brightness · " + quick.brightness + "%" : "",
+        hint: quick.visible ? "" : ["Quick Settings", quick.flight.on ? "Airplane Mode on" : "",
+            quick.brightness != null ? "Brightness · " + quick.brightness + "%" : "",
             quick.battery ? "Battery · " + quick.battery.tooltip : ""].filter(Boolean).join("\n")
         selected: quick.visible
         onTriggered: controls.state.controlPopup = quick.visible ? null : quick

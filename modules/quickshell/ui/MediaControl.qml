@@ -1,6 +1,8 @@
 import QtQuick
 import Quickshell
 import Quickshell.Services.Mpris
+import Quickshell.Io
+import "Config.js" as Config
 import "Palette.js" as Ink
 
 TaskButton {
@@ -9,6 +11,20 @@ TaskButton {
     required property bool boostAllowed
     readonly property string speakerIcon: output && !output.muted ? "audio-volume-high" : "audio-volume-muted"
     signal openRequested()
+    function setOutputVolume(value) {
+        if (!output) return
+        const next = Math.max(0, Math.min(boostAllowed ? 2 : 1, value))
+        if (Math.abs(output.volume - next) < 0.0001) return
+        output.volume = next
+        previewDelay.restart()
+    }
+    Timer {
+        id: previewDelay
+        interval: 100
+        onTriggered: if (mediaButton.output && !mediaButton.output.muted && mediaButton.output.volume > 0)
+            preview.running = true
+    }
+    Process { id: preview; command: Config.commands.volumeFeedback }
     // playerctld can retain stale metadata after the last real player exits.
     readonly property var players: Mpris.players.values.filter(p =>
         p.dbusName !== "org.mpris.MediaPlayer2.playerctld" && p.playbackState !== MprisPlaybackState.Stopped)
@@ -36,8 +52,10 @@ TaskButton {
             text: "♪"; color: mediaButton.accent; font.pixelSize: 14
         }
         Text {
+            id: trackTitle
             anchors.verticalCenter: parent.verticalCenter; visible: !!text
-            width: Math.min(implicitWidth, 185)
+            FontMetrics { id: titleMetrics; font: trackTitle.font }
+            width: Math.min(implicitWidth, 185 + 20 * titleMetrics.averageCharacterWidth)
             text: mediaButton.title; textFormat: Text.PlainText; elide: Text.ElideRight
             font.family: "Inter"; font.pixelSize: 13; color: Ink.text
         }
@@ -46,9 +64,7 @@ TaskButton {
     Accessible.name: title ? "Audio · " + title : "Audio"
     hint: selected ? "" : [(output ? (output.muted ? "Muted" : "Volume · " + Math.round(output.volume * 100) + "%") : "No audio output"),
         title, title ? "Middle-click to " + action.toLowerCase() : ""].filter(Boolean).join("\n")
-    onScrolled: delta => {
-        if (output) output.volume = Math.max(0, Math.min(boostAllowed ? 2 : 1, output.volume + Math.sign(delta) * 0.05))
-    }
+    onScrolled: delta => { if (output) setOutputVolume(output.volume + Math.sign(delta) * 0.05) }
     buttons: Qt.LeftButton | Qt.MiddleButton | Qt.BackButton | Qt.ForwardButton
     onTriggered: button => {
         if (button === Qt.LeftButton) openRequested()

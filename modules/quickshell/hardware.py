@@ -2,6 +2,7 @@
 import json
 from pathlib import Path
 import time
+import airplane
 
 
 def external_power(directory):
@@ -72,7 +73,8 @@ def brightness():
 if __name__ == "__main__":
     previous = None
     while True:
-        current = {"brightness": brightness(), "battery": battery_info(Path("/sys/class/power_supply"))}
+        current = {"brightness": brightness(), "battery": battery_info(Path("/sys/class/power_supply")),
+                   "airplane": airplane.status()}
         if current != previous:
             print(json.dumps(current), flush=True)
             previous = current
