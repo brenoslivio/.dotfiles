@@ -29,6 +29,14 @@ in {
     touch "$out"
   '';
   media-vpn-vm = import ./media-vpn.nix { inherit pkgs; };
+  notifications = pkgs.runCommand "quickshell-notification-checks" {
+    nativeBuildInputs = [ pkgs.dbus pkgs.sway pkgs.quickshell pkgs.libnotify ];
+    LC_ALL = "C.UTF-8";
+    FONTCONFIG_FILE = pkgs.makeFontsConf { fontDirectories = [ pkgs.inter ]; };
+  } ''
+    dbus-run-session --config-file=${pkgs.dbus}/share/dbus-1/session.conf -- bash ${./notifications.sh} ${(import ../modules/quickshell/package.nix { inherit pkgs; }).ui} ${./NotificationFixture.qml}
+    touch "$out"
+  '';
   vps-vm = import ./vps-vm.nix { inherit vps vpsModules vpsSpecialArgs; };
   generated-config = pkgs.runCommand "generated-config-checks" {
     nativeBuildInputs = [ python pkgs.bash pkgs.fish pkgs.lua pkgs.desktop-file-utils pkgs.hyprland ];
@@ -50,7 +58,10 @@ in {
   } ''
     cp -R ${../scripts} scripts
     cp -R ${./.} tests
-    mkdir -p modules/quickshell
+    mkdir -p modules/quickshell modules/hypr
+    cp ${../modules/quickshell/hardware.py} modules/quickshell/hardware.py
+    cp ${../modules/hypr/night_light.py} modules/hypr/night_light.py
+    cp ${../modules/hypr/night-light.json} modules/hypr/night-light.json
     cp ${../modules/quickshell/capture.py} modules/quickshell/capture.py
     cp ${../modules/quickshell/clock.py} modules/quickshell/clock.py
     cp ${../modules/quickshell/weather.py} modules/quickshell/weather.py

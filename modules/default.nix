@@ -37,7 +37,7 @@ in
     ./nemo/nemo.nix
     ./rofi/rofi.nix
     ./shell/shell.nix
-    ./swaync/swaync.nix
+    ./quickshell/battery.nix
     ./quickshell/home.nix
     ./wayland_flags/wayland_flags.nix
   ];

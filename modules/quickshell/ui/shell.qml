@@ -20,7 +20,37 @@ ShellRoot {
 
     Component.onCompleted: Hyprland.refreshToplevels()
     PwObjectTracker { objects: root.sink ? [root.sink] : [] }
-    property var notifications: ({})
+    property var boostAllowed: null
+    function enforceVolumeLimit() {
+        const output = sink?.audio
+        if (boostAllowed !== null && output && output.volume > (boostAllowed ? 2 : 1))
+            output.volume = boostAllowed ? 2 : 1
+    }
+    Connections {
+        target: root.sink?.audio ?? null
+        function onVolumeChanged() { root.enforceVolumeLimit() }
+    }
+    onSinkChanged: Qt.callLater(enforceVolumeLimit)
+    onBoostAllowedChanged: enforceVolumeLimit()
+    Feed { command: Config.commands.audio.concat("boost-watch"); onLine: data => root.boostAllowed = JSON.parse(data) }
+    readonly property alias notifications: notices
+    property PanelWindow controlPopup: null
+    onBarVisibleChanged: if (!barVisible) controlPopup = null
+    property bool barVisible: true
+    NotificationHub {
+        id: notices
+        focusSession: root.tracking.active ?? null
+        now: root.focusNow
+        barVisible: root.barVisible
+    }
+    IpcHandler {
+        target: "bar"
+        function toggle(): bool {
+            root.barVisible = !root.barVisible
+            if (!root.barVisible) board.visible = false
+            return root.barVisible
+        }
+    }
     property var updates: ({})
     property var tasks: ({})
     readonly property alias taskBoard: board
@@ -47,6 +77,8 @@ ShellRoot {
     property var memory: ({})
     property var cpu: ({})
     property var hardware: ({})
+    readonly property alias brightnessControl: brightnessWriter
+    BrightnessControl { id: brightnessWriter }
     property var display: ({})
     readonly property var displayCommand: Config.commands.displays
     IpcHandler {
@@ -59,7 +91,6 @@ ShellRoot {
         }
     }
 
-    Feed { command: Config.commands.notifications.concat("-swb"); onLine: data => root.notifications = JSON.parse(data) }
     Feed { command: Config.commands.tasks.concat("watch"); onLine: data => root.tasks = JSON.parse(data) }
     Feed { command: Config.commands.updates.concat("watch"); onLine: data => root.updates = JSON.parse(data) }
     Feed { command: Config.commands.resources.concat("memory"); onLine: data => root.memory = JSON.parse(data) }
@@ -102,6 +133,7 @@ ShellRoot {
             id: panel
             required property var modelData
             screen: modelData
+            visible: root.barVisible
             readonly property var monitor: Hyprland.monitorFor(screen)
             readonly property var workspace: monitor?.activeWorkspace
             readonly property var focusedWindow: Hyprland.activeToplevel

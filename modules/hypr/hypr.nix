@@ -1,6 +1,7 @@
 { lib, pkgs, ... }:
 let
   displayMode = import ./display-mode.nix { inherit pkgs; };
+  nightLight = lib.getExe (import ./night-light.nix { inherit pkgs; });
 in
 {
   home.file = {
@@ -33,13 +34,25 @@ in
   services.hyprsunset = {
     enable = true;
     systemdTarget = "wayland-session@hyprland.desktop.target";
-    settings.profile = [
-      { time = "06:00"; temperature = 6500; }
-      { time = "18:00"; temperature = 5625; }
-      { time = "19:00"; temperature = 4750; }
-      { time = "20:00"; temperature = 3875; }
-      { time = "21:00"; temperature = 3000; }
-    ];
+    extraArgs = [ "--temperature" "6500" ];
+    settings.max-gamma = 100;
+  };
+
+  # One schedule writer also honors manual warmth across intermediate evening steps.
+  systemd.user.services.hyprsunset.Service.ExecStartPost = "${nightLight} startup";
+  systemd.user.services.night-light-schedule = {
+    Unit = { Description = "Apply scheduled Night Light warmth"; Requisite = [ "hyprsunset.service" ]; After = [ "hyprsunset.service" ]; };
+    Service = { Type = "oneshot"; ExecStart = "${nightLight} apply"; };
+  };
+  systemd.user.timers.night-light-schedule = {
+    Unit = { Description = "Follow the Night Light schedule"; PartOf = [ "wayland-session@hyprland.desktop.target" ]; };
+    Timer = {
+      OnCalendar = "*-*-* *:*:00";
+      AccuracySec = "1s";
+      OnTimezoneChange = true;
+      OnClockChange = true;
+    };
+    Install.WantedBy = [ "wayland-session@hyprland.desktop.target" ];
   };
 
   systemd.user.services.hyprsunset.Unit = {

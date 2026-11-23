@@ -10,6 +10,7 @@ if [[ $mode == full || $mode == quick ]]; then
   nix flake check "${flags[@]}" --no-build "$flake"
   nix build "${flags[@]}" --no-link \
     "$flake#checks.x86_64-linux.generated-config" \
+    "$flake#checks.x86_64-linux.notifications" \
     "$flake#checks.x86_64-linux.updater"
 fi
 if [[ $mode == quick ]]; then

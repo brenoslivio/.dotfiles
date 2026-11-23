@@ -18,18 +18,19 @@ let
     text = ''exec ${python}/bin/python3 ${sources}/${script} "$@"'';
   };
   clock = pkgs.writeShellScript "panel-clock" ''
+    export PATH=${lib.makeBinPath [ pkgs.systemd ]}:$PATH
     export PYTHONTZPATH=${pkgs.tzdata}/share/zoneinfo
     exec ${python}/bin/python3 ${lib.fileset.toSource {
       root = ./.;
       fileset = lib.fileset.unions [ ./clock.py ./weather.py ];
     }}/clock.py "$@"
   '';
-  audio = control "dotfiles-audio" "panel_audio.py" [ pkgs.pulseaudio pkgs.libnotify pkgs.zenity ];
-  updates = control "dotfiles-update-indicator" "panel_updates.py" [ pkgs.gh pkgs.systemd pkgs.xdg-utils ];
+  audio = control "dotfiles-audio" "panel_audio.py" [ pkgs.pulseaudio pkgs.wireplumber pkgs.libnotify pkgs.zenity ];
+  updates = control "dotfiles-update-indicator" "panel_updates.py" [ pkgs.gh pkgs.git pkgs.systemd pkgs.xdg-utils ];
   tasks = control "dotfiles-tasks" "panel_tasks.py" [ pkgs.zenity pkgs.libnotify ];
   focus = pkgs.writeShellScript "panel-task-focus" ''
     export PYTHONTZPATH=${pkgs.tzdata}/share/zoneinfo
-    export PATH=${lib.makeBinPath [ pkgs.libnotify pkgs.swaynotificationcenter ]}:$PATH
+    export PATH=${lib.makeBinPath [ pkgs.libnotify ]}:$PATH
     exec ${python}/bin/python3 ${sources}/task_focus.py "$@"
   '';
   capture = pkgs.writeShellScript "panel-capture" ''
@@ -46,30 +47,31 @@ let
     ${pkgs.coreutils}/bin/sleep 1
     exec ${pkgs.hyprland}/bin/hyprctl dispatch 'hl.dsp.exit()'
   '';
-  powerAction = label: glyph: key: command: { inherit label glyph key command; };
+  powerAction = label: symbol: key: command: { inherit label symbol key command; };
   powerActions = [
-    (powerAction "Lock" "󰌾" "l" [ lock "--grace" "0" ])
-    (powerAction "Suspend" "󰖔" "u" [ (toString (sleepAndLock "suspend")) ])
-    (powerAction "Hibernate" "󰜗" "h" [ (toString (sleepAndLock "hibernate")) ])
-    (powerAction "Log Out" "󰍃" "e" [ (toString logout) ])
-    (powerAction "Reboot" "󰜉" "r" [ systemctl "reboot" ])
-    (powerAction "Shut Down" "󰐥" "s" [ systemctl "poweroff" ])
+    (powerAction "Lock" "system-lock-screen" "l" [ lock "--grace" "0" ])
+    (powerAction "Suspend" "system-suspend" "u" [ (toString (sleepAndLock "suspend")) ])
+    (powerAction "Hibernate" "system-hibernate" "h" [ (toString (sleepAndLock "hibernate")) ])
+    (powerAction "Log Out" "system-log-out" "e" [ (toString logout) ])
+    (powerAction "Reboot" "system-reboot" "r" [ systemctl "reboot" ])
+    (powerAction "Shut Down" "system-shutdown" "s" [ systemctl "poweroff" ])
   ];
   commands = {
     displays = [ (toString (import ../hypr/display-mode.nix { inherit pkgs; })) ];
     clock = [ (toString clock) ];
     streetSearch = [ "${python}/bin/python3" "${./street_search.py}" ];
     audio = [ (lib.getExe audio) ];
+    nightLight = [ (lib.getExe (import ../hypr/night-light.nix { inherit pkgs; })) ];
     updates = [ (lib.getExe updates) ];
     tasks = [ (lib.getExe tasks) ];
     focus = [ (toString focus) ];
     resources = [ "${python}/bin/python3" "${../../scripts/panel_resources.py}" ];
     hardware = [ "${python}/bin/python3" "${./hardware.py}" ];
     brightness = [ "${pkgs.brightnessctl}/bin/brightnessctl" "-c" "backlight" "set" ];
-    notifications = [ "${pkgs.swaynotificationcenter}/bin/swaync-client" ];
     spectrum = [ "${python}/bin/python3" "${./spectrum.py}" "${pkgs.cava}/bin/cava" "-p" "${./cava.conf}" ];
     capture = [ (toString capture) ];
-    mixer = [ "${pkgs.pavucontrol}/bin/pavucontrol" "-t" "3" ];
+    bluetoothDevice = [ "${pkgs.systemd}/bin/busctl" "--system" "--timeout=30s" "call" "org.bluez" ];
+    bluetoothPair = [ "${pkgs.python3.withPackages (ps: [ ps.pygobject3 ])}/bin/python3" "${./bluetooth_pair.py}" ];
     obsidian = [ "${pkgs.obsidian}/bin/obsidian" ];
     logo = "file://${../../assets/icons/nixos.svg}";
     bellIcon = "file://${../../assets/icons/notification-bell.svg}";
@@ -79,17 +81,14 @@ let
   ui = pkgs.runCommandLocal "quickshell-panel-ui" { } ''
     mkdir -p "$out"
     cp ${./ui}/*.qml "$out/"
-    # Use the GTK panel variants for nm-applet and Blueman, including their state changes.
-    mkdir "$out/tray"
-    for icon in ${papirus}/share/icons/Papirus-Dark/16x16/panel/{nm-*,network-*,blueman*}.svg; do
-      cp -L "$icon" "$out/tray/"
-    done
-    (
-      cd "$out/tray"
-      echo 'var names = ['
-      printf '  "%s",\n' *.svg
-      echo ']'
-    ) > "$out/TrayIcons.js"
+    icons=${papirus}/share/icons/Papirus-Dark/24x24/symbolic/status
+    cp -L "$icons/../actions"/{go-previous,media-skip-{backward,forward},media-playback-{start,pause}}-symbolic.svg "$out/"
+    cp -L "$icons/../actions"/system-{lock-screen,suspend,hibernate,log-out,reboot,shutdown}-symbolic.svg "$out/"
+    cp -L "$icons"/battery-[0-9]*-symbolic.svg "$icons"/display-brightness-{off,low,medium,high}-symbolic.svg "$out/"
+    cp -L "$icons"/weather-clear-night-symbolic.svg "$out/"
+    cp -L "$icons/../devices"/{ram,cpu}-symbolic.svg "$out/"
+    cp -L "$icons"/{audio-volume-{high,muted},microphone-sensitivity-{high,muted},display-brightness,bluetooth-{disabled,active,disconnected},network-wireless-{disabled,offline,signal-{excellent,good,ok,weak}}}-symbolic.svg "$out/"
+    cp -L ${papirus}/share/icons/Papirus-Dark/24x24/symbolic/status/{appointment-soon,battery-low,battery-caution}-symbolic.svg "$out/"
     echo 'var commands = ${builtins.toJSON commands}' > "$out/Config.js"
     echo 'var actions = ${builtins.toJSON powerActions}' > "$out/PowerActions.js"
     sed -nE 's/^@define-color desktop_([a-z]+) (#[a-fA-F0-9]+);$/var \1 = "\2";/p' \

@@ -13,12 +13,15 @@ Rectangle {
         spacing: 2
         BarButton {
             iconSource: Config.commands.bellIcon
-            readonly property string mode: center.state.notifications.alt || ""
-            alert: mode.includes("notification")
-            slashed: mode.includes("dnd") || mode.includes("inhibited")
-            hint: (center.state.notifications.tooltip || "Notifications") + "\nLeft-click to open · Right-click for Do Not Disturb"
+            readonly property var notices: center.state.notifications
+            alert: notices.unreadCount > 0
+            slashed: notices.quiet
+            hint: notices.description + "\nLeft-click to open · Right-click for Do Not Disturb"
             buttons: Qt.LeftButton | Qt.RightButton
-            onTriggered: button => Quickshell.execDetached(Config.commands.notifications.concat([button === Qt.RightButton ? "-d" : "-t", "-sw"]))
+            onTriggered: button => {
+                if (button === Qt.RightButton) notices.toggleManual()
+                else notices.toggleCenter(center.QsWindow.window.screen)
+            }
         }
         BarButton {
             id: updates
@@ -31,6 +34,7 @@ Rectangle {
             }
             onFlagsChanged: if (!flags.includes("checking")) animateAutomatic = false
             iconSource: Config.commands.updateIcon
+            dotSize: 6
             alert: flags.includes("attention")
             marked: flags.includes("pending")
             spinning: flags.includes("manual") || animateAutomatic

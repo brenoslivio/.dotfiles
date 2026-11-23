@@ -6,6 +6,7 @@ Rectangle {
     id: button
     property string label
     property color markColor: Ink.lavender
+    property int dotSize: alert ? 6 : 4
     property alias labelFormat: caption.textFormat
     readonly property alias hovered: pointer.containsMouse
     property string hint
@@ -13,6 +14,7 @@ Rectangle {
     property string iconSource
     property int iconSize: 18
     property bool selected: false
+    property int underlineWidth: 16
     property bool marked: false
     property bool alert: false
     property bool slashed: false
@@ -67,13 +69,13 @@ Rectangle {
     }
     Rectangle {
         anchors { right: parent.right; top: parent.top; rightMargin: 2; topMargin: 2 }
-        width: button.alert ? 6 : 4; height: width; radius: width / 2
+        width: button.dotSize; height: width; radius: width / 2
         color: button.alert ? "#ff6675" : button.markColor
         visible: button.marked || button.alert
     }
     Rectangle {
         anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
-        width: 16; height: 2; radius: 1; color: Ink.magenta; visible: button.selected
+        width: button.underlineWidth; height: 2; radius: 1; color: Ink.magenta; visible: button.selected
     }
     MouseArea {
         id: pointer

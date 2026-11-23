@@ -24,20 +24,37 @@ system controls on the right. The magenta underline marks the active workspace.
 
 ![Quickshell desktop panel on the laptop](assets/previews/quickshell-panel.png)
 
-Click the bell to open notifications, or right-click it to toggle Do Not Disturb.
+Click the bell to read notifications on that display. Banners preview up to two
+lines of message text. The center shows the full message and groups cards by
+day, newest first. Opening the center marks them as read. Hover or use Tab to
+dismiss individual cards, or use **Clear all**. Escape or a click
+outside closes the center. Clicking a banner or card invokes the sender’s open
+action, so a mail app can take you straight to the message. If the notification
+only identifies its desktop app, clicking opens that app. Use the switch in the
+center or right-click the bell to toggle manual Do Not Disturb.
+The panel keeps history in memory and remembers manual Do Not Disturb across
+restarts. Volume and microphone popups disappear after a moment.
 While the laptop is discharging, it shows a low-battery popup at 20% and a
-critical alert at 10% that stays until dismissed. Plugging in re-arms both alerts.
-Hover over the power button to see its label, then click to open the power menu.
+critical alert at 10% that can interrupt Do Not Disturb and stays in the center
+until dismissed. Plugging in re-arms both alerts.
+Choose **Power** at the bottom right of Quick Settings or press the laptop’s power key to open the power actions.
 The notification center, power controls, and GTK menus share the Rofi palette.
 
-[Power controls](assets/previews/power-controls.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png) · [Tray context menu](assets/previews/quickshell-tray-menu.png)
+[Power controls](assets/previews/power-controls.png) · [Notification banners](assets/previews/notification-banners.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png) · [Tray context menu](assets/previews/quickshell-tray-menu.png)
 
-Right-click the volume indicator to open the audio menu. Choose an output or
-microphone by name. The checkmarks reflect the audio server's current defaults
-and ports. On the laptop, choose **Speakers** or **Headphones** with the wired
-headphones still plugged in. If a Bluetooth microphone requires call-quality
-playback, the menu asks before switching profiles. Left-click opens the mixer,
-scrolling adjusts volume, and the microphone mute key shows its resulting state.
+Click the Wi-Fi, Bluetooth, brightness, battery, and power group to open **Quick Settings**.
+Hover for brightness and battery percentages. Scroll over brightness to adjust the backlight. Click a wireless icon to toggle its radio or
+the name beside it to choose a network or device. **Find devices** starts a
+20-second Bluetooth scan. Brightness, volume, and microphone gain update as you drag. Escape goes back, and clicking
+outside closes Quick Settings.
+The battery shows **Plugged** whenever the adapter is online. Click the moon to toggle
+**Night Light**, or click its name to set the hours and daytime and nighttime
+temperatures (2500–6500 K). Lower values look warmer. At the start time, the
+display takes the first of four steps toward the nighttime temperature. The
+steps are an hour apart, or closer for short schedules. At the end time the
+display returns to the daytime temperature.
+The schedule follows the laptop’s time zone, including overnight hours. Manual warmth
+lasts until the next start or end. **Resume schedule** restores the scheduled warmth.
 
 Click the task count beside the clock to open **Projects & tasks**. Project
 arrows expand or collapse their tasks. Use **+ Project** or **+ Add task** to
@@ -64,9 +81,9 @@ Choose **Focus…** on a task to enter minutes (`37m`), hours and minutes
 that has passed means tomorrow. Leave the field empty for untimed focus. The
 active session stays at the top while you browse. Pause, resume, or finish it
 there. Switching tasks or completing the active one saves the session.
-Starting or resuming focus turns on SwayNC’s **Do Not Disturb** switch. Pausing,
-finishing, or reaching the timer limit turns it off again, even with the bar
-hidden. If the switch was already on before focus, it stays on.
+Starting or resuming focus silences notification banners. Pausing, finishing,
+or reaching the timer limit restores banners unless manual Do Not Disturb is
+on.
 At expiry you can extend it in Tasks or add five minutes from the notification.
 The bar shows **Focusing...** during a session. Open Tasks to see today’s
 focus total at the bottom of the popup. Click **Focus history** to review sessions.
@@ -98,17 +115,22 @@ Click the NixOS logo at the far left of the panel to open Rofi and search for an
 
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)
 
-The media button beside volume shows the current track while playing or paused.
-Click it to pause or resume. The music note and the full spectrum use a color from the cover art.
-Hover for artwork and playback controls. Click the progress bar to jump to a time,
+The audio button to the left of Memory shows the current track beside the speaker while playing or paused.
+Middle-click the title to pause or resume. The music note and the full spectrum use a color from the cover art.
+Click the title or speaker for volume, mute, output and microphone selection, headset profiles, and playback.
+Scroll over the button to adjust volume. Click the progress bar to jump to a time,
 or drag to preview a timestamp and release to seek when the player supports it.
-The back and forward mouse buttons on the media button skip tracks.
+The back and forward mouse buttons over the song title skip tracks.
+Enable **Allow volume above 100%** to raise output up to 200% with the slider,
+bar scroll, or volume keys. Disabling it brings boosted output back to 100%.
 
 Left-click the clock for the selected place’s calendar and forecast.
 Choose **7 days** below the place name for daily highs, lows, and precipitation
 probabilities. Hover over a weather icon for the day's condition.
-Right-click the clock to
-switch places or choose **Add place…**, enter a name and paste latitude and
+Right-click the clock to select a place and set the laptop’s system time zone.
+The active local desktop user can change the zone from the bar after the laptop
+configuration has been activated once. Previously resolved places work offline.
+Choose **Add place…**, enter a name and paste latitude and
 longitude (for example, `-23.5505, -46.6333`). You can also choose **Find by street…**,
 enter a street and city, and press Enter. Select a match to fill in its coordinates,
 review the place name, and click **Save**. Street-only matches are approximate.
@@ -120,17 +142,20 @@ Open-Meteo supplies the time zone and forecast. The active forecast refreshes
 every 30 minutes. Your selection and per-location offline cache stay in your
 local state directory. [Open-Meteo](https://open-meteo.com/)
 
-Hover over memory or CPU for the total and the five
-busiest programs. During playback, a squared audio spectrum spans the panel.
+Click either percentage in **Resources** to see the last minute of CPU and memory
+usage, available memory, swap, logical CPUs, and a searchable list of running programs.
+The side you click selects the initial ranking. Click a column heading to re-sort,
+or select a program and confirm **Force quit…** to stop it. During playback, a squared audio spectrum spans the panel.
 Active screen sharing, microphone use, and camera use each show an icon beside
 the volume control. Hover over an icon to see which applications are using it.
 
-The panel starts with Hyprland on each display. Press **Super+W** to hide or
-show it. Use `systemctl --user restart quickshell-panel.service` to restart it
-and `journalctl --user -u quickshell-panel.service -b` to inspect its log.
+The panel starts with Hyprland on each display. **Super+W** stops Quickshell
+and its notification center. Press it again to start both. **Super+Shift+W**
+restarts Quickshell in one step, even when the panel is frozen. Use
+`journalctl --user -u quickshell-panel.service -b` to inspect its log.
 
-When an HDMI display is connected, click the monitor icon beside the power
-button to choose a layout. **Mirror** shows the same desktop on both screens.
+When an HDMI display is connected, click the monitor icon beside Quick
+Settings to choose a layout. **Mirror** shows the same desktop on both screens.
 **Docked** uses the external screen alone. In either **Extend** mode, numbered
 workspaces stay on the selected main screen and the other screen gets its own
 workspace. The checkmark shows the current layout.
@@ -351,9 +376,12 @@ Hover to see the Friday update, other open non-draft pull requests targeting
 `main`, the desktop update status, and the time of the last successful check.
 Each PR shows CI for its latest commit. Lavender means CI is pending or running,
 or GitHub is still checking mergeability. Red means CI failed, CI needs approval
-to run, or CI passed and the PR is ready to merge or blocked by GitHub. Red takes
-priority across PRs. With no open non-draft PRs targeting `main`, the arrow has
-no dot. Right-click to open a PR by number or follow the Friday and main CI links.
+to run, or CI passed and the PR is ready to merge or blocked by GitHub. A verified
+system update available through `up` also shows red until it is active or scheduled
+for next boot. A local development build can differ from an already-applied
+verified revision. The tooltip explains this and the system update dot stays clear.
+Red takes priority over lavender. With no eligible PRs or updates,
+the arrow has no dot. Right-click to open a PR by number or follow the Friday and main CI links.
 The Friday GitHub workflow creates proposals. The indicator only reads GitHub.
 If offline, it keeps the last known status. After a rate limit it waits until
 GitHub permits another check.

@@ -155,10 +155,36 @@ def system(previous):
             return {**result, "text": "Current main · CI changed during check"}
         path = manifest["system_path"]
         expires = datetime.fromisoformat(manifest["expires_at"]).timestamp() if manifest.get("expires_at") else 0
-    local = update.system_label(path, update.read_state(STATE))
+    return {**result, "verified": key, "path": path, "expires": expires}
+
+
+def active_revision():
+    try:
+        return json.loads(update.run("/run/current-system/sw/bin/nixos-version", "--json")).get("configurationRevision")
+    except (OSError, ValueError, subprocess.CalledProcessError):
+        return None
+
+
+def system_view(desktop):
+    if not desktop.get("verified") or not desktop.get("path"):
+        return desktop
+    state = update.read_state(STATE)
+    local = update.system_label(desktop["path"], state)
     text = {"active": "Laptop up to date", "scheduled for next boot": "Update scheduled for next boot"}.get(local)
-    return {**result, "verified": key, "path": path, "expires": expires,
-            "text": text or "Tested system update ready · run up", "attention": text is None}
+    applied = state.get("last_system_action", {})
+    if not text and (applied.get("sha"), applied.get("path"), applied.get("choice")) == (
+            desktop["verified"][0], desktop["path"], "switch"):
+        if active_revision() in (None, applied["sha"]):
+            text = "Latest tested main already applied · a different system build is active"
+    if not text:
+        repo = Path(os.environ.get("DOTFILES_REPO", Path.home() / ".dotfiles")).resolve()
+        try:
+            update.clean_checkout(repo)
+        except update.UpdateError as error:
+            text = "Tested main available · " + str(error)
+        except (OSError, subprocess.CalledProcessError):
+            text = "Tested main available · checkout unavailable for updating"
+    return {**desktop, "text": text or "Tested system update ready · run up", "attention": text is None}
 
 
 def cached():
@@ -219,9 +245,13 @@ def view(data, checking, manual):
             lines.append(datetime.fromtimestamp(data["retry_after"]).strftime("Retry after %H:%M"))
     proposals = (data.get("proposal", {}), *data.get("pull_requests", []))
     prs = [item for item in proposals if item.get("pr")]
-    if prs:
-        classes.append("attention" if any(item.get("attention") for item in prs) else "pending")
-    for status in (*proposals, data.get("system", {})):
+    desktop = system_view(data.get("system", {}))
+    update_ready = desktop.get("verified") and desktop.get("attention")
+    if update_ready or any(item.get("attention") for item in prs):
+        classes.append("attention")
+    elif prs:
+        classes.append("pending")
+    for status in (*proposals, desktop):
         if status.get("text"):
             lines.append(status["text"])
     if data.get("checked"):

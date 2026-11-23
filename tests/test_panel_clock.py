@@ -23,6 +23,16 @@ class ClockTests(unittest.TestCase):
             dict(id="berlin", name="Work", latitude=52.52, longitude=13.405),
         ]
         self.path.write_text(json.dumps(self.places))
+        self.enterContext(patch("clock.system_zone", return_value="America/Sao_Paulo"))
+        self.set_zone = self.enterContext(patch("clock.set_zone"))
+
+    def test_selection_requires_confirmed_system_change(self):
+        self.change("select", id="berlin")
+        self.set_zone.assert_called_with("Europe/Berlin")
+        self.set_zone.side_effect = ValueError("Access denied")
+        with self.assertRaisesRegex(ValueError, "Access denied"):
+            self.change("select", id="sao-paulo")
+        self.assertEqual(selected_id(self.directory), "berlin")
 
     def test_calendar_uses_the_date_on_the_selected_clock(self):
         instant = datetime(2027, 1, 31, 23, 30, tzinfo=timezone.utc)
@@ -54,6 +64,7 @@ class ClockTests(unittest.TestCase):
         self.assertEqual(self.path.read_bytes(), original)
 
     def test_edit_same_place_and_remove_selection(self):
+        self.enterContext(patch.object(weather, "fetch", return_value={"zone": "America/Los_Angeles"}))
         self.change("add", name="Studio", coordinates=" 34, -118 ")
         studio = read_places(self.path)[-1]
         self.assertEqual(selected_id(self.directory), studio["id"])

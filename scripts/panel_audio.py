@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from collections import Counter
 import json
 import os
+from pathlib import Path
 import subprocess
 import sys
 import time
@@ -98,7 +99,7 @@ def select_route(kind, device, port):
     raise ValueError("The audio server did not confirm the selected device and port.")
 
 
-def switch_headset(action):
+def switch_headset(action, confirmed=False):
     def cards():
         return json.loads(pactl("-f", "json", "list", "cards"))
     name, profile = action["card"], action["profile"]
@@ -106,11 +107,12 @@ def switch_headset(action):
                      if c["name"] == name and p == profile), None)
     if original is None:
         raise ValueError("The headset configuration changed. Reopen the menu.")
-    result = subprocess.run(["zenity", "--question", "--title", "Enable headset microphone?",
-                             "--text", "Using the headset microphone switches Bluetooth playback to call quality.",
-                             "--ok-label", "Use headset microphone", "--cancel-label", "Cancel"])
-    if result.returncode:
-        return
+    if not confirmed:
+        result = subprocess.run(["zenity", "--question", "--title", "Enable headset microphone?",
+                                 "--text", "Using the headset microphone switches Bluetooth playback to call quality.",
+                                 "--ok-label", "Use headset microphone", "--cancel-label", "Cancel"])
+        if result.returncode:
+            return
     if not any(c["name"] == name and c["active_profile"] == original for c in cards()):
         raise ValueError("The headset configuration changed. Reopen the menu.")
     pactl("set-card-profile", name, profile)
@@ -136,9 +138,9 @@ def switch_headset(action):
         raise
 
 
-def apply(action):
+def apply(action, confirmed=False):
     if action["action"] == "headset":
-        switch_headset(action)
+        switch_headset(action, confirmed)
     elif action["action"] == "route":
         select_route(action["kind"], action["device"], action["port"])
 
@@ -152,17 +154,54 @@ def mic_mute():
                     "Microphone muted" if muted else "Microphone on"], check=True)
 
 
+def boost_flag():
+    directory = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state") / "dotfiles-audio"
+    directory.mkdir(parents=True, exist_ok=True)
+    return directory / "allow-boost"
+
+
+def watch_boost():
+    from inotify_simple import INotify, flags
+    path = boost_flag()
+    with INotify() as watcher:
+        watcher.add_watch(path.parent, flags.CREATE | flags.DELETE | flags.MOVED_FROM | flags.MOVED_TO)
+        while True:
+            print(json.dumps(path.exists()), flush=True)
+            watcher.read()
+
+
+def step_volume(direction):
+    limit = "2.0" if boost_flag().exists() else "1.0"
+    sink = "@DEFAULT_AUDIO_SINK@"
+    subprocess.run(["wpctl", "set-volume", "--limit", limit, sink, "5%" + direction], check=True)
+    level = round(float(subprocess.check_output(["wpctl", "get-volume", sink], text=True).split()[1]) * 100)
+    subprocess.run(["notify-send", "-e", "-u", "low", "-h", "string:x-canonical-private-synchronous:volume_notif",
+                    "-h", f"int:value:{min(level, 100)}", f"🔊 Volume · {level}%"], check=True)
+
+
 if __name__ == "__main__":
     try:
         if sys.argv[1:] == ["mic-mute"]:
             mic_mute()
+        elif sys.argv[1:] == ["boost-watch"]:
+            watch_boost()
+        elif sys.argv[1:] == ["boost-on"]:
+            boost_flag().touch()
+        elif sys.argv[1:] == ["boost-off"]:
+            boost_flag().unlink(missing_ok=True)
+        elif sys.argv[1:] in (["volume-up"], ["volume-down"]):
+            step_volume("+" if sys.argv[1] == "volume-up" else "-")
         elif sys.argv[1:] == ["choices"]:
             print(json.dumps(audio_choices()))
-        elif sys.argv[1:2] == ["apply"]:
-            apply(json.loads(sys.argv[2]))
+        elif sys.argv[1:2] in (["apply"], ["apply-inline"]):
+            apply(json.loads(sys.argv[2]), confirmed=sys.argv[1] == "apply-inline")
         else:
             sys.exit("Usage: dotfiles-audio {mic-mute | choices | apply ACTION_JSON}")
     except ValueError as error:
+        if sys.argv[1:2] == ["apply-inline"]:
+            sys.exit(str(error))
         notify("Audio selection unavailable", str(error))
     except subprocess.CalledProcessError:
+        if sys.argv[1:2] == ["apply-inline"]:
+            sys.exit("The audio device is unavailable.")
         notify("Audio control unavailable", "Check the device connection and try again.")
