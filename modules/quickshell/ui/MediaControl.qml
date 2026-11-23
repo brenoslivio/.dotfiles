@@ -52,8 +52,10 @@ TaskButton {
             text: "♪"; color: mediaButton.accent; font.pixelSize: 14
         }
         Text {
+            id: trackTitle
             anchors.verticalCenter: parent.verticalCenter; visible: !!text
-            width: Math.min(implicitWidth, 185)
+            FontMetrics { id: titleMetrics; font: trackTitle.font }
+            width: Math.min(implicitWidth, 185 + 20 * titleMetrics.averageCharacterWidth)
             text: mediaButton.title; textFormat: Text.PlainText; elide: Text.ElideRight
             font.family: "Inter"; font.pixelSize: 13; color: Ink.text
         }

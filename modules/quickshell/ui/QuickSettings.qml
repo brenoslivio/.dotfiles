@@ -99,7 +99,7 @@ PanelWindow {
         anchors.fill: parent; color: Ink.panel; radius: 13; border.color: Qt.alpha(Ink.lavender, 0.48)
         focus: true
         Keys.onPressed: event => { if (popup.page === "Power") powerPage.handleKey(event) }
-        Shortcut { sequence: "Escape"; enabled: popup.visible; onActivated: popup.back() }
+        Shortcut { sequence: "Escape"; enabled: popup.visible && !powerPage.confirming; onActivated: popup.back() }
         Flickable {
             id: scroll
             anchors.fill: parent; anchors.margins: 16; clip: true

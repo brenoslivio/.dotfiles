@@ -22,7 +22,7 @@ also exposed separately for user-only changes; servers use a minimal profile.
 Quickshell shows workspaces on the left, the date and time in the center, and
 system controls on the right. The magenta underline marks the active workspace.
 
-![Quickshell desktop panel on the laptop](assets/previews/quickshell-panel.png)
+![Laptop panel with the playback spectrum, track title, memory and CPU usage, and Quick Settings](assets/previews/quickshell-panel.png)
 
 Click the bell to read notifications on that display. Banners preview up to two
 lines of message text. The center shows the full message and groups cards by
@@ -37,10 +37,11 @@ restarts. Volume and microphone popups disappear after a moment.
 While the laptop is discharging, it shows a low-battery popup at 20% and a
 critical alert at 10% that can interrupt Do Not Disturb and stays in the center
 until dismissed. Plugging in re-arms both alerts.
-Choose **Power** at the bottom right of Quick Settings or press the laptop’s power key to open the power actions.
+Choose **Power** at the bottom right of Quick Settings or press the laptop’s power key.
+Selecting a session action opens a confirmation. Choose the action again to proceed, or press Escape to cancel.
 The notification center, power controls, and GTK menus share the Rofi palette.
 
-[Power controls](assets/previews/power-controls.png) · [Notification banners](assets/previews/notification-banners.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png) · [Tray context menu](assets/previews/quickshell-tray-menu.png)
+[Power controls](assets/previews/power-controls.png) · [Reboot confirmation](assets/previews/power-confirmation.png) · [Notification banners](assets/previews/notification-banners.png) · [Notification center](assets/previews/notification-center.png) · [Nemo context menu](assets/previews/nemo-context-menu.png) · [Tray context menu](assets/previews/quickshell-tray-menu.png)
 
 Click the Wi-Fi, Bluetooth, brightness, battery, and power group to open **Quick Settings**.
 Hover for brightness and battery percentages. Scroll over brightness to adjust the backlight. Click a wireless icon to toggle its radio or
@@ -49,6 +50,11 @@ the name beside it to choose a network or device. **Find devices** starts a
 Click it again to restore their previous settings. A plane icon appears in the
 bar while the radios are blocked. Brightness, volume, and microphone gain update as you drag. Escape goes back, and clicking
 outside closes Quick Settings.
+
+| Quick Settings | Displays |
+| --- | --- |
+| ![Airplane Mode enabled with Wi-Fi and Bluetooth controls dimmed](assets/previews/quick-settings.png) | ![Four HDMI layouts with Extend · External main selected](assets/previews/displays.png) |
+
 The battery shows **Plugged** whenever the adapter is online. Click the moon to toggle
 **Night Light**, or click its name to set the hours and daytime and nighttime
 temperatures (2500–6500 K). Lower values look warmer. At the start time, the
@@ -118,6 +124,8 @@ Click the NixOS logo at the far left of the panel to open Rofi and search for an
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)
 
 The audio button to the left of Memory shows the current track beside the speaker while playing or paused.
+The lock screen centers available cover art below the password field, with the track title and artist underneath.
+Pausing adds a **Paused** label. Stopping playback clears the title and cover.
 Middle-click the title to pause or resume. The music note and the full spectrum use a color from the cover art.
 Click the title or speaker for volume, mute, output and microphone selection, headset profiles, and playback.
 Scroll over the button to adjust volume. Click the progress bar to jump to a time,
@@ -150,6 +158,8 @@ Programs open sorted by highest memory usage. Click a column heading to re-sort,
 or select a program and confirm **Force quit…** to stop it. During playback, a squared audio spectrum spans the panel.
 Active screen sharing, microphone use, and camera use each show an icon beside
 the volume control. Hover over an icon to see which applications are using it.
+
+[Resources with programs sorted by memory](assets/previews/resources.png)
 
 The panel starts with Hyprland on each display. **Super+W** stops Quickshell
 and its notification center. Press it again to start both. **Super+Shift+W**

@@ -96,6 +96,7 @@ let
   ui = pkgs.runCommandLocal "quickshell-panel-ui" { } ''
     mkdir -p "$out"
     cp ${./ui}/*.qml "$out/"
+    cp -L ${papirus}/share/icons/Papirus-Dark/16x16/places/folder-magenta.svg "$out/nemo-folder.svg"
     icons=${papirus}/share/icons/Papirus-Dark/24x24/symbolic/status
     cp -L "$icons/../actions"/{go-previous,media-skip-{backward,forward},media-playback-{start,pause}}-symbolic.svg "$out/"
     cp -L "$icons/../actions"/system-{lock-screen,suspend,hibernate,log-out,reboot,shutdown}-symbolic.svg "$out/"
