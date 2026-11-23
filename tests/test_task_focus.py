@@ -62,27 +62,62 @@ class FocusTests(unittest.TestCase):
         finished = focus.read_history(self.path)["sessions"][0]
         self.assertEqual((finished["focused_seconds"], finished["ended_at"]), (180, 10120))
 
-    def test_notification_inhibitor_tracks_saved_session_and_wall_clock(self):
-        def check(now, operation, next_change=None):
-            with patch.object(focus.time, "time", return_value=now), patch.object(focus.subprocess, "run") as run:
-                self.assertEqual(focus.sync_notifications(self.path), next_change)
-                self.assertEqual(run.call_args.args[0], ["swaync-client", "--skip-wait", operation, "Task focus"])
+    def test_focus_owns_dnd_through_pause_resume_expiry_and_finish(self):
+        marker = self.state / "focus-owns-dnd"
+        enabled = False
+        writes = []
 
-        check(999, "-Ir")
-        self.action("start", duration="1m")
-        check(1001, "-Ia", 1060)
-        self.action("pause", now=1010)
-        check(1010, "-Ir")
-        self.action("resume", now=1020)
-        check(1020, "-Ia", 1070)
-        check(1070, "-Ir")  # Timer elapsed with the panel closed.
-        self.action("tick", now=1071)
-        self.action("extend", now=1080, duration="2m")
-        check(1080, "-Ia", 1200)
-        self.action("start", now=1100, duration="")
-        check(1150, "-Ia")
-        self.action("finish", now=1150)
-        check(1150, "-Ir")
+        def client(command, **kwargs):
+            nonlocal enabled
+            self.assertEqual(command[:-1], ["swaync-client", "--skip-wait"])
+            option = command[-1]
+            if option != "-D":
+                self.assertIn(option, ("-dn", "-df"))
+                enabled = option == "-dn"
+                writes.append(enabled)
+            return str(enabled).lower()
+
+        def check(now, expected, next_change=None):
+            with patch.object(focus.time, "time", return_value=now):
+                self.assertEqual(focus.sync_notifications(self.path, marker), next_change)
+            self.assertEqual(enabled, expected)
+
+        with patch.object(focus.subprocess, "check_output", side_effect=client):
+            check(999, False)
+            self.action("start", duration="1m")
+            check(1001, True, 1060)
+            check(1002, True, 1060)
+            self.action("pause", now=1010)
+            check(1010, False)
+            self.action("resume", now=1020)
+            check(1020, True, 1070)
+            check(1070, False)
+            self.action("tick", now=1071)
+            self.action("extend", now=1080, duration="2m")
+            check(1080, True, 1200)
+            self.action("start", now=1100, duration="")
+            check(1150, True)
+            self.action("finish", now=1150)
+            check(1150, False)
+            self.assertFalse(marker.exists())
+            self.assertEqual(writes, [True, False] * 3)
+
+            enabled = True  # The user enabled DND before starting focus.
+            self.action("start", now=1200, duration="")
+            check(1201, True)
+            self.action("pause", now=1202)
+            check(1202, True)
+            self.assertEqual(len(writes), 6)
+
+    def test_dnd_cleanup_retries_unconfirmed_release(self):
+        marker = self.root / "focus-owns-dnd"
+        marker.touch()
+        with patch.object(focus.subprocess, "check_output", side_effect=["", "false"]):
+            with self.assertRaises(OSError):
+                focus.release_dnd(marker)
+            self.assertTrue(marker.exists())
+            focus.release_dnd(marker)
+            self.assertFalse(marker.exists())
 
     def test_deadline_projection_and_legacy_edit(self):
         block = self.action("deadline", date="2026-12-02", time="23:30", zone="America/Sao_Paulo")["task"]

@@ -158,9 +158,23 @@ def cutoff(session):
     return None
 
 
-def sync_notifications(path):
-    # Serialize with task edits and the expiry notification so an old timer cannot
-    # release the inhibitor for a session that has just started.
+def swaync_dnd(option):
+    value = subprocess.check_output(["swaync-client", "--skip-wait", option],
+                                    text=True, stderr=subprocess.PIPE, timeout=2).strip()
+    if value not in ("true", "false") or (option == "-dn" and value != "true") or (option == "-df" and value != "false"):
+        raise OSError("SwayNC did not confirm the Do Not Disturb setting.")
+    return value == "true"
+
+
+def release_dnd(marker):
+    if marker.exists():
+        swaync_dnd("-df")
+        marker.unlink()
+
+
+def sync_notifications(path, marker):
+    # The expiry notifier and the watcher share both the history lock and ownership
+    # marker, so only a DND setting enabled by focus is restored.
     with locked(path):
         try:
             session = active_session(read_history(path))
@@ -169,12 +183,17 @@ def sync_notifications(path):
         except (OSError, ValueError, KeyError, TypeError) as exc:
             print(f"Cannot read focus session for notifications: {exc}", file=sys.stderr)
             end, quiet = None, False
-        subprocess.run(["swaync-client", "--skip-wait", "-Ia" if quiet else "-Ir", "Task focus"],
-                       stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, check=True, timeout=2)
+        if quiet:
+            if not swaync_dnd("-D"):
+                marker.parent.mkdir(parents=True, exist_ok=True)
+                marker.touch()  # Record ownership before setting DND in case of interruption.
+                swaync_dnd("-dn")
+        else:
+            release_dnd(marker)
         return end if quiet else None
 
 
-def watch_notifications(path):
+def watch_notifications(path, marker):
     from inotify_simple import INotify, flags
 
     # Watch the directory because history is replaced atomically. An absolute
@@ -187,7 +206,7 @@ def watch_notifications(path):
             events.register(changes.fd, select.POLLIN)
             events.register(timer, select.POLLIN)
             while True:
-                end = sync_notifications(path)
+                end = sync_notifications(path, marker)
                 os.timerfd_settime(timer, flags=os.TFD_TIMER_ABSTIME, initial=end or 0)
                 while True:
                     ready = dict(events.poll())
@@ -577,16 +596,20 @@ if __name__ == "__main__":
     path = repo / "config/quickshell/task-history.json"
     note = Path(os.environ.get("TASKS_FILE") or Path.home() / "Dropbox/Ikiru/Ikiru.md")
     state = Path(os.environ.get("XDG_STATE_HOME") or Path.home() / ".local/state") / "dotfiles/task-capture"
+    dnd_marker = state / "focus-owns-dnd"
     if sys.argv[1] == "watch":
         watch(note, state, path, sys.argv[2])
     elif sys.argv[1] == "quiet":
-        watch_notifications(path)
+        watch_notifications(path, dnd_marker)
+    elif sys.argv[1] == "release-dnd":
+        with locked(path):
+            release_dnd(dnd_marker)
     else:
         try:
             if sys.argv[1] == "notify":
                 # The expiry popup can race the background listener on the same history write.
                 try:
-                    sync_notifications(path)
+                    sync_notifications(path, dnd_marker)
                 except (OSError, ValueError, subprocess.SubprocessError) as exc:
                     print(f"Could not update focus notifications: {exc}", file=sys.stderr)
                 answer = subprocess.run(["notify-send", "--app-name=Desktop panel", "--action=extend=Extend 5 min",

@@ -64,9 +64,9 @@ Choose **Focus…** on a task to enter minutes (`37m`), hours and minutes
 that has passed means tomorrow. Leave the field empty for untimed focus. The
 active session stays at the top while you browse. Pause, resume, or finish it
 there. Switching tasks or completing the active one saves the session.
-Starting or resuming focus silences desktop notification popups. Pausing,
-finishing, or reaching the timer limit releases focus silence, even with the
-bar hidden. Your manual Do Not Disturb setting still applies.
+Starting or resuming focus turns on SwayNC’s **Do Not Disturb** switch. Pausing,
+finishing, or reaching the timer limit turns it off again, even with the bar
+hidden. If the switch was already on before focus, it stays on.
 At expiry you can extend it in Tasks or add five minutes from the notification.
 The bar shows **Focusing...** during a session. Open Tasks to see today’s
 focus total at the bottom of the popup. Click **Focus history** to review sessions.

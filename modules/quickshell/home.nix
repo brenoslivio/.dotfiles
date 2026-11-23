@@ -51,7 +51,7 @@ in {
     };
     Service = {
       ExecStart = "${panel.focus} quiet";
-      ExecStopPost = ''-${pkgs.swaynotificationcenter}/bin/swaync-client -sw -Ir "Task focus"'';
+      ExecStopPost = "-${panel.focus} release-dnd";
       Restart = "on-failure";
       RestartSec = 2;
     };
