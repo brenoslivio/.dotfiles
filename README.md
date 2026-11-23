@@ -45,7 +45,9 @@ The notification center, power controls, and GTK menus share the Rofi palette.
 Click the Wi-Fi, Bluetooth, brightness, battery, and power group to open **Quick Settings**.
 Hover for brightness and battery percentages. Scroll over brightness to adjust the backlight. Click a wireless icon to toggle its radio or
 the name beside it to choose a network or device. **Find devices** starts a
-20-second Bluetooth scan. Brightness, volume, and microphone gain update as you drag. Escape goes back, and clicking
+20-second Bluetooth scan. **Airplane Mode** blocks Wi-Fi and Bluetooth together.
+Click it again to restore their previous settings. A plane icon appears in the
+bar while the radios are blocked. Brightness, volume, and microphone gain update as you drag. Escape goes back, and clicking
 outside closes Quick Settings.
 The battery shows **Plugged** whenever the adapter is online. Click the moon to toggle
 **Night Light**, or click its name to set the hours and daytime and nighttime
@@ -144,7 +146,7 @@ local state directory. [Open-Meteo](https://open-meteo.com/)
 
 Click either percentage in **Resources** to see the last minute of CPU and memory
 usage, available memory, swap, logical CPUs, and a searchable list of running programs.
-The side you click selects the initial ranking. Click a column heading to re-sort,
+Programs open sorted by highest memory usage. Click a column heading to re-sort,
 or select a program and confirm **Force quit…** to stop it. During playback, a squared audio spectrum spans the panel.
 Active screen sharing, microphone use, and camera use each show an icon beside
 the volume control. Hover over an icon to see which applications are using it.
@@ -154,13 +156,11 @@ and its notification center. Press it again to start both. **Super+Shift+W**
 restarts Quickshell in one step, even when the panel is frozen. Use
 `journalctl --user -u quickshell-panel.service -b` to inspect its log.
 
-When an HDMI display is connected, click the monitor icon beside Quick
-Settings to choose a layout. **Mirror** shows the same desktop on both screens.
+Open **Quick Settings → Displays** to see the current layout. Connect an HDMI
+display to choose another layout. **Mirror** shows the same desktop on both screens.
 **Docked** uses the external screen alone. In either **Extend** mode, numbered
 workspaces stay on the selected main screen and the other screen gets its own
 workspace. The checkmark shows the current layout.
-
-![Display picker with Extend · External main checked and Extend · Laptop main highlighted](assets/previews/rofi-display-picker.png)
 
 ## Daily commands
 

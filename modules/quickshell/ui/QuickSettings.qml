@@ -2,9 +2,11 @@ import QtQuick
 import QtQuick.Controls.Basic as Controls
 import QtQuick.Layouts
 import Quickshell
+import Quickshell.Io
 import Quickshell.Wayland
 import Quickshell.Networking
 import Quickshell.Bluetooth
+import "Config.js" as Config
 import "Palette.js" as Ink
 
 PanelWindow {
@@ -12,6 +14,13 @@ PanelWindow {
     required property PanelWindow bar
     required property var state
     readonly property var battery: state.hardware.battery
+    readonly property var flight: state.hardware.airplane ?? ({})
+    readonly property var display: state.display ?? ({})
+    property string radioError: ""
+    Process {
+        id: radioWriter
+        stderr: StdioCollector { onStreamFinished: popup.radioError = text.trim() }
+    }
     readonly property var brightness: state.hardware.brightness
     readonly property string brightnessIcon: "display-brightness-" + (brightness === 0 ? "off"
         : brightness < 34 ? "low" : brightness < 67 ? "medium" : "high")
@@ -21,13 +30,15 @@ PanelWindow {
         || Networking.devices.values.find(d => d.type === DeviceType.Wifi) || null
     readonly property var network: wifi?.networks.values.find(n => n.connected) || null
     readonly property var adapter: Bluetooth.defaultAdapter
-    readonly property var connectedDevices: adapter?.devices.values.filter(d => d.connected) ?? []
+    readonly property var connectedDevice: adapter?.devices.values.find(d => d.connected) ?? null
+    readonly property real wirelessPageHeight: Math.min(410, (screen?.height || 600) - margins.top
+        - 14 - 2 * scroll.anchors.margins - header.height - contents.spacing)
     readonly property string wifiIcon: !Networking.wifiEnabled ? "network-wireless-disabled"
         : !network ? "network-wireless-offline" : "network-wireless-signal-" +
             (network.signalStrength > 0.75 ? "excellent" : network.signalStrength > 0.5 ? "good"
             : network.signalStrength > 0.25 ? "ok" : "weak")
     readonly property string bluetoothIcon: !adapter?.enabled ? "bluetooth-disabled"
-        : connectedDevices.length ? "bluetooth-active" : "bluetooth-disconnected"
+        : connectedDevice ? "bluetooth-active" : "bluetooth-disconnected"
     property string page: ""
     function close() { if (state.controlPopup === popup) state.controlPopup = null }
     function back() { if (page) page = ""; else close() }
@@ -55,6 +66,7 @@ PanelWindow {
         required property string icon
         required property bool powered
         property bool canToggle: true
+        property bool canOpen: true
         signal toggled()
         signal openDetails()
         Layout.fillWidth: true; Layout.preferredWidth: 1; implicitHeight: 58
@@ -70,6 +82,7 @@ PanelWindow {
             }
             Rectangle { Layout.preferredWidth: 1; Layout.preferredHeight: 24; color: Qt.alpha(Ink.lavender, 0.24) }
             QuickChoice {
+                enabled: tile.canOpen
                 Layout.fillWidth: true; Layout.fillHeight: true; horizontalPadding: 6; padding: 3
                 text: tile.label; detail: tile.detail; trailing: "›"
                 background: Rectangle {
@@ -132,18 +145,57 @@ PanelWindow {
                         Layout.fillWidth: true; Layout.topMargin: 4; spacing: 7
                         SettingsTile {
                             label: "Wi-Fi"; icon: popup.wifiIcon
-                            powered: Networking.wifiEnabled; canToggle: !!popup.wifi && Networking.wifiHardwareEnabled
-                            detail: !popup.wifi ? "Unavailable" : !powered ? "Off" : popup.network?.name || "Disconnected"
+                            powered: !popup.flight.restore && Networking.wifiEnabled
+                            canToggle: canOpen && !!popup.wifi && Networking.wifiHardwareEnabled
+                            canOpen: !popup.flight.restore && !radioWriter.running
+                            detail: popup.flight.restore ? "Airplane Mode" : !popup.wifi ? "Unavailable" : !powered ? "Off" : popup.network?.name || "Disconnected"
                             onToggled: Networking.wifiEnabled = !powered
                             onOpenDetails: popup.page = "Wi-Fi"
                         }
                         SettingsTile {
                             label: "Bluetooth"; icon: popup.bluetoothIcon
-                            powered: !!popup.adapter?.enabled; canToggle: !!popup.adapter && popup.adapter.state !== BluetoothAdapterState.Blocked
-                            detail: !popup.adapter ? "Unavailable" : !powered ? "Off" : popup.connectedDevices[0]?.name || "On"
+                            powered: !popup.flight.restore && !!popup.adapter?.enabled
+                            canToggle: canOpen && !!popup.adapter && popup.adapter.state !== BluetoothAdapterState.Blocked
+                            canOpen: !popup.flight.restore && !radioWriter.running
+                            detail: popup.flight.restore ? "Airplane Mode" : !popup.adapter ? "Unavailable" : !powered ? "Off" : popup.connectedDevice?.name || "On"
                             onToggled: popup.adapter.enabled = !powered
                             onOpenDetails: popup.page = "Bluetooth"
                         }
+                    }
+                    RowLayout {
+                        Layout.fillWidth: true; spacing: 7
+                        QuickChoice {
+                            Layout.fillWidth: true; Layout.preferredWidth: 1; Layout.preferredHeight: 58
+                            text: "Displays"; symbol: "video-display"; trailing: "›"
+                            detail: popup.display.connected === undefined ? "Unavailable"
+                                : popup.display.connected ? popup.display.current || "Switching…" : "Laptop display"
+                            iconDivider: true; horizontalPadding: 7
+                            onClicked: popup.page = "Displays"
+                        }
+                        QuickChoice {
+                            id: airplaneTile
+                            Layout.fillWidth: true; Layout.preferredWidth: 1; Layout.preferredHeight: 58
+                            text: "Airplane Mode"; symbol: "airplane-mode"; iconDivider: true; horizontalPadding: 7
+                            current: !!popup.flight.on
+                            enabled: !!popup.flight.available && !radioWriter.running
+                            detail: radioWriter.running ? "Switching…" : current ? "On"
+                                : popup.flight.restore ? "Restore radios" : enabled ? "Off" : "Unavailable"
+                            Accessible.role: Accessible.CheckBox
+                            Accessible.checked: current
+                            background: Rectangle {
+                                radius: 9; color: airplaneTile.hovered ? Ink.selection : airplaneTile.current ? Qt.alpha(Ink.lavender, 0.16) : Ink.field
+                                border.color: airplaneTile.visualFocus ? Ink.lavender : "transparent"
+                            }
+                            onClicked: {
+                                popup.radioError = ""
+                                radioWriter.command = Config.commands.airplane.concat(popup.flight.restore ? "off" : "on")
+                                radioWriter.running = true
+                            }
+                        }
+                    }
+                    Text {
+                        Layout.fillWidth: true; visible: !!text
+                        text: popup.radioError; textFormat: Text.PlainText; wrapMode: Text.Wrap; color: Ink.text
                     }
                     RowLayout {
                         Layout.fillWidth: true; spacing: 7
@@ -167,6 +219,10 @@ PanelWindow {
                     showing: popup.visible && (!popup.page || visible)
                     city: popup.state.clock?.zoneMismatch ? "" : popup.state.clock?.place?.name ?? ""
                 }
+                QuickDisplays {
+                    Layout.fillWidth: true; visible: popup.page === "Displays"
+                    display: popup.display
+                }
                 PowerMenu {
                     id: powerPage
                     Layout.fillWidth: true; visible: popup.page === "Power"
@@ -178,13 +234,16 @@ PanelWindow {
                     sourceComponent: Component {
                         QuickWifi {
                             device: popup.wifi
-                            availableHeight: Math.min(410, (popup.screen?.height || 600) - popup.margins.top
-                                - 14 - 2 * scroll.anchors.margins - header.height - contents.spacing)
+                            availableHeight: popup.wirelessPageHeight
                             onShowPrompt: scroll.contentY = 0
                         }
                     }
                 }
-                QuickBluetooth { Layout.fillWidth: true; visible: popup.visible && popup.page === "Bluetooth"; adapter: popup.adapter; onShowPrompt: scroll.contentY = 0 }
+                QuickBluetooth {
+                    Layout.fillWidth: true; visible: popup.visible && popup.page === "Bluetooth"
+                    adapter: popup.adapter; availableHeight: popup.wirelessPageHeight
+                    onShowPrompt: scroll.contentY = 0
+                }
             }
         }
     }

@@ -173,8 +173,12 @@ def watch_boost():
 def step_volume(direction):
     limit = "2.0" if boost_flag().exists() else "1.0"
     sink = "@DEFAULT_AUDIO_SINK@"
+    before = subprocess.check_output(["wpctl", "get-volume", sink], text=True).split()
     subprocess.run(["wpctl", "set-volume", "--limit", limit, sink, "5%" + direction], check=True)
-    level = round(float(subprocess.check_output(["wpctl", "get-volume", sink], text=True).split()[1]) * 100)
+    after = subprocess.check_output(["wpctl", "get-volume", sink], text=True).split()
+    level = round(float(after[1]) * 100)
+    if before[1] != after[1] and level > 0 and "[MUTED]" not in after:
+        subprocess.Popen(["dotfiles-volume-feedback"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     subprocess.run(["notify-send", "-e", "-u", "low", "-h", "string:x-canonical-private-synchronous:volume_notif",
                     "-h", f"int:value:{min(level, 100)}", f"🔊 Volume · {level}%"], check=True)
 

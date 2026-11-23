@@ -25,7 +25,14 @@ let
       fileset = lib.fileset.unions [ ./clock.py ./weather.py ];
     }}/clock.py "$@"
   '';
-  audio = control "dotfiles-audio" "panel_audio.py" [ pkgs.pulseaudio pkgs.wireplumber pkgs.libnotify pkgs.zenity ];
+  volumeFeedback = pkgs.writeShellScriptBin "dotfiles-volume-feedback" ''
+    exec 9>"$XDG_RUNTIME_DIR/dotfiles-volume-feedback.lock"
+    ${pkgs.util-linux}/bin/flock -n 9 || exit 0
+    exec ${pkgs.pulseaudio}/bin/paplay --device=@DEFAULT_SINK@ --property=media.role=event \
+      --stream-name="Volume feedback" --volume=65536 \
+      ${pkgs.sound-theme-freedesktop}/share/sounds/freedesktop/stereo/audio-volume-change.oga
+  '';
+  audio = control "dotfiles-audio" "panel_audio.py" [ pkgs.pulseaudio pkgs.wireplumber pkgs.libnotify pkgs.zenity volumeFeedback ];
   updates = control "dotfiles-update-indicator" "panel_updates.py" [ pkgs.gh pkgs.git pkgs.systemd pkgs.xdg-utils ];
   tasks = control "dotfiles-tasks" "panel_tasks.py" [ pkgs.zenity pkgs.libnotify ];
   focus = pkgs.writeShellScript "panel-task-focus" ''
@@ -57,16 +64,24 @@ let
     (powerAction "Shut Down" "system-shutdown" "s" [ systemctl "poweroff" ])
   ];
   commands = {
+    airplane = [ (toString (pkgs.writeShellScript "panel-airplane" ''
+      export PATH=${lib.makeBinPath [ pkgs.util-linux pkgs.systemd ]}:$PATH
+      exec ${python}/bin/python3 ${./airplane.py} "$@"
+    '')) ];
     displays = [ (toString (import ../hypr/display-mode.nix { inherit pkgs; })) ];
     clock = [ (toString clock) ];
     streetSearch = [ "${python}/bin/python3" "${./street_search.py}" ];
     audio = [ (lib.getExe audio) ];
+    volumeFeedback = [ "${volumeFeedback}/bin/dotfiles-volume-feedback" ];
     nightLight = [ (lib.getExe (import ../hypr/night-light.nix { inherit pkgs; })) ];
     updates = [ (lib.getExe updates) ];
     tasks = [ (lib.getExe tasks) ];
     focus = [ (toString focus) ];
     resources = [ "${python}/bin/python3" "${../../scripts/panel_resources.py}" ];
-    hardware = [ "${python}/bin/python3" "${./hardware.py}" ];
+    hardware = [ "${python}/bin/python3" "${lib.fileset.toSource {
+      root = ./.;
+      fileset = lib.fileset.unions [ ./hardware.py ./airplane.py ];
+    }}/hardware.py" ];
     brightness = [ "${pkgs.brightnessctl}/bin/brightnessctl" "-c" "backlight" "set" ];
     spectrum = [ "${python}/bin/python3" "${./spectrum.py}" "${pkgs.cava}/bin/cava" "-p" "${./cava.conf}" ];
     capture = [ (toString capture) ];
@@ -86,7 +101,8 @@ let
     cp -L "$icons/../actions"/system-{lock-screen,suspend,hibernate,log-out,reboot,shutdown}-symbolic.svg "$out/"
     cp -L "$icons"/battery-[0-9]*-symbolic.svg "$icons"/display-brightness-{off,low,medium,high}-symbolic.svg "$out/"
     cp -L "$icons"/weather-clear-night-symbolic.svg "$out/"
-    cp -L "$icons/../devices"/{ram,cpu}-symbolic.svg "$out/"
+    cp -L "$icons"/airplane-mode-symbolic.svg "$out/"
+    cp -L "$icons/../devices"/{ram,cpu,video-display}-symbolic.svg "$out/"
     cp -L "$icons"/{audio-volume-{high,muted},microphone-sensitivity-{high,muted},display-brightness,bluetooth-{disabled,active,disconnected},network-wireless-{disabled,offline,signal-{excellent,good,ok,weak}}}-symbolic.svg "$out/"
     cp -L ${papirus}/share/icons/Papirus-Dark/24x24/symbolic/status/{appointment-soon,battery-low,battery-caution}-symbolic.svg "$out/"
     echo 'var commands = ${builtins.toJSON commands}' > "$out/Config.js"

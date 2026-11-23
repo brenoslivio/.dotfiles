@@ -12,13 +12,6 @@ PanelWindow {
     required property Item button
     property string ranking: "Memory"
     function close() { state.controlPopup = null }
-    function toggle(metric) {
-        if (visible && ranking === metric) close()
-        else {
-            ranking = metric
-            state.controlPopup = popup
-        }
-    }
 
     screen: bar.screen
     visible: !!bar.screen && state.controlPopup === popup
@@ -35,7 +28,12 @@ PanelWindow {
     implicitWidth: Math.min(456, (screen?.width || 480) - 28)
     implicitHeight: Math.min(690, (screen?.height || 600) - margins.top - 14)
     color: "transparent"
-    onVisibleChanged: if (visible) { programs.reset(); scroll.contentY = 0; frame.forceActiveFocus() }
+    onVisibleChanged: if (visible) {
+        ranking = "Memory"
+        programs.reset()
+        scroll.contentY = 0
+        frame.forceActiveFocus()
+    }
 
     component Caption: Text {
         color: Ink.muted; textFormat: Text.PlainText
