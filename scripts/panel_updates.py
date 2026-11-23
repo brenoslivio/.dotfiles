@@ -33,6 +33,8 @@ def ci_status(run):
         return "CI pending"
     if run["conclusion"] == "action_required" or run["status"] == "waiting":
         return "CI needs approval"
+    if run["status"] in {"requested", "queued", "pending"}:
+        return "CI pending"
     if run["status"] != "completed":
         return "CI running"
     return "passed" if run["conclusion"] == "success" else "CI failed"
@@ -46,8 +48,11 @@ def proposal(previous):
         if run and ci_status(run) in {"CI failed", "CI needs approval"}:
             return {"text": "Flake proposal needs attention", "attention": True, "run": run["id"]}
         return {}
+    if prs[0]["draft"]:
+        return {}
     result = pr_status(prs[0], previous)
-    result["text"] = f"Friday update · #{result['pr']} · {result['status']}"
+    if result:
+        result["text"] = f"Friday update · #{result['pr']} · {result['status']}"
     return result
 
 
@@ -78,21 +83,38 @@ def pr_status(pr, previous):
                for s in suites):
             label = "CI needs approval"
     key = [pr["number"], sha, run_key(run)] if run else None
-    if label == "passed":
-        label = "ready for review"
-        if previous.get("verified") != key:
-            jobs = update.pages(f"actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs", "jobs")
-            try:
-                update.validate_jobs(jobs)
-            except update.UpdateError:
-                label = "CI failed"
-    result = {"pr": pr["number"], "status": label,
-              "attention": label in {"ready for review", "CI failed", "CI needs approval"}}
+    if label == "passed" and previous.get("verified") != key:
+        jobs = update.pages(f"actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs", "jobs")
+        try:
+            update.validate_jobs(jobs)
+        except update.UpdateError:
+            label = "CI failed"
+    result = {"pr": pr["number"]}
     if run:
         result["run"] = run["id"]
-    if label == "ready for review":
+    attention = label in {"CI failed", "CI needs approval"}
+    if label == "passed":
+        # Reviews and branch rules can change without a new CI run.
+        detail = update.api_json(f"pulls/{pr['number']}")
+        if detail["state"] != "open" or detail["draft"] or detail["base"]["ref"] != "main":
+            return {}
+        if detail["head"]["sha"] != sha:
+            return {"pr": pr["number"], "status": "CI pending", "attention": False}
         result["verified"] = key
-    return result
+        state = detail.get("mergeable_state")
+        attention = True
+        if detail.get("mergeable") is False or state == "dirty":
+            label = "CI passed · merge blocked by conflicts"
+        elif state == "behind":
+            label = "CI passed · merge blocked until branch is updated"
+        elif state == "blocked":
+            label = "CI passed · merge blocked by GitHub"
+        elif detail.get("mergeable") and state in {"clean", "has_hooks", "unstable"}:
+            label = "CI passed · ready to merge"
+        else:
+            label = "CI passed · GitHub checking mergeability"
+            attention = False
+    return {**result, "status": label, "attention": attention}
 
 
 def ordinary_prs(previous):
@@ -104,6 +126,8 @@ def ordinary_prs(previous):
         if pr["draft"] or (head["ref"] == BRANCH and (head["repo"] or {}).get("full_name") == update.REPOSITORY):
             continue
         status = pr_status(pr, old.get(pr["number"], {}))
+        if not status:
+            continue
         status["title"] = pr["title"]
         status["text"] = f"Pull request · #{pr['number']} · {pr['title']} · {status['status']}"
         result.append(status)
@@ -193,11 +217,13 @@ def view(data, checking, manual):
         lines.append(data["error"])
         if data.get("retry_after", 0) > time.time():
             lines.append(datetime.fromtimestamp(data["retry_after"]).strftime("Retry after %H:%M"))
-    for status in (data.get("proposal", {}), *data.get("pull_requests", []), data.get("system", {})):
+    proposals = (data.get("proposal", {}), *data.get("pull_requests", []))
+    prs = [item for item in proposals if item.get("pr")]
+    if prs:
+        classes.append("attention" if any(item.get("attention") for item in prs) else "pending")
+    for status in (*proposals, data.get("system", {})):
         if status.get("text"):
             lines.append(status["text"])
-        if status.get("attention") and "attention" not in classes:
-            classes.append("attention")
     if data.get("checked"):
         lines.append(datetime.fromtimestamp(data["checked"]).strftime("Last checked %a %d %b · %H:%M"))
     elif not lines:

@@ -345,14 +345,15 @@ The circular arrow beside the panel bell checks the flake update PR and the
 verified desktop revision on `main` every five minutes while the laptop is awake.
 A missed check runs once on wake. Left-click to refresh immediately. The arrow
 spins as soon as you click. Automatic checks start the animation after half a
-second. The red dot stays in place while the arrow turns.
+second. The dot stays in place while the arrow turns.
 
 Hover to see the Friday update, other open non-draft pull requests targeting
 `main`, the desktop update status, and the time of the last successful check.
-Each PR shows CI for its latest commit. Pending or running checks appear in the
-tooltip. A red dot marks a PR ready for review, CI needing attention, or a tested
-system ready to apply with `up`. A system scheduled for next boot clears its
-update dot. Right-click to open a PR by number or follow the Friday and main CI links.
+Each PR shows CI for its latest commit. Lavender means CI is pending or running,
+or GitHub is still checking mergeability. Red means CI failed, CI needs approval
+to run, or CI passed and the PR is ready to merge or blocked by GitHub. Red takes
+priority across PRs. With no open non-draft PRs targeting `main`, the arrow has
+no dot. Right-click to open a PR by number or follow the Friday and main CI links.
 The Friday GitHub workflow creates proposals. The indicator only reads GitHub.
 If offline, it keeps the last known status. After a rate limit it waits until
 GitHub permits another check.

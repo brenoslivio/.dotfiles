@@ -32,6 +32,7 @@ Rectangle {
             onFlagsChanged: if (!flags.includes("checking")) animateAutomatic = false
             iconSource: Config.commands.updateIcon
             alert: flags.includes("attention")
+            marked: flags.includes("pending")
             spinning: flags.includes("manual") || animateAutomatic
             hint: menu.visible ? "" : center.state.updates.tooltip || "Check for updates"
             buttons: Qt.LeftButton | Qt.RightButton
