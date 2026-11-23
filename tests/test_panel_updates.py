@@ -11,7 +11,8 @@ import panel_updates as w
 import update
 
 SHA = "a" * 40
-PR = {"head": {"sha": SHA}, "number": 16}
+PR = {"head": {"sha": SHA, "ref": w.BRANCH, "repo": {"id": 1, "full_name": update.REPOSITORY}},
+      "number": 16, "draft": False, "title": "Weekly update"}
 RUN = {"id": 33, "run_attempt": 1, "conclusion": "success", "status": "completed"}
 JOBS = [{"name": name, "conclusion": "success", "status": "completed"} for name in update.REQUIRED_JOBS]
 MANIFEST = {"run_id": "33", "run_attempt": "1", "system_path": "/tested", "expires_at": "2099-12-01T00:00:00Z"}
@@ -26,7 +27,7 @@ class IndicatorTests(unittest.TestCase):
             self.enterContext(patch.object(w, name, path))
 
     def test_pr_filter_and_required_jobs(self):
-        with patch.object(update, "api_json", return_value=[PR]) as api, patch.object(w, "latest", return_value=RUN), \
+        with patch.object(update, "api_json", return_value=[PR]) as api, patch.object(w, "pr_run", return_value=RUN), \
                 patch.object(update, "pages", return_value=JOBS) as jobs:
             ready = w.proposal({})
             self.assertTrue(ready["attention"])
@@ -38,7 +39,7 @@ class IndicatorTests(unittest.TestCase):
             self.assertIn("failed", w.proposal({})["text"])
 
     def test_pr_pending_and_approval(self):
-        with patch.object(update, "api_json", return_value=[PR]), patch.object(w, "latest", return_value=None), \
+        with patch.object(update, "api_json", return_value=[PR]), patch.object(w, "pr_run", return_value=None), \
                 patch.object(update, "pages", return_value=[]) as suites:
             self.assertFalse(w.proposal({})["attention"])
             suites.return_value = [{"app": {"slug": "github-actions"}, "conclusion": "action_required"}]
@@ -49,6 +50,44 @@ class IndicatorTests(unittest.TestCase):
             proposal = w.proposal({})
             self.assertTrue(proposal["attention"])
             self.assertEqual(w.links({"proposal": proposal}), {"View proposal CI run": w.WEB + "/actions/runs/33"})
+
+    def test_ordinary_prs_share_friday_rules_and_remove_closed_entries(self):
+        fork = {**PR, "number": 17, "title": "Panel", "head": {**PR["head"], "repo": {"id": 2, "full_name": "fork/repo"}}}
+        opened = [PR, {**fork, "draft": True, "number": 18}, fork]
+        with patch.object(update, "pages", side_effect=lambda endpoint, key=None: opened if key is None else JOBS), \
+                patch.object(w, "pr_run", return_value=RUN) as latest_run:
+            items = w.ordinary_prs([])
+            latest_run.assert_called_once_with(fork)
+            self.assertEqual(items[0]["text"], "Pull request · #17 · Panel · ready for review")
+            data = {"proposal": w.pr_status(PR, {}), "pull_requests": items}
+            self.assertEqual(w.view(data, False, False)["class"], ["attention"])
+            self.assertIn(w.WEB + "/pull/17", w.links(data).values())
+            fork["title"] = "Renamed"
+            self.assertIn("Renamed", w.ordinary_prs(items)[0]["text"])
+            for status, conclusion, attention in (("queued", None, False), ("completed", "failure", True),
+                                                   ("waiting", None, True)):
+                latest_run.return_value = {**RUN, "status": status, "conclusion": conclusion}
+                self.assertEqual(w.ordinary_prs(items)[0]["attention"], attention)
+            opened.clear()
+            self.assertEqual(w.ordinary_prs(items), [])
+
+    def test_run_selection_uses_revision_branch_and_pr_or_fork_identity(self):
+        runs = [{"pull_requests": [{"number": 27}], "head_repository": {"id": 1}},
+                {"pull_requests": [], "head_repository": {"id": 2}},
+                {"pull_requests": [], "head_repository": {"id": 1}}]
+        with patch.object(update, "pages", return_value=runs) as pages:
+            self.assertIs(w.pr_run(PR), runs[-1])
+            query = pages.call_args.args[0]
+            self.assertIn("head_sha=" + SHA, query)
+            self.assertIn("event=pull_request", query)
+            self.assertIn("branch=automation%2Fflake-update", query)
+            runs[0]["pull_requests"] = [{"number": 16}]
+            self.assertIs(w.pr_run(PR), runs[0])
+
+    def test_open_pr_pagination(self):
+        with patch.object(update, "api_json", side_effect=[[PR] * 100, [PR]]) as api:
+            self.assertEqual(len(update.pages("pulls?state=open&base=main")), 101)
+            self.assertIn("&page=2", api.call_args.args[0])
 
     def test_verified_attempt_cached_but_local_activation_rechecked(self):
         with patch.object(update, "api_json", return_value={"object": {"sha": SHA}}), \
@@ -72,6 +111,7 @@ class IndicatorTests(unittest.TestCase):
             self.assertEqual(evidence.call_count, 3)
 
     def test_offline_preserves_badge_and_last_check_then_recovers(self):
+        self.enterContext(patch.object(w, "ordinary_prs", return_value=[]))
         update.atomic_json(w.CACHE, {"checked": 42, "proposal": {"attention": True}})
         with patch.object(w, "proposal", side_effect=OSError("offline")), patch.object(w, "system", return_value={}):
             w.main(["check"])

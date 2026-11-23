@@ -347,10 +347,12 @@ A missed check runs once on wake. Left-click to refresh immediately. The arrow
 spins as soon as you click. Automatic checks start the animation after half a
 second. The red dot stays in place while the arrow turns.
 
-Hover for the PR status, desktop update status, and time of the last successful
-check. A red dot marks a proposal ready for review, CI needing attention, or a
-tested system ready to apply with `up`. A system scheduled for next boot clears
-its update dot. Right-click for links to the relevant PR and Actions runs.
+Hover to see the Friday update, other open non-draft pull requests targeting
+`main`, the desktop update status, and the time of the last successful check.
+Each PR shows CI for its latest commit. Pending or running checks appear in the
+tooltip. A red dot marks a PR ready for review, CI needing attention, or a tested
+system ready to apply with `up`. A system scheduled for next boot clears its
+update dot. Right-click to open a PR by number or follow the Friday and main CI links.
 The Friday GitHub workflow creates proposals. The indicator only reads GitHub.
 If offline, it keeps the last known status. After a rate limit it waits until
 GitHub permits another check.
