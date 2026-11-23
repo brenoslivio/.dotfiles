@@ -6,6 +6,7 @@ from pathlib import Path
 import subprocess
 import sys
 import time
+from urllib.parse import urlencode
 import zipfile
 
 import update
@@ -32,6 +33,8 @@ def ci_status(run):
         return "CI pending"
     if run["conclusion"] == "action_required" or run["status"] == "waiting":
         return "CI needs approval"
+    if run["status"] in {"requested", "queued", "pending"}:
+        return "CI pending"
     if run["status"] != "completed":
         return "CI running"
     return "passed" if run["conclusion"] == "success" else "CI failed"
@@ -45,30 +48,89 @@ def proposal(previous):
         if run and ci_status(run) in {"CI failed", "CI needs approval"}:
             return {"text": "Flake proposal needs attention", "attention": True, "run": run["id"]}
         return {}
-    pr = prs[0]
+    if prs[0]["draft"]:
+        return {}
+    result = pr_status(prs[0], previous)
+    if result:
+        result["text"] = f"Friday update · #{result['pr']} · {result['status']}"
+    return result
+
+
+def pr_run(pr):
+    head = pr["head"]
+    query = urlencode({"event": "pull_request", "branch": head["ref"], "head_sha": head["sha"]})
+    runs = update.pages(f"actions/workflows/{update.WORKFLOW}/runs?{query}", "workflow_runs")
+    for run in runs:
+        associated = run["pull_requests"]
+        if any(p["number"] == pr["number"] for p in associated):
+            return run
+        # GitHub can omit PR associations for fork runs. Disambiguate branches
+        # with the same name and commit using their source repository.
+        source = run.get("head_repository") or {}
+        if not associated and head["repo"] and source.get("id") == head["repo"]["id"]:
+            return run
+    return None
+
+
+def pr_status(pr, previous):
     sha = pr["head"]["sha"]
-    run = latest(update.WORKFLOW, event="pull_request", branch=BRANCH, head_sha=sha)
+    run = pr_run(pr)
     label = ci_status(run)
     if not run:
         suites = update.pages(f"commits/{sha}/check-suites", "check_suites")
-        if any(s["app"]["slug"] == "github-actions" and s["conclusion"] == "action_required" for s in suites):
+        if any(s["app"]["slug"] == "github-actions" and s["conclusion"] == "action_required"
+               and (not s.get("pull_requests") or any(p["number"] == pr["number"] for p in s["pull_requests"]))
+               for s in suites):
             label = "CI needs approval"
     key = [pr["number"], sha, run_key(run)] if run else None
-    if label == "passed":
-        if previous.get("verified") == key:
-            return previous
+    if label == "passed" and previous.get("verified") != key:
         jobs = update.pages(f"actions/runs/{run['id']}/attempts/{run['run_attempt']}/jobs", "jobs")
         try:
             update.validate_jobs(jobs)
-            label = "ready for review"
         except update.UpdateError:
             label = "CI failed"
-    result = {"pr": pr["number"], "text": f"PR #{pr['number']} · {label}",
-              "attention": label in {"ready for review", "CI failed", "CI needs approval"}}
+    result = {"pr": pr["number"]}
     if run:
         result["run"] = run["id"]
-    if label == "ready for review":
+    attention = label in {"CI failed", "CI needs approval"}
+    if label == "passed":
+        # Reviews and branch rules can change without a new CI run.
+        detail = update.api_json(f"pulls/{pr['number']}")
+        if detail["state"] != "open" or detail["draft"] or detail["base"]["ref"] != "main":
+            return {}
+        if detail["head"]["sha"] != sha:
+            return {"pr": pr["number"], "status": "CI pending", "attention": False}
         result["verified"] = key
+        state = detail.get("mergeable_state")
+        attention = True
+        if detail.get("mergeable") is False or state == "dirty":
+            label = "CI passed · merge blocked by conflicts"
+        elif state == "behind":
+            label = "CI passed · merge blocked until branch is updated"
+        elif state == "blocked":
+            label = "CI passed · merge blocked by GitHub"
+        elif detail.get("mergeable") and state in {"clean", "has_hooks", "unstable"}:
+            label = "CI passed · ready to merge"
+        else:
+            label = "CI passed · GitHub checking mergeability"
+            attention = False
+    return {**result, "status": label, "attention": attention}
+
+
+def ordinary_prs(previous):
+    prs = update.pages("pulls?state=open&base=main")
+    old = {item["pr"]: item for item in previous}
+    result = []
+    for pr in prs:
+        head = pr["head"]
+        if pr["draft"] or (head["ref"] == BRANCH and (head["repo"] or {}).get("full_name") == update.REPOSITORY):
+            continue
+        status = pr_status(pr, old.get(pr["number"], {}))
+        if not status:
+            continue
+        status["title"] = pr["title"]
+        status["text"] = f"Pull request · #{pr['number']} · {pr['title']} · {status['status']}"
+        result.append(status)
     return result
 
 
@@ -127,9 +189,9 @@ def check():
         return
     (RUNTIME / "checking").touch()
     errors = []
-    for name, fetch in (("proposal", proposal), ("system", system)):
+    for name, fetch in (("proposal", proposal), ("system", system), ("pull_requests", ordinary_prs)):
         try:
-            data[name] = fetch(data.get(name, {}))
+            data[name] = fetch(data.get(name, [] if name == "pull_requests" else {}))
         except update.GitHubError as error:
             print(f"{name}: {error}", file=sys.stderr)
             errors.append(error.summary)
@@ -155,12 +217,13 @@ def view(data, checking, manual):
         lines.append(data["error"])
         if data.get("retry_after", 0) > time.time():
             lines.append(datetime.fromtimestamp(data["retry_after"]).strftime("Retry after %H:%M"))
-    for section in ("proposal", "system"):
-        status = data.get(section, {})
+    proposals = (data.get("proposal", {}), *data.get("pull_requests", []))
+    prs = [item for item in proposals if item.get("pr")]
+    if prs:
+        classes.append("attention" if any(item.get("attention") for item in prs) else "pending")
+    for status in (*proposals, data.get("system", {})):
         if status.get("text"):
             lines.append(status["text"])
-        if status.get("attention") and "attention" not in classes:
-            classes.append("attention")
     if data.get("checked"):
         lines.append(datetime.fromtimestamp(data["checked"]).strftime("Last checked %a %d %b · %H:%M"))
     elif not lines:
@@ -172,9 +235,12 @@ def links(data):
     result = {}
     pr = data.get("proposal", {})
     if pr.get("pr"):
-        result["Open update PR"] = f"{WEB}/pull/{int(pr['pr'])}"
+        result[f"Friday update · #{int(pr['pr'])}"] = f"{WEB}/pull/{int(pr['pr'])}"
     if pr.get("run"):
         result["View proposal CI run"] = f"{WEB}/actions/runs/{int(pr['run'])}"
+    for item in data.get("pull_requests", []):
+        number = int(item["pr"])
+        result[f"Pull request · #{number} · {item['title']}"] = f"{WEB}/pull/{number}"
     main = data.get("system", {})
     if main.get("run"):
         result["View main CI run"] = f"{WEB}/actions/runs/{int(main['run'])}"

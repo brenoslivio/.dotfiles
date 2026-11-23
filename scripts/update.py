@@ -79,11 +79,13 @@ def api_json(endpoint, **params):
     return json.loads(api(endpoint))
 
 
-def pages(endpoint, key):
+def pages(endpoint, key=None):
     result = []
     for page in range(1, 101):
         join = "&" if "?" in endpoint else "?"
-        batch = api_json(f"{endpoint}{join}per_page=100&page={page}")[key]
+        batch = api_json(f"{endpoint}{join}per_page=100&page={page}")
+        if key is not None:
+            batch = batch[key]
         result.extend(batch)
         if len(batch) < 100:
             return result

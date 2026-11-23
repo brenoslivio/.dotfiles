@@ -42,6 +42,21 @@ in {
       TimeoutStartSec = "90s";
     };
   };
+  systemd.user.services.quickshell-focus-notifications = {
+    Unit = {
+      Description = "Silence desktop notifications during task focus";
+      After = [ "swaync.service" ];
+      BindsTo = [ "swaync.service" ];
+      PartOf = [ "swaync.service" "graphical-session.target" ];
+    };
+    Service = {
+      ExecStart = "${panel.focus} quiet";
+      ExecStopPost = "-${panel.focus} release-dnd";
+      Restart = "on-failure";
+      RestartSec = 2;
+    };
+    Install.WantedBy = [ "swaync.service" ];
+  };
   systemd.user.timers.dotfiles-update-check = {
     Unit = {
       Description = "Check the desktop update every five minutes";

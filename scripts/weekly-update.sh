@@ -43,4 +43,3 @@ git -c commit.gpgsign=false commit -m 'Update pinned flake inputs'
 git push origin "$branch"
 gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" \
   --title 'Update pinned flake inputs' --body-file /tmp/proposal-body.md
-# The pull_request event starts CI; approve the bot-triggered run in GitHub if requested.

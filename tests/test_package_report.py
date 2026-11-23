@@ -98,23 +98,49 @@ class ReportTests(unittest.TestCase):
         output = r.table([{**row, 'hosts': ['ahimsa-vps'], 'note': note, 'url': url}])
         self.assertIn('1.0 → 2.0', output)
 
+    def test_recovery_waits_for_latest_same_repository_run(self):
+        candidate = {**RUN, 'workflow_id': 10, 'path': '.github/workflows/ci.yml', 'event': 'pull_request',
+                     'head_repository': {'full_name': r.u.REPOSITORY}, 'head_branch': r.BRANCH, 'status': 'completed'}
+        pending = {**candidate, 'id': 2, 'status': 'in_progress'}
+        fork = {**candidate, 'id': 3, 'head_repository': {'full_name': 'someone/else'}}
+        pr = {'head': {'sha': SHA}}
+        with patch.object(r.u, 'pages', return_value=[fork, pending, candidate]):
+            self.assertEqual(r.latest_pr_run(pr, {'id': 10}), pending)
+        with patch.object(r, 'find_pr', return_value=pr), patch.object(r.u, 'api_json', return_value={'id': 10}), \
+                patch.object(r, 'latest_pr_run', return_value=pending), patch.object(r.u, 'pages') as baselines:
+            r.render()
+            baselines.assert_not_called()
+
+    def test_recovery_skips_already_published_attempt(self):
+        pr = {'base': {'sha': SHA}, 'head': {'sha': SHA},
+              'body': f'{r.START}\n<!-- package-report:complete {SHA} {SHA} 1 2 -->\n{r.END}'}
+        run = {**RUN, 'status': 'completed', 'conclusion': 'success'}
+        with patch.object(r, 'find_pr', return_value=pr), patch.object(r.u, 'api_json', return_value={'id': 10}), \
+                patch.object(r, 'latest_pr_run', return_value=run), patch.object(r.u, 'pages') as baselines:
+            r.render()
+            baselines.assert_not_called()
+
     def test_missing_baseline_is_not_reported_as_unchanged(self):
         import os
         run = {**RUN, 'workflow_id': 10, 'path': '.github/workflows/ci.yml', 'event': 'pull_request',
-               'status': 'completed', 'head_repository': {'full_name': r.u.REPOSITORY}, 'head_branch': r.BRANCH}
+               'status': 'completed', 'conclusion': 'success', 'head_repository': {'full_name': r.u.REPOSITORY}, 'head_branch': r.BRANCH}
         pr = {'number': 5, 'head': {'sha': 'b'*40}, 'base': {'sha': SHA}, 'merge_commit_sha': 'c'*40}
         with tempfile.TemporaryDirectory() as tmp:
             old = os.getcwd()
             try:
                 os.chdir(tmp)
-                Path('event.json').write_text(json.dumps({'workflow_run': {'id': 1}}))
                 Path('config').mkdir()
                 Path('config/release-sources.json').write_text('{}')
-                with patch.dict(os.environ, {'GITHUB_EVENT_PATH': 'event.json', 'GITHUB_RUN_ID': '99'}), patch.object(r.u, 'api_json', side_effect=[run, {'id': 10}]), patch.object(r, 'find_pr', return_value=pr), patch.object(r.u, 'pages', return_value=[]):
+                with (patch.dict(os.environ, {'GITHUB_RUN_ID': '99'}),
+                      patch.object(r.u, 'api_json', return_value={'id': 10}),
+                      patch.object(r, 'latest_pr_run', return_value=run),
+                      patch.object(r, 'find_pr', return_value=pr),
+                      patch.object(r.u, 'pages', return_value=[])):
                     r.render()
                 body = json.loads(Path('package-report/publication.json').read_text())['section']
                 self.assertIn('comparison unavailable', body)
                 self.assertNotIn('No runtime package changes', body)
+                self.assertNotIn('package-report:complete', body)
             finally:
                 os.chdir(old)
 

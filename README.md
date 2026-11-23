@@ -39,24 +39,75 @@ headphones still plugged in. If a Bluetooth microphone requires call-quality
 playback, the menu asks before switching profiles. Left-click opens the mixer,
 scrolling adjusts volume, and the microphone mute key shows its resulting state.
 
-Left-click the task count beside the clock to open the notepad on the Markdown
-body of Ikiru’s `## Tasks` section. Enter continues a bullet, and Tab or Shift+Tab
-indents or outdents the current line or selection. Ctrl+S saves to the note.
-Escape or × closes the window and keeps unfinished edits and the cursor as a local
-draft. If another editor changed the section, **Review changes** shows the current
-note above your editable draft. **Older drafts…** opens recovery for earlier
-task captures when available. Right-click opens Obsidian. `TASKS_FILE` overrides
-the note for both the notepad and the counter.
+Click the task count beside the clock to open **Projects & tasks**. Project
+arrows expand or collapse their tasks. Use **+ Project** or **+ Add task** to
+create an item. Enter saves a task and keeps the field ready for another.
+Click a title to select it. Open **⋯** and choose **Rename** to edit its name.
+The same menu offers subtasks, moves, and deletion.
+When deleting a populated project, **Move tasks first…** transfers its tasks
+to another project. Drag the grip on a project header to the insertion line,
+or choose **Move up** or **Move down** in its menu. This also reorders its
+whole subtree in Obsidian. Check off a task to complete it. **Show completed**
+lets you review or reopen it.
+
+At the top of Tasks, open **Today → + Plan task** to search by task or project.
+Add several tasks, then choose **Done**. A task’s **⋯ → Do today** also adds it.
+Drag the grips in Today or use **Move up** and **Move down** in a planned
+task’s menu. **Focus…** starts the first unfinished task, labeled **Up next**.
+Checking it off completes the task in Obsidian. **Remove from Today** leaves it
+open in its project. When a new local day begins, expand **Carry over** to
+add or dismiss individual unfinished tasks, or choose **Add all to today**.
+The daily order is saved by note and date in `config/quickshell/task-plan.json`.
+
+Choose **Focus…** on a task to enter minutes (`37m`), hours and minutes
+(`1h 15m`), or an end time (`14:40`) in the clock’s time zone. A clock time
+that has passed means tomorrow. Leave the field empty for untimed focus. The
+active session stays at the top while you browse. Pause, resume, or finish it
+there. Switching tasks or completing the active one saves the session.
+Starting or resuming focus turns on SwayNC’s **Do Not Disturb** switch. Pausing,
+finishing, or reaching the timer limit turns it off again, even with the bar
+hidden. If the switch was already on before focus, it stays on.
+At expiry you can extend it in Tasks or add five minutes from the notification.
+The bar shows **Focusing...** during a session. Open Tasks to see today’s
+focus total at the bottom of the popup. Click **Focus history** to review sessions.
+The arrows jump between days with records. **Delete** removes a whole finished
+session and updates its totals. **Undo** restores it during this panel session.
+
+Select **Deadline…** or click an existing date. Choosing a day, **Today**, or
+**Tomorrow** saves it immediately. Existing timed deadlines follow the clock’s
+selected place until edited. Newly chosen dates stay on the same calendar day.
+The Tasks button shows a red dot for overdue items or deadlines today, and
+amber for either of the next two days. Hover for item names and projects.
+The clock calendar opens the corresponding item when you click its title.
+Completing a task hides its deadline until you reopen it.
+
+Changes are saved to the Markdown bullets in Ikiru’s `## Tasks` section.
+`TASKS_FILE` overrides the note. Right-click the panel button to open Obsidian.
+Keep the trailing `^id` when renaming or moving an item in Markdown so its time
+and deadlines follow it. If another editor changes an item you are editing,
+the form keeps your input for review. **Recover draft…** appears when an older
+notepad or capture draft is available.
+
+Sessions and deadlines are stored in `config/quickshell/task-history.json`
+under `DOTFILES_REPO`. Totals exclude pauses, **Today** uses the computer’s
+local day, and deleting a task preserves its recorded time. Running sessions
+survive a panel restart and timed sessions stop at the scheduled end even if the
+panel was closed.
 
 Click the NixOS logo at the far left of the panel to open Rofi and search for an app.
 
 ![Rofi app launcher with Bluetooth Manager highlighted](assets/previews/rofi-launcher.png)
 
-The current track appears beneath the date while playing or paused. Left-click
-the clock for the selected place’s calendar, forecast, and playback controls.
+The media button beside volume shows the current track while playing or paused.
+Click it to pause or resume. The music note and the full spectrum use a color from the cover art.
+Hover for artwork and playback controls. Click the progress bar to jump to a time,
+or drag to preview a timestamp and release to seek when the player supports it.
+The back and forward mouse buttons on the media button skip tracks.
+
+Left-click the clock for the selected place’s calendar and forecast.
 Choose **7 days** below the place name for daily highs, lows, and precipitation
 probabilities. Hover over a weather icon for the day's condition.
-The back and forward mouse buttons on the clock skip tracks. Right-click to
+Right-click the clock to
 switch places or choose **Add place…**, enter a name and paste latitude and
 longitude (for example, `-23.5505, -46.6333`). You can also choose **Find by street…**,
 enter a street and city, and press Enter. Select a match to fill in its coordinates,
@@ -237,10 +288,21 @@ notes, Nixpkgs changelog/homepage links, or an explicit fallback. Full compariso
 the first successful main CI seeds the baseline.
 
 Weekly proposals run Friday at 15:23 UTC (12:23 São Paulo). Existing PRs and
-manual fixes and their CI runs are retained. Approve bot-triggered PR CI if GitHub asks.
+manual fixes and their CI runs are retained. The proposal workflow pushes the branch
+with its built-in token and opens the PR as a GitHub App so PR checks start automatically.
 Merge or close the proposal and delete its branch before the next one. Use
 Actions' “Run workflow” for an earlier proposal, or `flake-update` on a clean
 proposal branch to update inputs locally and run quick checks.
+
+### One-time setup for automatic Friday PR checks
+
+1. Register a private GitHub App under your account. Set the homepage to this
+   repository, disable webhooks, and grant **Contents** read-only and
+   **Pull requests** read and write.
+2. Install the app on this repository only and generate a private key in the app settings.
+3. Under the repository’s **Settings → Secrets and variables → Actions**, add the
+   app’s client ID as the variable `FLAKE_UPDATE_APP_CLIENT_ID` and the contents
+   of the downloaded PEM file as the secret `FLAKE_UPDATE_APP_PRIVATE_KEY`.
 
 ### What `up` does
 
@@ -283,12 +345,15 @@ The circular arrow beside the panel bell checks the flake update PR and the
 verified desktop revision on `main` every five minutes while the laptop is awake.
 A missed check runs once on wake. Left-click to refresh immediately. The arrow
 spins as soon as you click. Automatic checks start the animation after half a
-second. The red dot stays in place while the arrow turns.
+second. The dot stays in place while the arrow turns.
 
-Hover for the PR status, desktop update status, and time of the last successful
-check. A red dot marks a proposal ready for review, CI needing attention, or a
-tested system ready to apply with `up`. A system scheduled for next boot clears
-its update dot. Right-click for links to the relevant PR and Actions runs.
+Hover to see the Friday update, other open non-draft pull requests targeting
+`main`, the desktop update status, and the time of the last successful check.
+Each PR shows CI for its latest commit. Lavender means CI is pending or running,
+or GitHub is still checking mergeability. Red means CI failed, CI needs approval
+to run, or CI passed and the PR is ready to merge or blocked by GitHub. Red takes
+priority across PRs. With no open non-draft PRs targeting `main`, the arrow has
+no dot. Right-click to open a PR by number or follow the Friday and main CI links.
 The Friday GitHub workflow creates proposals. The indicator only reads GitHub.
 If offline, it keeps the last known status. After a rate limit it waits until
 GitHub permits another check.

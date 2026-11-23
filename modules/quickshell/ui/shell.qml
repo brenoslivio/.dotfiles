@@ -23,8 +23,27 @@ ShellRoot {
     property var notifications: ({})
     property var updates: ({})
     property var tasks: ({})
-    readonly property alias taskNotepad: notepad
-    TaskNotepad { id: notepad }
+    readonly property alias taskBoard: board
+    property var tracking: ({})
+    readonly property string focusTodayLabel: {
+        const a = tracking.active
+        const end = Math.min(focusNow, a?.cutoff ?? focusNow)
+        const live = a?.running_since == null ? 0 : Math.max(0, end - Math.max(tracking.midnight, a.running_since))
+        return "Today " + board.elapsed((tracking.todaySeconds || 0) + live)
+    }
+    property double focusNow: Date.now() / 1000
+    Timer {
+        interval: 1000; repeat: true; triggeredOnStart: true
+        running: root.tracking.active?.status === "running"
+        onTriggered: root.focusNow = Math.floor(Date.now() / 1000)
+    }
+    Feed {
+        property string zone: root.clock.zone || ""
+        command: Config.commands.focus.concat(["watch", zone])
+        onZoneChanged: if (running) running = false
+        onLine: data => root.tracking = JSON.parse(data)
+    }
+    TaskBoard { id: board; panelState: root }
     property var memory: ({})
     property var cpu: ({})
     property var hardware: ({})
@@ -86,7 +105,7 @@ ShellRoot {
             readonly property var monitor: Hyprland.monitorFor(screen)
             readonly property var workspace: monitor?.activeWorkspace
             readonly property var focusedWindow: Hyprland.activeToplevel
-            function togglePowerMenu() { right.togglePowerMenu() }
+            function togglePowerMenu() { systemControls.togglePowerMenu() }
             anchors { left: true; right: true; top: true }
             margins { left: 14; right: 14; top: 10 }
             implicitHeight: 38
@@ -105,6 +124,7 @@ ShellRoot {
                     anchors.margins: background.border.width
                     readonly property real corner: background.radius - background.border.width
                     readonly property real baselineInset: 5 - background.border.width
+                    readonly property color bandColor: Qt.alpha(systemControls.mediaAccent, 0.22)
                     Repeater {
                         id: bands
                         model: 64
@@ -132,7 +152,7 @@ ShellRoot {
                                 bottomLeftRadius: topLeftRadius
                                 topRightRadius: band.last ? spectrum.corner : 0
                                 bottomRightRadius: topRightRadius
-                                color: Qt.alpha(Ink.lavender, 0.22)
+                                color: spectrum.bandColor
                             }
                         }
                     }
@@ -199,10 +219,10 @@ ShellRoot {
                     id: center
                     state: root
                     anchors.verticalCenter: parent.verticalCenter
-                    x: Math.max(left.x + left.implicitWidth + 3, Math.min((parent.width - width) / 2, right.x - width - 5))
+                    x: Math.max(left.x + left.implicitWidth + 3, Math.min((parent.width - width) / 2, systemControls.x - width - 5))
                 }
                 SystemControls {
-                    id: right
+                    id: systemControls
                     bar: panel
                     state: root
                     anchors { right: parent.right; rightMargin: 7; verticalCenter: parent.verticalCenter }

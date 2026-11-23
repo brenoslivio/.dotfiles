@@ -11,9 +11,10 @@ PanelWindow {
     id: pad
     visible: false
     anchors { top: true; left: true }
-    implicitWidth: Math.min(440, (screen?.width || 456) - 16); implicitHeight: 320
+    implicitWidth: Math.min(470, (screen?.width || 486) - 16)
+    implicitHeight: Math.min(340, (screen?.height || 600) - 48)
     exclusionMode: ExclusionMode.Ignore
-    WlrLayershell.namespace: "dotfiles-task-notepad"
+    WlrLayershell.namespace: "dotfiles-draft-recovery"
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.keyboardFocus: focusPulse.running ? WlrKeyboardFocus.Exclusive : WlrKeyboardFocus.OnDemand
     color: "transparent"
@@ -62,10 +63,11 @@ PanelWindow {
     }
     function complete(result) {
         const action = request.action
+        let cursor = request.cursor
         if (action === "open" && result.text !== undefined) {
             base = result.base
             editor.text = result.text
-            editor.cursorPosition = Math.min(result.cursor, editor.length)
+            cursor = result.cursor
             hasDraft = result.draft
             legacy = result.legacy
             changedSection = result.conflict ?? null
@@ -90,6 +92,8 @@ PanelWindow {
             message = "Saved to note"
         }
         request = null
+        // Making a TextArea editable again can move its cursor to the end.
+        editor.cursorPosition = Math.min(cursor, editor.length)
     }
     Timer { id: focusPulse; interval: 120 }
     Process {
@@ -107,14 +111,6 @@ PanelWindow {
     Shortcut { sequence: "Escape"; enabled: pad.visible; onActivated: pad.finish() }
     Shortcut { sequences: [StandardKey.Save]; enabled: pad.visible; onActivated: pad.save() }
 
-    component Button: BarButton {
-        activeFocusOnTab: true
-        border.color: activeFocus ? Ink.lavender : "transparent"
-        Accessible.role: Accessible.Button; Accessible.name: label
-        Accessible.onPressAction: triggered(Qt.LeftButton)
-        Keys.onReturnPressed: triggered(Qt.LeftButton)
-        Keys.onSpacePressed: triggered(Qt.LeftButton)
-    }
     component Caption: Text {
         color: Ink.muted; font.family: "Inter"; font.pixelSize: 12
         textFormat: Text.PlainText
@@ -126,16 +122,16 @@ PanelWindow {
             RowLayout {
                 Layout.fillWidth: true
                 Caption {
-                    text: "Tasks"; font.pixelSize: 16; font.bold: true; color: Ink.lavender
+                    text: "Recover Markdown draft"; font.pixelSize: 16; font.bold: true; color: Ink.lavender
                     Layout.fillWidth: true
                 }
-                Button {
+                TaskButton {
                     id: older
                     visible: pad.legacy; label: "Older drafts…"
                     onTriggered: legacyMenu.toggle()
                     ActionMenu { id: legacyMenu; anchor.item: older; command: Config.commands.tasks; choicesArgument: "drafts" }
                 }
-                Button { label: "×"; Accessible.name: "Close notepad"; onTriggered: pad.finish() }
+                TaskButton { label: "×"; Accessible.name: "Close draft recovery"; onTriggered: pad.finish() }
             }
             Caption { visible: pad.reviewing; text: "Current tasks in the note"; color: Ink.lavender }
             Controls.ScrollView {
@@ -163,7 +159,7 @@ PanelWindow {
                     Layout.fillWidth: true; wrapMode: Text.Wrap
                     text: pad.message || (pad.dirty ? "Unsaved changes" : "")
                 }
-                Button {
+                TaskButton {
                     label: pad.changedSection === null ? "Save" : (pad.reviewing ? "Save reviewed draft" : "Review changes")
                     enabled: pad.loaded && !pad.request && (pad.dirty || pad.hasDraft)
                     labelColor: Ink.lavender; opacity: enabled ? 1 : 0.5
