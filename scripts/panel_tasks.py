@@ -14,6 +14,13 @@ import time
 from desktop_menu import dialog, notify
 
 
+BLOCK = re.compile(r"(?:^|\s)\^([A-Za-z0-9-]+)\s*$")
+
+
+def task_label(text):
+    return BLOCK.sub("", text).strip()
+
+
 def task_section(lines):
     start = next((i + 1 for i, line in enumerate(lines) if re.fullmatch(r"##\s+Tasks\s*", line)), len(lines))
     end = next((i for i in range(start, len(lines)) if re.match(r"^#{1,6}\s", lines[i])), len(lines))
@@ -41,9 +48,9 @@ def status(path):
         items = list(entries(read_lines(path)))
     except (OSError, UnicodeError):
         return {"text": "0", "tooltip": f"Task file unavailable: {html.escape(str(path))}\nLeft-click to keep a draft"}
-    tooltip = [("  ✓ " if indent else "• ") + html.escape(text) for _, indent, text in items]
-    return {"text": str(sum(bool(indent) for _, indent, _ in items)),
-            "tooltip": "\n".join([*tooltip, "Left-click to open the task notepad · Right-click to open Obsidian"])}
+    tooltip = [("  " if indent else "• ") + html.escape(task_label(text)) for _, indent, text in items]
+    return {"text": str(sum(bool(indent) and not re.match(r"^\[[xX]\]\s", text) for _, indent, text in items)),
+            "tooltip": "\n".join([*tooltip, "Left-click for projects and tasks · Right-click for Obsidian"])}
 
 
 def insert_task(lines, project, text):
@@ -152,6 +159,9 @@ def locate(lines, target):
 def replace_task(lines, target, text):
     index = locate(lines, target)
     line = lines[index]
+    block = BLOCK.search(target["path"][-1])
+    if block:
+        text = task_label(text) + " ^" + block[1]
     start = line.index(target["path"][-1], re.match(r"^[ \t]*-[ \t]+", line).end())
     end = start + len(target["path"][-1])
     lines[index] = line[:start] + text + line[end:]
@@ -321,7 +331,7 @@ def save_dialog(path, state, action):
             project = projects[choice]
     title = ("Edit task" if target else "Add task") + (f" · {project}" if project else "")
     message = "Task" if project else "No projects available. Save keeps a local draft."
-    answer = dialog(title, message=message, initial=previous.get("text", target["path"][-1] if target else ""))
+    answer = dialog(title, message=message, initial=previous.get("text", task_label(target["path"][-1]) if target else ""))
     if answer is None or not answer.strip():
         return
     text = " ".join(answer.splitlines()).strip()

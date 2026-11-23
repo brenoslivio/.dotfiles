@@ -5,8 +5,9 @@ import "Palette.js" as Ink
 Rectangle {
     id: button
     property string label
+    property color markColor: Ink.lavender
     property alias labelFormat: caption.textFormat
-    property string subtitle
+    readonly property alias hovered: pointer.containsMouse
     property string hint
     property bool richHint: false
     property string iconSource
@@ -34,7 +35,6 @@ Rectangle {
 
     Row {
         anchors.centerIn: parent
-        anchors.verticalCenterOffset: button.subtitle ? -6 : 0
         spacing: iconSource && label ? 3 : 0
         Image {
             id: icon
@@ -58,16 +58,7 @@ Rectangle {
             color: button.selected || (button.highlight && pointer.containsMouse) ? Ink.text : button.labelColor
             font.family: button.glyph ? button.glyphFamily : "Inter"
             font.pixelSize: button.glyph ? 19 : 13
-            font.italic: button.italic
         }
-    }
-    Text {
-        visible: !!button.subtitle
-        anchors { bottom: parent.bottom; horizontalCenter: parent.horizontalCenter }
-        width: Math.max(0, button.width - 2 * button.padding)
-        text: button.subtitle; textFormat: Text.PlainText
-        horizontalAlignment: Text.AlignHCenter; elide: Text.ElideRight
-        color: Ink.lavender; font.family: "Inter"; font.pixelSize: 11
     }
     Rectangle {
         anchors.centerIn: parent
@@ -77,7 +68,7 @@ Rectangle {
     Rectangle {
         anchors { right: parent.right; top: parent.top; rightMargin: 2; topMargin: 2 }
         width: button.alert ? 6 : 4; height: width; radius: width / 2
-        color: button.alert ? "#ff6675" : Ink.lavender
+        color: button.alert ? "#ff6675" : button.markColor
         visible: button.marked || button.alert
     }
     Rectangle {

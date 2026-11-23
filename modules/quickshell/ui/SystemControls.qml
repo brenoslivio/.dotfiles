@@ -7,6 +7,7 @@ Row {
     id: controls
     required property PanelWindow bar
     required property var state
+    readonly property alias mediaAccent: media.accent
     function togglePowerMenu() { powerMenu.visible = !powerMenu.visible }
     spacing: 2
     Repeater {
@@ -19,6 +20,7 @@ Row {
             Accessible.name: hint
         }
     }
+    MediaControl { id: media }
     BarButton {
         id: volume
         readonly property var audio: controls.state.sink?.audio
